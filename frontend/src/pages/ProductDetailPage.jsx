@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Star,
   Truck,
@@ -54,21 +54,28 @@ export default function ProductDetailPage() {
 
   const product = selectedProduct || defaultProduct;
 
-  const [mainImage, setMainImage] = useState(product.image || boatRockerzImg);
+  const [mainImage, setMainImage] = useState(product.image || product.primary_image || boatRockerzImg);
   const [selectedColor, setSelectedColor] = useState(
-    product.colors?.[0]?.name || 'Teal Green'
+    product.colors?.[0]?.name || product.selectedColor || 'Standard'
   );
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [addedToast, setAddedToast] = useState(null);
 
+  // Sync state when selected product changes
+  useEffect(() => {
+    if (product) {
+      setMainImage(product.image || product.primary_image || boatRockerzImg);
+      setSelectedColor(product.colors?.[0]?.name || product.selectedColor || 'Standard');
+      setQuantity(1);
+    }
+  }, [product]);
+
   const activeWish = isWishlisted(product);
 
-  const galleryThumbnails = [
-    product.image || boatRockerzImg,
-    noiseSmartwatchImg,
-    sonyHeadphonesImg
-  ];
+  const galleryThumbnails = Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : [product.image || boatRockerzImg];
 
   const handleAddToCart = () => {
     addToCart({ ...product, selectedColor, quantity });

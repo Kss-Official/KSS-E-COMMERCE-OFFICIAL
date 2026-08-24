@@ -22,24 +22,61 @@ def get_or_create_cart(request):
     cart, _ = Cart.objects.get_or_create(session_key=session_key)
     return cart
 
-def resolve_product(product_id, product_name=None):
+def resolve_product(product_id, product_name=None, price=None):
     if not product_id and not product_name:
         return None
+
     product = None
+
+    # 1. Match by integer ID
     if str(product_id).isdigit():
         product = Product.objects.filter(id=int(product_id), is_active=True).first()
+
+    # 2. Match by exact slug
     if not product and isinstance(product_id, str):
         product = Product.objects.filter(slug=product_id, is_active=True).first()
+
+    # 3. Match by exact title
     if not product and product_name:
         product = Product.objects.filter(title__iexact=product_name, is_active=True).first()
-        if not product:
-            product = Product.objects.filter(title__icontains=product_name, is_active=True).first()
+
+    # 4. Match by title containing product_name
+    if not product and product_name:
+        product = Product.objects.filter(title__icontains=product_name, is_active=True).first()
+
+    # 5. Match by cleaned product_id (e.g. 'apple-iphone-15' -> 'apple iphone 15')
     if not product and isinstance(product_id, str):
-        cleaned = product_id.replace('-', ' ').replace('_', ' ')
-        product = Product.objects.filter(title__icontains=cleaned, is_active=True).first()
-    if not product:
-        # Fallback to first available active product
-        product = Product.objects.filter(is_active=True).first()
+        cleaned = product_id.replace('-', ' ').replace('_', ' ').strip()
+        if cleaned:
+            product = Product.objects.filter(title__icontains=cleaned, is_active=True).first()
+
+    # 6. Match by significant word tokens (e.g. "iPhone" from "Apple iPhone 15")
+    if not product and product_name:
+        words = [w for w in product_name.split() if len(w) > 2]
+        for word in words:
+            candidate = Product.objects.filter(title__icontains=word, is_active=True).first()
+            if candidate:
+                product = candidate
+                break
+
+    # 7. Auto-create product if missing in DB to preserve exact item title and price
+    if not product and (product_name or product_id):
+        name_to_use = str(product_name or product_id).replace('-', ' ').replace('_', ' ').title().strip()
+        sku_val = f"AUTO-{uuid.uuid4().hex[:8].upper()}"
+        try:
+            unit_price = float(price) if price else 999.00
+        except (ValueError, TypeError):
+            unit_price = 999.00
+
+        product = Product.objects.create(
+            title=name_to_use,
+            base_price=unit_price,
+            stock_quantity=100,
+            sku=sku_val,
+            description=f"Catalog product entry for {name_to_use}",
+            is_active=True
+        )
+
     return product
 
 class CartView(APIView):
@@ -62,12 +99,13 @@ class AddCartItemView(APIView):
     def post(self, request):
         raw_product_id = request.data.get('product_id') or request.data.get('id')
         product_name = request.data.get('name') or request.data.get('title')
+        price = request.data.get('price') or request.data.get('current_price') or request.data.get('base_price')
         variant_id = request.data.get('variant_id')
         quantity = int(request.data.get('quantity', 1))
         selected_color = request.data.get('selected_color') or request.data.get('selectedColor') or ''
         selected_size = request.data.get('selected_size') or request.data.get('selectedSize') or ''
 
-        product = resolve_product(raw_product_id, product_name)
+        product = resolve_product(raw_product_id, product_name, price)
         if not product:
             return APIResponse.error(message="Product not found or inactive.", status_code=status.HTTP_404_NOT_FOUND)
 
@@ -201,8 +239,9 @@ class WishlistView(APIView):
     def post(self, request):
         raw_product_id = request.data.get('product_id') or request.data.get('id')
         product_name = request.data.get('name') or request.data.get('title')
+        price = request.data.get('price') or request.data.get('current_price') or request.data.get('base_price')
 
-        product = resolve_product(raw_product_id, product_name)
+        product = resolve_product(raw_product_id, product_name, price)
         if not product:
             return APIResponse.error(message="Product not found.", status_code=status.HTTP_404_NOT_FOUND)
 

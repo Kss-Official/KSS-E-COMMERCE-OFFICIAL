@@ -281,7 +281,7 @@ export async function addToWishlistApi(productData) {
 
   const res = await apiRequest('/cart/wishlist/', {
     method: 'POST',
-    body: JSON.stringify({ product_id: pid, name: pname })
+    body: JSON.stringify({ product_id: pid, name: pname, price: productData.price || productData.current_price })
   });
   return res?.data?.items || [];
 }
