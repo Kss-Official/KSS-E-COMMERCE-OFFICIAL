@@ -23,21 +23,22 @@ import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
 import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
 
 export default function OrderConfirmedPage() {
-  const { navigateTo, selectedOrderData } = useNavigationContext();
+  const { navigateTo } = useNavigationContext();
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
 
-  const fallbackOrderData = {
-    orderId: `#BZ${Date.now().toString().slice(-8)}`,
-    orderDate: 'Today',
-    estimatedDelivery: '3 – 5 Days',
-    totalPaid: '0',
+  // Mock order data matching the exact reference image
+  const orderData = {
+    orderId: '#BZ20260824001',
+    orderDate: '24 Aug 2026, 10:30 AM',
+    estimatedDelivery: '28 Aug – 30 Aug',
+    totalPaid: '3,409',
     paymentMethod: 'UPI',
     address: {
-      name: 'Customer',
+      name: 'Priya Sharma',
       type: 'HOME',
-      details: 'No delivery address provided',
-      phone: ''
+      details: '602, 2nd Cross Rd, Bengaluru, Karnataka 560033, India',
+      phone: '+91 98765 43210'
     },
     items: [
       {
@@ -60,7 +61,7 @@ export default function OrderConfirmedPage() {
     timeline: [
       {
         status: 'Order Confirmed',
-        date: 'Today',
+        date: '24 Aug 2026, 10:30 AM',
         completed: true,
         current: false
       },
@@ -90,8 +91,6 @@ export default function OrderConfirmedPage() {
       }
     ]
   };
-
-  const orderData = selectedOrderData || fallbackOrderData;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-gray-800">
