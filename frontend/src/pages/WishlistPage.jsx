@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Share2, Trash2, Heart, ShoppingBag, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
 
 export default function WishlistPage() {
   const { wishlistItems, addToCart, removeFromWishlist, clearWishlist } = useCartContext();
@@ -159,7 +160,7 @@ export default function WishlistPage() {
                       <div className="flex items-center space-x-4">
                         <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
                           <img
-                            src={item.image}
+                            src={getProductImage(item.name, item.image)}
                             alt={item.name}
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                           />

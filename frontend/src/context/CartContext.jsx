@@ -10,6 +10,7 @@ import {
   removeFromWishlistApi,
   getCurrentUser
 } from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 const CartContext = createContext();
 
@@ -30,15 +31,16 @@ export function CartProvider({ children }) {
     if (!Array.isArray(rawItems)) return [];
     return rawItems.map((item) => {
       const p = item.product_details || {};
+      const itemName = item.name || p.name || p.title || 'Product';
       const unitPrice = Number(item.unit_price || item.price || p.price || p.current_price || 0);
-      const origPrice = Number(item.originalPrice || p.originalPrice || p.original_price || unitPrice * 1.25);
+      const origPrice = Number(item.originalPrice || p.originalPrice || p.original_price || (unitPrice > 0 ? unitPrice * 1.25 : 0));
       const discount = item.discount || p.discount || (origPrice > unitPrice ? `${Math.round(((origPrice - unitPrice) / origPrice) * 100)}% OFF` : '');
 
       return {
         id: item.id,
         productId: item.productId || item.product || p.id,
-        name: item.name || p.name || p.title || 'Product',
-        image: item.image || p.image || p.primary_image || '',
+        name: itemName,
+        image: getProductImage(itemName, item.image || p.image || p.primary_image),
         price: unitPrice,
         originalPrice: origPrice,
         discount: discount,
@@ -55,6 +57,7 @@ export function CartProvider({ children }) {
     if (!Array.isArray(rawItems)) return [];
     return rawItems.map((item) => {
       const p = item.product_details || item.product || {};
+      const itemName = item.name || p.name || p.title || 'Product';
       const unitPrice = Number(item.price || p.price || p.current_price || 0);
       const origPrice = Number(item.originalPrice || p.originalPrice || p.original_price || (unitPrice > 0 ? unitPrice * 1.25 : 0));
       const discount = item.discount || p.discount || (origPrice > unitPrice ? `${Math.round(((origPrice - unitPrice) / origPrice) * 100)}% OFF` : '');
@@ -62,8 +65,8 @@ export function CartProvider({ children }) {
       return {
         id: item.id,
         productId: item.productId || p.id || item.id,
-        name: item.name || p.name || p.title || 'Product',
-        image: item.image || p.image || p.primary_image || '',
+        name: itemName,
+        image: getProductImage(itemName, item.image || p.image || p.primary_image),
         price: unitPrice,
         originalPrice: origPrice,
         discount: discount,
