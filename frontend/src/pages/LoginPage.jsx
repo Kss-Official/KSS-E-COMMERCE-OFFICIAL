@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  RotateCcw, 
-  ClipboardCheck, 
-  Heart, 
-  Briefcase, 
-  Eye, 
-  EyeOff, 
-  Check 
+import {
+  RotateCcw,
+  ClipboardCheck,
+  Heart,
+  Briefcase,
+  Eye,
+  EyeOff,
+  Check
 } from 'lucide-react';
 import { useNavigationContext } from '../context/NavigationContext';
 import loginShoppingBagImg from '../assets/loginPage/loginPageBag.png';
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       {/* Main Card Container */}
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 my-4">
-        
+
         {/* Left Side - Dark Teal Column */}
         <div className="bg-[#0c7a68] p-8 md:p-10 text-white flex flex-col justify-between relative overflow-hidden">
           {/* Header & Subtitle */}
@@ -121,22 +121,20 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('login')}
-                className={`flex-1 text-center py-2 text-base font-bold transition-all relative cursor-pointer ${
-                  activeTab === 'login'
-                    ? 'text-[#0c7a68] border-b-2 border-[#0c7a68]'
-                    : 'text-gray-500 hover:text-gray-800'
-                }`}
+                className={`flex-1 text-center py-2 text-base font-bold transition-all relative cursor-pointer ${activeTab === 'login'
+                  ? 'text-[#0c7a68] border-b-2 border-[#0c7a68]'
+                  : 'text-gray-500 hover:text-gray-800'
+                  }`}
               >
                 Login
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('signup')}
-                className={`flex-1 text-center py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                  activeTab === 'signup'
-                    ? 'bg-[#0c7a68] text-white shadow-xs'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`flex-1 text-center py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${activeTab === 'signup'
+                  ? 'bg-[#0c7a68] text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 Sign Up
               </button>
@@ -182,7 +180,7 @@ export default function LoginPage() {
                     Password
                   </label>
                   {activeTab === 'login' && (
-                    <span 
+                    <span
                       onClick={() => setToastMessage('Password reset link sent!')}
                       className="text-xs font-semibold text-[#0c7a68] hover:underline cursor-pointer"
                     >
@@ -266,7 +264,7 @@ export default function LoginPage() {
                   className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-xl py-2 px-2 hover:bg-gray-50 transition-colors text-xs font-semibold text-gray-700 cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                   <span>Facebook</span>
                 </button>
@@ -278,7 +276,7 @@ export default function LoginPage() {
                   className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-xl py-2 px-2 hover:bg-gray-50 transition-colors text-xs font-semibold text-gray-700 cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.62-.75 1.04-1.8 0.93-2.85-.9.04-2 .6-2.65 1.37-.58.68-.99 1.74-.85 2.77 1.01.08 2.05-.54 2.57-1.29z"/>
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.62-.75 1.04-1.8 0.93-2.85-.9.04-2 .6-2.65 1.37-.58.68-.99 1.74-.85 2.77 1.01.08 2.05-.54 2.57-1.29z" />
                   </svg>
                   <span>Apple</span>
                 </button>

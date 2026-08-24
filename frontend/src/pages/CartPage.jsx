@@ -63,8 +63,7 @@ export default function CartPage() {
   const totalDiscount = totalOriginalPrice - finalTotalAmount;
 
   const handleCheckout = () => {
-    setCheckoutToast('Order placed successfully! Thank you for shopping with BuyZo.');
-    setTimeout(() => setCheckoutToast(null), 4000);
+    navigateTo('checkout');
   };
 
   return (

@@ -13,7 +13,6 @@ import {
   LogOut,
   ChevronLeft
 } from 'lucide-react';
-import logo from '../../src/assets/logo.png';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,10 +33,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
       <div>
         <div className="p-4 border-b border-emerald-900/50 flex items-center justify-between bg-[#062920]">
           <div className="flex items-center justify-center lg:justify-start space-x-3">
-            <div className="bg-white px-2 py-1 rounded-lg shadow-sm flex items-center justify-center">
-              <img src={logo} alt="BuyZo Logo" className="h-7 w-auto object-contain" />
-            </div>
-            <span className="hidden lg:inline text-[11px] text-emerald-300 font-bold tracking-wider uppercase bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60">Admin</span>
+            <span className="text-emerald-100 font-bold tracking-wide text-lg">Admin</span>
           </div>
           {onExitAdmin && (
             <button

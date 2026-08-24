@@ -179,6 +179,8 @@ export default function Header() {
       navigateTo('electronics');
     } else if (val === 'Fashion') {
       navigateTo('fashion');
+    } else if (val === 'Home & Kitchen') {
+      navigateTo('home-kitchen');
     } else if (val === 'Mobiles') {
       navigateTo('shop');
     }
@@ -201,9 +203,11 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-200 py-3 px-3 sm:px-6 flex flex-wrap items-center justify-between gap-y-2 shadow-xs relative z-40">
       {/* Brand Logo */}
-      <div onClick={() => navigateTo('home')} className="flex items-center space-x-3 cursor-pointer">
-        <img src={logo} alt="BuyZo Logo" className="h-10 w-auto object-contain max-h-12" />
-        <span className="text-xs text-gray-500 hidden sm:inline font-medium">Shop More, Save More</span>
+      <div onClick={() => navigateTo('home')} className="flex flex-col items-start cursor-pointer group select-none">
+        <img src={logo} alt="BuyZo Logo" className="h-8 sm:h-9 w-auto object-contain" />
+        <span className="text-[10px] sm:text-[11px] font-bold tracking-tight mt-0.5 leading-none">
+          <span className="text-[#063328]">Shop More,</span> <span className="text-[#ff5100]">Save More</span>
+        </span>
       </div>
 
       {/* Interactive Search Bar Container */}

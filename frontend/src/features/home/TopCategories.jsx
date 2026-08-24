@@ -13,7 +13,7 @@ const categories = [
   { name: 'Mobiles', svg: mobileSvg },
   { name: 'Electronics', svg: electronicsSvg },
   { name: 'Fashion', svg: fashionSvg },
-  { name: 'Chairs & Furniture', svg: chairsSvg },
+  { name: 'Home & Furniture', svg: chairsSvg },
   { name: 'Beauty', svg: beautySvg },
   { name: 'Footwear', svg: shoesSvg }
 ];
