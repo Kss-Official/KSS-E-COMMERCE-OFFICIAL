@@ -13,10 +13,15 @@ import OrdersPage from './pages/OrdersPage';
 import ContactPage from './pages/ContactPage';
 import DealsPage from './pages/DealsPage';
 import FashionPage from './pages/FashionPage';
+import BestSellersPage from './pages/BestSellersPage';
+import BeautyPage from './pages/BeautyPage';
+import HomeKitchenPage from './pages/HomeKitchenPage';
 import ShopPage from './pages/ShopPage';
 import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import NewArrivalsPage from './pages/NewArrivalsPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmedPage from './pages/OrderConfirmedPage';
 
 import AdminPage from '../Admin';
 import DeliveryAgentPage from '../DeliveryAgentPortal';
@@ -53,6 +58,10 @@ function AppContent() {
         return <ProductDetailPage />;
       case 'cart':
         return <CartPage />;
+      case 'checkout':
+        return <CheckoutPage />;
+      case 'order-confirmed':
+        return <OrderConfirmedPage />;
       case 'wishlist':
         return <WishlistPage />;
       case 'login':
@@ -67,17 +76,25 @@ function AppContent() {
         return <DealsPage />;
       case 'fashion':
         return <FashionPage />;
+      case 'best-sellers':
+        return <BestSellersPage />;
+      case 'beauty':
+        return <BeautyPage />;
+      case 'home-kitchen':
+        return <HomeKitchenPage />;
       default:
         return <HomePage />;
     }
   };
 
+  const isLoginPage = currentPage === 'login';
+
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
-      <TopAnnouncement />
-      <Header />
-      <Navbar />
-      <div>
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-800 flex flex-col justify-between">
+      {!isLoginPage && <TopAnnouncement />}
+      {!isLoginPage && <Header />}
+      {!isLoginPage && <Navbar />}
+      <div className="flex-1">
         {renderCurrentPage()}
       </div>
       <Footer />

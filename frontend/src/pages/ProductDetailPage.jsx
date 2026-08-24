@@ -77,8 +77,7 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     addToCart({ ...product, selectedColor, quantity });
-    setAddedToast(`Redirecting to checkout for "${product.name}"...`);
-    setTimeout(() => setAddedToast(null), 3000);
+    navigateTo('checkout');
   };
 
   const handleToggleWishlist = () => {
