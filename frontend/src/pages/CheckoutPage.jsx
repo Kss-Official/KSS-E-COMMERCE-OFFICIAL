@@ -122,10 +122,88 @@ export default function CheckoutPage() {
 
   // Handle Place Order
   const handlePlaceOrder = () => {
+    const selectedAddr = addresses.find((a) => a.id === selectedAddressId) || addresses[0];
+    const newOrderId = `#BZ${Date.now().toString().slice(-8)}`;
+
+    const orderDateStr = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const now = new Date();
+    const minDelivery = new Date(now);
+    minDelivery.setDate(now.getDate() + (deliveryOption === 'express' ? 1 : 3));
+    const maxDelivery = new Date(now);
+    maxDelivery.setDate(now.getDate() + (deliveryOption === 'express' ? 2 : 5));
+
+    const formatDateShort = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const estDeliveryStr = `${formatDateShort(minDelivery)} – ${formatDateShort(maxDelivery)}`;
+
+    const orderData = {
+      orderId: newOrderId,
+      orderDate: orderDateStr,
+      estimatedDelivery: estDeliveryStr,
+      totalPaid: finalTotal.toLocaleString('en-IN'),
+      paymentMethod: paymentMethod.toUpperCase(),
+      address: {
+        name: selectedAddr?.name || 'Customer',
+        type: selectedAddr?.type || 'HOME',
+        details: selectedAddr?.address || 'Bengaluru, Karnataka, India',
+        phone: selectedAddr?.phone || ''
+      },
+      items: displayItems.map((item, idx) => ({
+        id: item.id || idx + 1,
+        name: item.name || item.title || 'Product',
+        variant: item.selectedColor || item.color || item.variant || 'Standard',
+        quantity: item.quantity || 1,
+        price: (item.price * (item.quantity || 1)).toLocaleString('en-IN'),
+        image: item.image
+      })),
+      timeline: [
+        {
+          status: 'Order Confirmed',
+          date: orderDateStr,
+          completed: true,
+          current: false
+        },
+        {
+          status: 'Processing',
+          date: 'We are packing your order',
+          completed: false,
+          current: true
+        },
+        {
+          status: 'Shipped',
+          date: `Expected by ${formatDateShort(minDelivery)}`,
+          completed: false,
+          current: false
+        },
+        {
+          status: 'Out for Delivery',
+          date: `Expected by ${formatDateShort(maxDelivery)}`,
+          completed: false,
+          current: false
+        },
+        {
+          status: 'Delivered',
+          date: `Expected by ${formatDateShort(maxDelivery)}`,
+          completed: false,
+          current: false
+        }
+      ]
+    };
+
+    try {
+      localStorage.setItem('buyzo_last_order', JSON.stringify(orderData));
+    } catch (e) {}
+
     if (clearCart) {
       clearCart();
     }
-    navigateTo('order-confirmed');
+    navigateTo('order-confirmed', orderData);
   };
 
   return (

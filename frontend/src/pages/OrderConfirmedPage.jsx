@@ -18,79 +18,83 @@ import {
 } from 'lucide-react';
 import { useNavigationContext } from '../context/NavigationContext';
 
-// Import product images
+// Import fallback product images
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
 import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
 
 export default function OrderConfirmedPage() {
-  const { navigateTo } = useNavigationContext();
+  const { navigateTo, selectedOrderData } = useNavigationContext();
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
 
-  // Mock order data matching the exact reference image
-  const orderData = {
-    orderId: '#BZ20260824001',
-    orderDate: '24 Aug 2026, 10:30 AM',
-    estimatedDelivery: '28 Aug – 30 Aug',
-    totalPaid: '3,409',
-    paymentMethod: 'UPI',
-    address: {
-      name: 'Priya Sharma',
-      type: 'HOME',
-      details: '602, 2nd Cross Rd, Bengaluru, Karnataka 560033, India',
-      phone: '+91 98765 43210'
-    },
-    items: [
-      {
-        id: 1,
-        name: 'boAt Rockerz 450',
-        variant: 'Teal Green',
-        quantity: 1,
-        price: '1,499',
-        image: boatRockerzImg
+  // Retrieve dynamic order data from context, localStorage, or compute dynamic fallback
+  const getOrderData = () => {
+    if (selectedOrderData) return selectedOrderData;
+    try {
+      const saved = localStorage.getItem('buyzo_last_order');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+
+    // Dynamic fallback if page opened directly without placing order in current session
+    const now = new Date();
+    const minDelivery = new Date(now);
+    minDelivery.setDate(now.getDate() + 3);
+    const maxDelivery = new Date(now);
+    maxDelivery.setDate(now.getDate() + 5);
+    const formatDateShort = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+    const orderDateStr = now.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    return {
+      orderId: '#BZ' + Date.now().toString().slice(-8),
+      orderDate: orderDateStr,
+      estimatedDelivery: `${formatDateShort(minDelivery)} – ${formatDateShort(maxDelivery)}`,
+      totalPaid: '4,498',
+      paymentMethod: 'UPI',
+      address: {
+        name: 'Priya Sharma',
+        type: 'HOME',
+        details: '602, 2nd Cross Rd, Bengaluru, Karnataka 560033, India',
+        phone: '+91 98765 43210'
       },
-      {
-        id: 2,
-        name: 'Noise ColorFit Pro 5',
-        variant: 'Jet Black',
-        quantity: 1,
-        price: '2,999',
-        image: noiseSmartwatchImg
-      }
-    ],
-    timeline: [
-      {
-        status: 'Order Confirmed',
-        date: '24 Aug 2026, 10:30 AM',
-        completed: true,
-        current: false
-      },
-      {
-        status: 'Processing',
-        date: 'We are packing your order',
-        completed: false,
-        current: true
-      },
-      {
-        status: 'Shipped',
-        date: 'Expected by 26 Aug 2026',
-        completed: false,
-        current: false
-      },
-      {
-        status: 'Out for Delivery',
-        date: 'Expected by 28 Aug 2026',
-        completed: false,
-        current: false
-      },
-      {
-        status: 'Delivered',
-        date: 'Expected by 30 Aug 2026',
-        completed: false,
-        current: false
-      }
-    ]
+      items: [
+        {
+          id: 1,
+          name: 'boAt Rockerz 450',
+          variant: 'Teal Green',
+          quantity: 1,
+          price: '1,499',
+          image: boatRockerzImg
+        },
+        {
+          id: 2,
+          name: 'Noise ColorFit Pro 5',
+          variant: 'Jet Black',
+          quantity: 1,
+          price: '2,999',
+          image: noiseSmartwatchImg
+        }
+      ],
+      timeline: [
+        { status: 'Order Confirmed', date: orderDateStr, completed: true, current: false },
+        { status: 'Processing', date: 'We are packing your order', completed: false, current: true },
+        { status: 'Shipped', date: `Expected by ${formatDateShort(minDelivery)}`, completed: false, current: false },
+        { status: 'Out for Delivery', date: `Expected by ${formatDateShort(maxDelivery)}`, completed: false, current: false },
+        { status: 'Delivered', date: `Expected by ${formatDateShort(maxDelivery)}`, completed: false, current: false }
+      ]
+    };
   };
+
+  const orderData = getOrderData();
+
+  // Dynamic items to display (handle "View All Items" toggle if > 2 items)
+  const itemsToDisplay = showAllItems ? orderData.items : orderData.items.slice(0, 2);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-gray-800">
@@ -178,11 +182,11 @@ export default function OrderConfirmedPage() {
                     Order Items ({orderData.items.length})
                   </h3>
                   <div className="space-y-3">
-                    {orderData.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between space-x-3">
+                    {itemsToDisplay.map((item, index) => (
+                      <div key={item.id || index} className="flex items-center justify-between space-x-3">
                         <div className="flex items-center space-x-3">
                           <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200/70 p-1 flex items-center justify-center shrink-0 overflow-hidden">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                            <img src={item.image || boatRockerzImg} alt={item.name} className="w-full h-full object-contain" />
                           </div>
                           <div>
                             <div className="font-bold text-xs text-gray-900 line-clamp-1">{item.name}</div>
@@ -198,15 +202,17 @@ export default function OrderConfirmedPage() {
                   </div>
                 </div>
 
-                <div className="pt-3 text-center border-t border-gray-100 mt-3">
-                  <button
-                    onClick={() => setShowAllItems(!showAllItems)}
-                    className="text-xs font-semibold text-gray-600 hover:text-black cursor-pointer inline-flex items-center space-x-1"
-                  >
-                    <span>View All Items</span>
-                    <span>⌄</span>
-                  </button>
-                </div>
+                {orderData.items.length > 2 && (
+                  <div className="pt-3 text-center border-t border-gray-100 mt-3">
+                    <button
+                      onClick={() => setShowAllItems(!showAllItems)}
+                      className="text-xs font-semibold text-gray-600 hover:text-black cursor-pointer inline-flex items-center space-x-1"
+                    >
+                      <span>{showAllItems ? 'Show Less' : `View All ${orderData.items.length} Items`}</span>
+                      <span className="transform transition-transform">{showAllItems ? '▴' : '⌄'}</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Delivery Address & Payment Details Box */}
@@ -224,7 +230,9 @@ export default function OrderConfirmedPage() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-600 leading-relaxed">{orderData.address.details}</p>
-                      <p className="text-xs text-gray-700 font-semibold mt-1">{orderData.address.phone}</p>
+                      {orderData.address.phone && (
+                        <p className="text-xs text-gray-700 font-semibold mt-1">{orderData.address.phone}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -240,7 +248,7 @@ export default function OrderConfirmedPage() {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-gray-500">Paid via {orderData.paymentMethod}</span>
                     <span className="font-black italic text-[#063328] text-xs">
-                      UPI <span className="text-[#ff5100]">▶</span>
+                      {orderData.paymentMethod} <span className="text-[#ff5100]">▶</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-1">
@@ -380,7 +388,7 @@ export default function OrderConfirmedPage() {
             <div className="space-y-3 text-xs">
               <div className="flex justify-between">
                 <span className="text-gray-500">Invoice No:</span>
-                <span className="font-bold text-gray-900">INV-2026-0824-001</span>
+                <span className="font-bold text-gray-900">INV-{(orderData.orderId || '').replace('#BZ', '')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Order ID:</span>

@@ -271,7 +271,7 @@ export default function ShopPage() {
   }, [selectedCategory, sortBy]);
 
   const isWishlisted = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
+    return wishlistItems?.some((item) => item.id === id || item.productId === id);
   };
 
   return (
