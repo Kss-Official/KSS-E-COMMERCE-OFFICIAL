@@ -1,153 +1,389 @@
-import React, { createContext, useState, useContext } from 'react';
-
-// Import images for initial cart state & wishlist state
-import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
-import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
-import redmiNote13Img from '../assets/images/redmi_note13.jpg';
-import womenDressImg from '../assets/images/women_dress.jpg';
-import loungeChairImg from '../assets/images/lounge_chair.jpg';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import {
+  fetchCartApi,
+  addToCartApi,
+  updateCartItemApi,
+  removeCartItemApi,
+  clearCartApi,
+  fetchWishlistApi,
+  addToWishlistApi,
+  removeFromWishlistApi,
+  getCurrentUser
+} from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 const CartContext = createContext();
 
-const initialCart = [
-  {
-    id: 'elec-1',
-    name: 'boAt Rockerz 450',
-    image: boatRockerzImg,
-    price: 1499,
-    originalPrice: 3999,
-    discount: '56% OFF',
-    selectedColor: 'Teal Green',
-    quantity: 1
-  },
-  {
-    id: 'elec-2',
-    name: 'Noise ColorFit Pro 5',
-    image: noiseSmartwatchImg,
-    price: 2999,
-    originalPrice: 4999,
-    discount: '40% OFF',
-    selectedColor: 'Black',
-    quantity: 1
-  }
-];
-
-const initialWishlist = [
-  {
-    id: 'wish-1',
-    name: 'Redmi Note 13 Pro 5G',
-    specs: '8GB RAM, 128GB Storage',
-    category: 'Electronics',
-    image: redmiNote13Img,
-    price: 18999,
-    originalPrice: 21999,
-    discount: '14% OFF',
-    inStock: true,
-    deliveryDate: 'Delivery by 24 May'
-  },
-  {
-    id: 'wish-2',
-    name: 'boAt Rockerz 450',
-    specs: 'Wireless Over Ear Headphones',
-    category: 'Electronics',
-    image: boatRockerzImg,
-    price: 1499,
-    originalPrice: 2490,
-    discount: '40% OFF',
-    inStock: true,
-    deliveryDate: 'Delivery by 24 May'
-  },
-  {
-    id: 'wish-3',
-    name: 'Women A-Line Dress',
-    specs: 'Green, Size: M',
-    category: 'Fashion',
-    image: womenDressImg,
-    price: 999,
-    originalPrice: 1999,
-    discount: '50% OFF',
-    inStock: true,
-    deliveryDate: 'Delivery by 24 May'
-  },
-  {
-    id: 'wish-4',
-    name: 'Modern Lounge Chair',
-    specs: 'Teal Blue',
-    category: 'Home & Kitchen',
-    image: loungeChairImg,
-    price: 7999,
-    originalPrice: 12999,
-    discount: '38% OFF',
-    inStock: true,
-    deliveryDate: 'Delivery by 24 May'
-  }
-];
-
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(initialCart);
-  const [wishlistItems, setWishlistItems] = useState(initialWishlist);
+  const [cartItems, setCartItems] = useState([]);
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [cartSummary, setCartSummary] = useState({
+    total_items: 0,
+    subtotal: 0,
+    estimated_tax: 0,
+    estimated_shipping: 0,
+    grand_total: 0
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const addToCart = (product) => {
-    setCartItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.id === product.id);
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += product.quantity || 1;
-        return updated;
+  // Helper to format cart items consistently for the UI
+  const formatCartItems = (rawItems) => {
+    if (!Array.isArray(rawItems)) return [];
+    return rawItems.map((item) => {
+      const p = item.product_details || {};
+      const itemName = item.name || p.name || p.title || 'Product';
+      const unitPrice = Number(item.unit_price || item.price || p.price || p.current_price || 0);
+      const origPrice = Number(item.originalPrice || p.originalPrice || p.original_price || (unitPrice > 0 ? unitPrice * 1.25 : 0));
+      const discount = item.discount || p.discount || (origPrice > unitPrice ? `${Math.round(((origPrice - unitPrice) / origPrice) * 100)}% OFF` : '');
+
+      return {
+        id: item.id,
+        productId: item.productId || item.product || p.id,
+        name: itemName,
+        image: getProductImage(itemName, item.image || p.image || p.primary_image),
+        price: unitPrice,
+        originalPrice: origPrice,
+        discount: discount,
+        selectedColor: item.selectedColor || item.selected_color || '',
+        selectedSize: item.selectedSize || item.selected_size || '',
+        quantity: Number(item.quantity) || 1,
+        totalPrice: Number(item.total_price) || unitPrice * (Number(item.quantity) || 1)
+      };
+    });
+  };
+
+  // Helper to format wishlist items consistently for the UI
+  const formatWishlistItems = (rawItems) => {
+    if (!Array.isArray(rawItems)) return [];
+    return rawItems.map((item) => {
+      const p = item.product_details || item.product || {};
+      const itemName = item.name || p.name || p.title || 'Product';
+      const unitPrice = Number(item.price || p.price || p.current_price || 0);
+      const origPrice = Number(item.originalPrice || p.originalPrice || p.original_price || (unitPrice > 0 ? unitPrice * 1.25 : 0));
+      const discount = item.discount || p.discount || (origPrice > unitPrice ? `${Math.round(((origPrice - unitPrice) / origPrice) * 100)}% OFF` : '');
+
+      return {
+        id: item.id,
+        productId: item.productId || p.id || item.id,
+        name: itemName,
+        image: getProductImage(itemName, item.image || p.image || p.primary_image),
+        price: unitPrice,
+        originalPrice: origPrice,
+        discount: discount,
+        category: item.category || p.category || p.category_name || 'General',
+        specs: item.specs || p.specs || '',
+        inStock: item.inStock !== false,
+        deliveryDate: item.deliveryDate || 'Delivery in 2-4 days'
+      };
+    });
+  };
+
+  // Fetch Cart from Backend
+  const refreshCart = useCallback(async () => {
+    try {
+      const data = await fetchCartApi();
+      if (data && Array.isArray(data.items)) {
+        setCartItems(formatCartItems(data.items));
+        setCartSummary({
+          total_items: data.total_items || 0,
+          subtotal: data.subtotal || 0,
+          estimated_tax: data.estimated_tax || 0,
+          estimated_shipping: data.estimated_shipping || 0,
+          grand_total: data.grand_total || 0
+        });
       }
+    } catch (e) {
+      console.warn('[CartContext] Error fetching cart:', e);
+    }
+  }, []);
+
+  // Fetch Wishlist from Backend
+  const refreshWishlist = useCallback(async () => {
+    try {
+      const items = await fetchWishlistApi();
+      if (Array.isArray(items)) {
+        setWishlistItems(formatWishlistItems(items));
+      }
+    } catch (e) {
+      console.warn('[CartContext] Error fetching wishlist:', e);
+    }
+  }, []);
+
+  // Load Cart & Wishlist on initial mount and when auth changes
+  useEffect(() => {
+    refreshCart();
+    refreshWishlist();
+
+    const handleAuthChange = () => {
+      refreshCart();
+      refreshWishlist();
+    };
+
+    window.addEventListener('buyzo_auth_change', handleAuthChange);
+    return () => window.removeEventListener('buyzo_auth_change', handleAuthChange);
+  }, [refreshCart, refreshWishlist]);
+
+  // Add Item to Cart
+  const addToCart = async (product, options = {}) => {
+    const qty = options.quantity || product.quantity || 1;
+    const color = options.selectedColor || product.selectedColor || product.selected_color || '';
+    const size = options.selectedSize || product.selectedSize || product.selected_size || '';
+
+    // Optimistic Update
+    setCartItems((prev) => {
+      const existingIdx = prev.findIndex(
+        (i) => (i.productId === product.id || i.id === product.id || i.name === product.name) &&
+               (!color || i.selectedColor === color)
+      );
+
+      if (existingIdx > -1) {
+        const copy = [...prev];
+        copy[existingIdx].quantity += qty;
+        copy[existingIdx].totalPrice = copy[existingIdx].price * copy[existingIdx].quantity;
+        return copy;
+      }
+
+      const unitPrice = Number(product.price || product.current_price || 0);
+      const origPrice = Number(product.originalPrice || product.original_price || unitPrice * 1.25);
       return [
         ...prev,
         {
-          ...product,
-          quantity: product.quantity || 1,
-          selectedColor: product.selectedColor || 'Default'
+          id: product.id || `temp-${Date.now()}`,
+          productId: product.id,
+          name: product.name || product.title || 'Product',
+          image: product.image || product.primary_image || '',
+          price: unitPrice,
+          originalPrice: origPrice,
+          discount: product.discount || (origPrice > unitPrice ? `${Math.round(((origPrice - unitPrice) / origPrice) * 100)}% OFF` : ''),
+          selectedColor: color,
+          selectedSize: size,
+          quantity: qty,
+          totalPrice: unitPrice * qty
         }
       ];
     });
+
+    // Backend Sync
+    try {
+      const data = await addToCartApi({
+        product_id: product.id,
+        id: product.id,
+        name: product.name || product.title,
+        quantity: qty,
+        selected_color: color,
+        selected_size: size,
+        variant_id: options.variantId || product.variant_id || null
+      });
+
+      if (data && Array.isArray(data.items)) {
+        setCartItems(formatCartItems(data.items));
+        setCartSummary({
+          total_items: data.total_items || 0,
+          subtotal: data.subtotal || 0,
+          estimated_tax: data.estimated_tax || 0,
+          estimated_shipping: data.estimated_shipping || 0,
+          grand_total: data.grand_total || 0
+        });
+      }
+    } catch (e) {
+      console.warn('[CartContext] Add to cart sync error:', e);
+    }
   };
 
-  const updateQuantity = (productId, newQuantity) => {
+  // Update Item Quantity
+  const updateQuantity = async (itemIdOrProductId, newQuantity) => {
     if (newQuantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(itemIdOrProductId);
       return;
     }
+
+    // Optimistic Update
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
+      prev.map((item) => {
+        if (item.id === itemIdOrProductId || item.productId === itemIdOrProductId) {
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: item.price * newQuantity
+          };
+        }
+        return item;
+      })
     );
+
+    // Backend Sync
+    try {
+      const data = await updateCartItemApi(itemIdOrProductId, newQuantity);
+      if (data && Array.isArray(data.items)) {
+        setCartItems(formatCartItems(data.items));
+        setCartSummary({
+          total_items: data.total_items || 0,
+          subtotal: data.subtotal || 0,
+          estimated_tax: data.estimated_tax || 0,
+          estimated_shipping: data.estimated_shipping || 0,
+          grand_total: data.grand_total || 0
+        });
+      }
+    } catch (e) {
+      console.warn('[CartContext] Update quantity sync error:', e);
+    }
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+  // Remove Item from Cart
+  const removeFromCart = async (itemIdOrProductId) => {
+    // Optimistic Update
+    setCartItems((prev) => prev.filter((i) => i.id !== itemIdOrProductId && i.productId !== itemIdOrProductId));
+
+    // Backend Sync
+    try {
+      const data = await removeCartItemApi(itemIdOrProductId);
+      if (data && Array.isArray(data.items)) {
+        setCartItems(formatCartItems(data.items));
+        setCartSummary({
+          total_items: data.total_items || 0,
+          subtotal: data.subtotal || 0,
+          estimated_tax: data.estimated_tax || 0,
+          estimated_shipping: data.estimated_shipping || 0,
+          grand_total: data.grand_total || 0
+        });
+      }
+    } catch (e) {
+      console.warn('[CartContext] Remove from cart sync error:', e);
+    }
   };
 
-  const addToWishlist = (product) => {
-    setWishlistItems((prev) => {
-      if (prev.some((item) => item.id === product.id)) return prev;
-      return [...prev, product];
+  // Clear Cart
+  const clearCart = async () => {
+    setCartItems([]);
+    setCartSummary({
+      total_items: 0,
+      subtotal: 0,
+      estimated_tax: 0,
+      estimated_shipping: 0,
+      grand_total: 0
     });
+    try {
+      await clearCartApi();
+    } catch (e) {
+      console.warn('[CartContext] Clear cart sync error:', e);
+    }
   };
 
-  const removeFromWishlist = (productId) => {
-    setWishlistItems((prev) => prev.filter((item) => item.id !== productId));
+  // Add Item to Wishlist
+  const addToWishlist = async (product) => {
+    const pid = product.id;
+    const pname = product.name || product.title;
+
+    // Optimistic Update
+    setWishlistItems((prev) => {
+      if (prev.some((i) => i.id === pid || i.productId === pid || i.name === pname)) {
+        return prev;
+      }
+      const unitPrice = Number(product.price || product.current_price || 0);
+      const origPrice = Number(product.originalPrice || product.original_price || unitPrice * 1.25);
+      return [
+        ...prev,
+        {
+          id: pid,
+          productId: pid,
+          name: pname,
+          image: product.image || product.primary_image || '',
+          price: unitPrice,
+          originalPrice: origPrice,
+          discount: product.discount || (origPrice > unitPrice ? `${Math.round(((origPrice - unitPrice) / origPrice) * 100)}% OFF` : ''),
+          category: product.category || product.category_name || 'General',
+          specs: product.specs || '',
+          inStock: true,
+          deliveryDate: 'Delivery in 2-4 days'
+        }
+      ];
+    });
+
+    // Backend Sync
+    try {
+      const items = await addToWishlistApi(product);
+      if (Array.isArray(items)) {
+        setWishlistItems(formatWishlistItems(items));
+      }
+    } catch (e) {
+      console.warn('[CartContext] Add to wishlist sync error:', e);
+    }
   };
 
-  const clearWishlist = () => {
+  // Remove Item from Wishlist
+  const removeFromWishlist = async (productId) => {
+    // Optimistic Update
+    setWishlistItems((prev) => prev.filter((i) => i.id !== productId && i.productId !== productId));
+
+    // Backend Sync
+    try {
+      const items = await removeFromWishlistApi(productId);
+      if (Array.isArray(items)) {
+        setWishlistItems(formatWishlistItems(items));
+      }
+    } catch (e) {
+      console.warn('[CartContext] Remove from wishlist sync error:', e);
+    }
+  };
+
+  // Toggle Wishlist
+  const toggleWishlist = async (product) => {
+    const pid = product.id;
+    const pname = product.name || product.title;
+    const isWish = wishlistItems.some((i) => i.id === pid || i.productId === pid || i.name === pname);
+
+    if (isWish) {
+      await removeFromWishlist(pid);
+    } else {
+      await addToWishlist(product);
+    }
+  };
+
+  // Check if Wishlisted
+  const isWishlisted = (productOrId) => {
+    if (!productOrId) return false;
+    if (typeof productOrId === 'object') {
+      const pid = productOrId.id;
+      const pname = productOrId.name || productOrId.title;
+      return wishlistItems.some((i) => (pid && (i.id === pid || i.productId === pid)) || (pname && i.name === pname));
+    }
+    return wishlistItems.some((i) => i.id === productOrId || i.productId === productOrId);
+  };
+
+  // Clear Wishlist
+  const clearWishlist = async () => {
+    const items = [...wishlistItems];
     setWishlistItems([]);
+    for (const it of items) {
+      try {
+        await removeFromWishlistApi(it.productId || it.id);
+      } catch (e) {}
+    }
   };
+
+  const cartCount = cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0);
+  const wishlistCount = wishlistItems.length;
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
         wishlistItems,
+        cartCount,
+        wishlistCount,
+        cartSummary,
+        isLoading,
         addToCart,
         updateQuantity,
         removeFromCart,
+        clearCart,
         addToWishlist,
         removeFromWishlist,
-        clearWishlist
+        toggleWishlist,
+        isWishlisted,
+        clearWishlist,
+        refreshCart,
+        refreshWishlist
       }}
     >
       {children}
@@ -156,4 +392,3 @@ export function CartProvider({ children }) {
 }
 
 export const useCartContext = () => useContext(CartContext);
-

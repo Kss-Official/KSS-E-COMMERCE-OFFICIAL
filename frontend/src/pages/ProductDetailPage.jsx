@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Star,
   Truck,
@@ -49,25 +49,33 @@ const defaultProduct = {
 };
 
 export default function ProductDetailPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { selectedProduct, navigateTo } = useNavigationContext();
 
   const product = selectedProduct || defaultProduct;
 
-  const [mainImage, setMainImage] = useState(product.image || boatRockerzImg);
+  const [mainImage, setMainImage] = useState(product.image || product.primary_image || boatRockerzImg);
   const [selectedColor, setSelectedColor] = useState(
-    product.colors?.[0]?.name || 'Teal Green'
+    product.colors?.[0]?.name || product.selectedColor || 'Standard'
   );
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [addedToast, setAddedToast] = useState(null);
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
-  const galleryThumbnails = [
-    product.image || boatRockerzImg,
-    noiseSmartwatchImg,
-    sonyHeadphonesImg
-  ];
+  // Sync state when selected product changes
+  useEffect(() => {
+    if (product) {
+      setMainImage(product.image || product.primary_image || boatRockerzImg);
+      setSelectedColor(product.colors?.[0]?.name || product.selectedColor || 'Standard');
+      setQuantity(1);
+    }
+  }, [product]);
+
+  const activeWish = isWishlisted(product);
+
+  const galleryThumbnails = Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : [product.image || boatRockerzImg];
 
   const handleAddToCart = () => {
     addToCart({ ...product, selectedColor, quantity });
@@ -81,8 +89,9 @@ export default function ProductDetailPage() {
   };
 
   const handleToggleWishlist = () => {
-    addToWishlist(product);
-    setIsWishlisted((prev) => !prev);
+    toggleWishlist(product);
+    setAddedToast(activeWish ? `Removed "${product.name}" from wishlist` : `Added "${product.name}" to wishlist`);
+    setTimeout(() => setAddedToast(null), 3000);
   };
 
   return (
@@ -160,7 +169,7 @@ export default function ProductDetailPage() {
             >
               <Heart
                 className={`w-5 h-5 ${
-                  isWishlisted
+                  activeWish
                     ? 'fill-red-500 text-red-500'
                     : 'text-gray-600 hover:text-red-500'
                 }`}

@@ -278,8 +278,10 @@ const bestSellerProducts = [
 ];
 
 export default function BestSellersPage() {
-  const { addToCart, addToWishlist, wishlistItems } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
+
+  const isProductInWishlist = (id) => isWishlisted(id);
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [minRating, setMinRating] = useState(0);
@@ -321,24 +323,10 @@ export default function BestSellersPage() {
 
   const handleToggleWishlist = (product, e) => {
     if (e) e.stopPropagation();
-    addToWishlist({
-      id: product.id,
-      name: product.name,
-      specs: `${product.brand} | ${product.category}`,
-      category: product.category,
-      image: product.image,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      discount: product.discount,
-      inStock: true,
-      deliveryDate: 'Delivery by 2-3 Days'
-    });
-    setToastMessage(`Saved "${product.name}" to wishlist!`);
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist!`);
     setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const isProductInWishlist = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
   };
 
   return (

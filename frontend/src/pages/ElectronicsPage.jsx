@@ -195,7 +195,7 @@ const brandList = [
 ];
 
 export default function ElectronicsPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -205,7 +205,6 @@ export default function ElectronicsPage() {
   const [sortBy, setSortBy] = useState('popularity');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [addedToast, setAddedToast] = useState(null);
-  const [wishlistActive, setWishlistActive] = useState({});
 
   // Toggle brand selection
   const handleBrandChange = (brandName) => {
@@ -241,8 +240,10 @@ export default function ElectronicsPage() {
   };
 
   const handleToggleWishlist = (product) => {
-    addToWishlist(product);
-    setWishlistActive((prev) => ({ ...prev, [product.id]: !prev[product.id] }));
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setAddedToast(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist`);
+    setTimeout(() => setAddedToast(null), 3000);
   };
 
   return (
@@ -489,7 +490,7 @@ export default function ElectronicsPage() {
                   >
                     <Heart
                       className={`w-4 h-4 transition-colors ${
-                        wishlistActive[product.id]
+                        isWishlisted(product.id)
                           ? 'fill-red-500 text-red-500'
                           : 'text-[#0d5c46] hover:text-red-500'
                       }`}

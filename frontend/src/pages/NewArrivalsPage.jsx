@@ -214,7 +214,7 @@ const newArrivalsProducts = [
 
 export default function NewArrivalsPage() {
   const { navigateTo } = useNavigationContext();
-  const { addToCart, addToWishlist, removeFromWishlist, wishlistItems } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
 
   const [activeCategory, setActiveCategory] = useState('All New Arrivals');
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
@@ -244,16 +244,10 @@ export default function NewArrivalsPage() {
     return () => clearInterval(timer);
   }, [nextSlide]);
 
-  const isWishlisted = (id) => wishlistItems?.some((item) => item.id === id);
-
   const handleToggleWishlist = (product) => {
-    if (isWishlisted(product.id)) {
-      removeFromWishlist(product.id);
-      setToastMessage(`Removed "${product.name}" from wishlist`);
-    } else {
-      addToWishlist(product);
-      setToastMessage(`Saved "${product.name}" to wishlist`);
-    }
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist`);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
