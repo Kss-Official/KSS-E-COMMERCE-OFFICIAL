@@ -1,141 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Heart,
-  ShoppingCart,
+  Tag,
+  Flame,
   Star,
+  Zap,
+  Calendar,
+  Percent,
+  CreditCard,
+  Gift,
+  ShieldCheck,
+  RotateCcw,
+  Check,
+  Heart,
   ChevronDown,
-  ChevronLeft,
+  ChevronUp,
   ChevronRight,
-  LayoutGrid,
-  List,
   ArrowRight,
-  Check
+  Sparkles,
+  SlidersHorizontal,
+  BadgeCheck,
+  Lock,
+  Shirt,
+  Watch
 } from 'lucide-react';
+import rakhiVisualImg from '../assets/rakhi_hero_visual.png';
+import rakhiDealsExactCardImg from '../assets/images/rakhi_deals_exact_card.png';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 
-// Import assets
-import heroDealsImg from '../assets/Deals/Hero.Deals.png';
-import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
+// Import local images
 import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
-import hpLaptopImg from '../assets/images/hp_laptop.jpg';
-import accentChairImg from '../assets/images/accent_chair.jpg';
+import boatAirdopesImg from '../assets/images/boat_airdopes.png';
 import tealBackpackImg from '../assets/images/teal_backpack.jpg';
-
-const initialDealsProducts = [
-  {
-    id: 'deal-1',
-    name: 'boAt Rockerz 450',
-    image: boatRockerzImg,
-    price: 1499,
-    originalPrice: 3999,
-    discount: '60% OFF',
-    rating: 4.5,
-    category: 'Electronics',
-    discountRange: '60% - 80%',
-    popularity: 99
-  },
-  {
-    id: 'deal-2',
-    name: 'Noise ColorFit Pro 5',
-    image: noiseSmartwatchImg,
-    price: 2999,
-    originalPrice: 4999,
-    discount: '40% OFF',
-    rating: 4.4,
-    category: 'Electronics',
-    discountRange: '40% - 60%',
-    popularity: 95
-  },
-  {
-    id: 'deal-3',
-    name: 'HP 15s Laptop',
-    image: hpLaptopImg,
-    price: 42990,
-    originalPrice: 60000,
-    discount: '35% OFF',
-    rating: 4.3,
-    category: 'Electronics',
-    discountRange: '20% - 40%',
-    popularity: 92
-  },
-  {
-    id: 'deal-4',
-    name: 'Home Living Accent Chair',
-    image: accentChairImg,
-    price: 6499,
-    originalPrice: 12999,
-    discount: '50% OFF',
-    rating: 4.6,
-    category: 'Home & Kitchen',
-    discountRange: '40% - 60%',
-    popularity: 96
-  },
-  {
-    id: 'deal-5',
-    name: 'Safari Seek 45L Backpack',
-    image: tealBackpackImg,
-    price: 1649,
-    originalPrice: 2999,
-    discount: '45% OFF',
-    rating: 4.4,
-    category: 'Fashion',
-    discountRange: '40% - 60%',
-    popularity: 91
-  },
-  {
-    id: 'deal-6',
-    name: 'Bella Vita Luxury Perfume',
-    image: boatRockerzImg,
-    price: 699,
-    originalPrice: 999,
-    discount: '30% OFF',
-    rating: 4.2,
-    category: 'Beauty',
-    discountRange: '20% - 40%',
-    popularity: 88
-  }
-];
-
-const dealTabs = [
-  'All Deals',
-  'Deal of the Day',
-  'Top Discounts',
-  'Combo Offers',
-  'Bank Offers'
-];
-
-const sideCategories = [
-  { name: 'All Deals', count: 320 },
-  { name: 'Electronics', count: 128 },
-  { name: 'Fashion', count: 96 },
-  { name: 'Home & Kitchen', count: 54 },
-  { name: 'Beauty', count: 28 },
-  { name: 'Sports & Fitness', count: 14 }
-];
-
-const sideDiscountRanges = [
-  { label: '10% - 20%', count: 86 },
-  { label: '20% - 40%', count: 124 },
-  { label: '40% - 60%', count: 78 },
-  { label: '60% - 80%', count: 28 },
-  { label: '80% & above', count: 6 }
-];
+import streetSneakersImg from '../assets/images/fashion_street_sneakers.jpg';
+import accentChairImg from '../assets/images/accent_chair.jpg';
+import beautyPerfumeImg from '../assets/images/boat_rockerz.jpg';
 
 export default function DealsPage() {
   const { addToCart, addToWishlist } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
-  const [activeTab, setActiveTab] = useState('All Deals');
-  const [selectedCategory, setSelectedCategory] = useState('All Deals');
+  // Navigation and Filter states
+  const [activeNav, setActiveNav] = useState('Deal of the Day');
+  const [activeCategory, setActiveCategory] = useState('All');
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
-  const [maxPrice, setMaxPrice] = useState(50000);
-  const [sortBy, setSortBy] = useState('popularity');
-  const [addedToast, setAddedToast] = useState(null);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [priceMin, setPriceMin] = useState(0);
+  const [priceMax, setPriceMax] = useState(10000);
+  const [discountSlider, setDiscountSlider] = useState(70);
   const [wishlistActive, setWishlistActive] = useState({});
+  const [addedToast, setAddedToast] = useState(null);
 
-  // Countdown timer state (12 hrs, 45 mins, 30 secs)
-  const [timeLeft, setTimeLeft] = useState({ hrs: 12, mins: 45, secs: 30 });
+  // Accordion toggle states
+  const [openSections, setOpenSections] = useState({
+    discount: true,
+    price: true,
+    categories: true
+  });
+
+  // Countdown timer for Deal of the Day (08:45:32)
+  const [timeLeft, setTimeLeft] = useState({ hrs: 8, mins: 45, secs: 32 });
+  // Flash deal timer (02:15:32)
+  const [flashTimeLeft, setFlashTimeLeft] = useState({ hrs: 2, mins: 15, secs: 32 });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -143,16 +69,26 @@ export default function DealsPage() {
         if (prev.secs > 0) return { ...prev, secs: prev.secs - 1 };
         if (prev.mins > 0) return { ...prev, mins: 59, secs: 59 };
         if (prev.hrs > 0) return { hrs: prev.hrs - 1, mins: 59, secs: 59 };
-        return prev;
+        return { hrs: 8, mins: 45, secs: 32 };
+      });
+      setFlashTimeLeft((prev) => {
+        if (prev.secs > 0) return { ...prev, secs: prev.secs - 1 };
+        if (prev.mins > 0) return { ...prev, mins: 59, secs: 59 };
+        if (prev.hrs > 0) return { hrs: prev.hrs - 1, mins: 59, secs: 59 };
+        return { hrs: 2, mins: 15, secs: 32 };
       });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleDiscountChange = (label) => {
-    setSelectedDiscounts((prev) =>
-      prev.includes(label) ? prev.filter((d) => d !== label) : [...prev, label]
-    );
+  const toggleSection = (sec) => {
+    setOpenSections((prev) => ({ ...prev, [sec]: !prev[sec] }));
+  };
+
+  const handleToggleWishlist = (e, product) => {
+    e.stopPropagation();
+    addToWishlist(product);
+    setWishlistActive((prev) => ({ ...prev, [product.id]: !prev[product.id] }));
   };
 
   const handleAddToCart = (e, product) => {
@@ -162,365 +98,619 @@ export default function DealsPage() {
     setTimeout(() => setAddedToast(null), 3000);
   };
 
-  const handleToggleWishlist = (e, product) => {
-    e.stopPropagation();
-    addToWishlist(product);
-    setWishlistActive((prev) => ({ ...prev, [product.id]: !prev[product.id] }));
+  const clearAllFilters = () => {
+    setSelectedDiscounts([]);
+    setSelectedCategories([]);
+    setPriceMin(0);
+    setPriceMax(10000);
+    setDiscountSlider(70);
+    setActiveCategory('All');
   };
 
+  // Nav menu items
+  const sidebarNavItems = [
+    { id: 'Deal of the Day', label: 'Deal of the Day', icon: Flame },
+    { id: 'Top Deals', label: 'Top Deals', icon: Star },
+    { id: 'Flash Deals', label: 'Flash Deals', icon: Zap },
+    { id: 'Weekend Offers', label: 'Weekend Offers', icon: Calendar },
+    { id: 'Clearance Sale', label: 'Clearance Sale', icon: Tag },
+    { id: 'Bank Offers', label: 'Bank Offers', icon: CreditCard },
+    { id: 'Combo Offers', label: 'Combo Offers', icon: Gift }
+  ];
+
+  // Discount filter options
+  const discountOptions = [
+    { label: '10% and above', count: 120 },
+    { label: '20% and above', count: 86 },
+    { label: '30% and above', count: 42 },
+    { label: '50% and above', count: 18 }
+  ];
+
+  // Categories filter options
+  const categoryFilterOptions = [
+    { label: 'Electronics', count: 45 },
+    { label: 'Fashion', count: 38 },
+    { label: 'Home & Kitchen', count: 24 },
+    { label: 'Beauty', count: 16 },
+    { label: 'Sports', count: 12 }
+  ];
+
+  // Category Tabs
+  const categoryTabs = [
+    'All',
+    'Electronics',
+    'Fashion',
+    'Home & Kitchen',
+    'Beauty',
+    'Sports',
+    'Toys & Games'
+  ];
+
+  // Main Deal of the Day Product
+  const featuredDeal = {
+    id: 'feat-1',
+    name: 'boAt Wave Call 2 Smartwatch',
+    image: noiseSmartwatchImg,
+    rating: 4.6,
+    soldCount: '2.3k+ sold',
+    price: 1299,
+    originalPrice: 3499,
+    discount: '63% OFF',
+    saveAmount: '2,200',
+    category: 'Electronics'
+  };
+
+  // Top Deals 5 Products
+  const topDealsProducts = [
+    {
+      id: 'top-1',
+      name: 'Realme Buds T300 Wireless Earbuds',
+      image: boatAirdopesImg,
+      price: 999,
+      originalPrice: 2699,
+      discount: '63% OFF',
+      saveText: 'Save ₹1,700',
+      category: 'Electronics'
+    },
+    {
+      id: 'top-2',
+      name: 'Skybags Brat 15.6 inch Laptop Backpack',
+      image: tealBackpackImg,
+      price: 1199,
+      originalPrice: 1999,
+      discount: '40% OFF',
+      saveText: 'Save ₹800',
+      category: 'Fashion'
+    },
+    {
+      id: 'top-3',
+      name: "Red Tape Men's Casual Sneakers",
+      image: streetSneakersImg,
+      price: 1399,
+      originalPrice: 3199,
+      discount: '56% OFF',
+      saveText: 'Save ₹1,800',
+      category: 'Fashion'
+    },
+    {
+      id: 'top-4',
+      name: 'Prestige Iris 750W Mixer Grinder',
+      image: accentChairImg,
+      price: 2999,
+      originalPrice: 4599,
+      discount: '35% OFF',
+      saveText: 'Save ₹1,600',
+      category: 'Home & Kitchen'
+    },
+    {
+      id: 'top-5',
+      name: 'Home Select Plastic Storage Box (Pack of 3)',
+      image: beautyPerfumeImg,
+      price: 499,
+      originalPrice: 1599,
+      discount: '68% OFF',
+      saveText: 'Save ₹1,100',
+      category: 'Home & Kitchen'
+    }
+  ];
+
+  // Filtered products based on activeCategory
+  const displayedProducts = activeCategory === 'All'
+    ? topDealsProducts
+    : topDealsProducts.filter(p => p.category.toLowerCase().includes(activeCategory.toLowerCase()));
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-4 font-sans text-gray-800 relative">
+    <div className="bg-[#f8fafc] min-h-screen py-6 px-4 sm:px-6 lg:px-8 font-sans text-gray-800">
       {/* Toast Notification */}
       {addedToast && (
-        <div className="fixed bottom-6 right-6 bg-[#0d5c46] text-white px-5 py-3 rounded-lg shadow-xl font-medium text-sm z-50 flex items-center space-x-2 animate-bounce">
-          <Check className="w-5 h-5 text-emerald-300" />
+        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+          <div className="bg-emerald-500 text-white rounded-full p-1">
+            <Check className="w-4 h-4" />
+          </div>
           <span>{addedToast}</span>
         </div>
       )}
 
-      {/* Breadcrumbs */}
-      <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500 mb-5">
-        <button
-          onClick={() => navigateTo('home')}
-          className="hover:text-[#0d5c46] transition-colors"
-        >
-          Home
-        </button>
-        <span className="text-gray-400 font-bold">&gt;</span>
-        <span className="text-gray-900 font-bold">Deals</span>
-      </nav>
+      <div className="max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* ================= LEFT SIDEBAR (3 COLS) ================= */}
+          <aside className="lg:col-span-3 space-y-5">
+            
+            {/* Top Navigation Menu Card */}
+            <div className="bg-white rounded-2xl p-4 shadow-xs border border-gray-100/90">
+              {/* Header */}
+              <div className="flex items-center space-x-2.5 px-3 py-2 text-[#063328]">
+                <Tag className="w-5 h-5 fill-[#063328] text-[#063328]" />
+                <span className="font-extrabold text-base tracking-tight text-gray-900">Deals</span>
+              </div>
 
-      {/* Page Title & Countdown Timer Row */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-            Deals of the Day
-          </h1>
-          <p className="text-xs text-gray-500 font-medium mt-0.5">
-            Top deals. Exciting offers. Limited time only!
-          </p>
-        </div>
-
-        {/* Countdown Timer Boxes */}
-        <div className="flex items-center space-x-3 self-end sm:self-auto">
-          <span className="text-xs font-bold text-gray-700">Offer ends in:</span>
-          <div className="flex items-center space-x-1.5">
-            <div className="bg-white border border-gray-200/90 rounded-lg px-2.5 py-1 text-center shadow-2xs">
-              <span className="text-sm font-black text-gray-900 block leading-none">
-                {String(timeLeft.hrs).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] text-gray-400 font-semibold block uppercase mt-0.5">
-                Hrs
-              </span>
-            </div>
-            <span className="font-bold text-gray-400 text-sm">:</span>
-            <div className="bg-white border border-gray-200/90 rounded-lg px-2.5 py-1 text-center shadow-2xs">
-              <span className="text-sm font-black text-gray-900 block leading-none">
-                {String(timeLeft.mins).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] text-gray-400 font-semibold block uppercase mt-0.5">
-                Mins
-              </span>
-            </div>
-            <span className="font-bold text-gray-400 text-sm">:</span>
-            <div className="bg-white border border-gray-200/90 rounded-lg px-2.5 py-1 text-center shadow-2xs">
-              <span className="text-sm font-black text-gray-900 block leading-none">
-                {String(timeLeft.secs).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] text-gray-400 font-semibold block uppercase mt-0.5">
-                Secs
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Deals Hero Banner - Exact Match */}
-      <div className="bg-[#f0f7f4] rounded-3xl p-8 sm:p-10 border border-gray-200/80 flex flex-col md:flex-row items-center justify-between shadow-2xs mb-8 overflow-hidden relative gap-6">
-        {/* Navigation Arrow Left */}
-        <button className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        {/* Navigation Arrow Right */}
-        <button className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer">
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* Left Text */}
-        <div className="max-w-md space-y-3 z-10 pl-6 sm:pl-8">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">
-            Grab the <span className="text-[#ff5100]">Best Deals</span> <br />
-            Before They're Gone!
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 font-normal">
-            Shop now and save up to 70%
-          </p>
-          <div className="pt-2">
-            <button
-              onClick={() => setActiveTab('All Deals')}
-              className="py-3 px-7 bg-[#0d5c46] hover:bg-[#094736] text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] inline-flex items-center space-x-2 cursor-pointer"
-            >
-              <span>Shop Now</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Right Hero Graphic: Exact Match using Hero.Deals.png */}
-        <div className="relative w-full md:w-1/2 flex justify-center md:justify-end items-center pr-6 sm:pr-8">
-          <img
-            src={heroDealsImg}
-            alt="Best Deals Graphic"
-            className="w-full max-w-xl h-auto object-contain rounded-2xl drop-shadow-xs"
-          />
-        </div>
-      </div>
-
-      {/* Horizontal Deal Filter Pills Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
-          {dealTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                activeTab === tab
-                  ? 'bg-[#0d5c46] text-white shadow-xs'
-                  : 'bg-white border border-gray-200/90 text-gray-700 hover:border-[#0d5c46]'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Right Controls */}
-        <div className="flex items-center space-x-4 self-end sm:self-auto shrink-0">
-          <span className="text-xs font-medium text-gray-500">
-            Showing 1-{initialDealsProducts.length} of 320 products
-          </span>
-          <div className="flex items-center space-x-1 border border-gray-300 rounded-lg p-1 bg-white shadow-xs">
-            <button className="p-1.5 rounded bg-emerald-50 text-[#0d5c46] border border-emerald-200">
-              <LayoutGrid className="w-4 h-4 stroke-[2.2]" />
-            </button>
-            <button className="p-1.5 rounded text-gray-500 hover:text-gray-800">
-              <List className="w-4 h-4 stroke-[2.2]" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: Sidebar (3 cols) + Products Grid (9 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Sidebar (3 cols) */}
-        <aside className="lg:col-span-3 space-y-4">
-          {/* Categories Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
-            <h3 className="text-xs font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Categories
-            </h3>
-            <ul className="space-y-1.5 text-xs font-medium text-gray-700">
-              {sideCategories.map((c) => (
-                <li key={c.name}>
-                  <button
-                    onClick={() => setSelectedCategory(c.name)}
-                    className={`w-full text-left py-1 px-2 rounded-md transition-colors flex items-center justify-between ${
-                      selectedCategory === c.name
-                        ? 'bg-[#0d5c46] text-white font-bold'
-                        : 'hover:bg-gray-200/60'
-                    }`}
-                  >
-                    <span>{c.name}</span>
-                    <span
-                      className={
-                        selectedCategory === c.name
-                          ? 'text-emerald-200 font-semibold'
-                          : 'text-gray-400 font-normal'
-                      }
+              {/* Menu Items */}
+              <div className="mt-2 space-y-1">
+                {sidebarNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeNav === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveNav(item.id)}
+                      className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                        isActive
+                          ? 'bg-[#e4f1ed] text-[#063328] border-l-4 border-[#063328] rounded-l-none pl-3 shadow-xs'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                     >
-                      {c.count}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Discount Range Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
-            <h3 className="text-xs font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Discount Range
-            </h3>
-            <div className="space-y-2 text-xs font-medium text-gray-700">
-              {sideDiscountRanges.map((d) => (
-                <label
-                  key={d.label}
-                  className="flex items-center space-x-2.5 cursor-pointer hover:text-gray-900"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedDiscounts.includes(d.label)}
-                    onChange={() => handleDiscountChange(d.label)}
-                    className="w-3.5 h-3.5 rounded border-gray-300 text-[#0d5c46] focus:ring-[#0d5c46] cursor-pointer"
-                  />
-                  <span>
-                    {d.label} <span className="text-gray-400 font-normal">({d.count})</span>
-                  </span>
-                </label>
-              ))}
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive
+                            ? 'text-[#ff5100] fill-[#ff5100]'
+                            : 'text-gray-400'
+                        }`}
+                      />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Price Range Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
-            <h3 className="text-xs font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Price Range
-            </h3>
-            <div className="flex justify-between text-[11px] text-gray-500 font-medium mb-1.5">
-              <span>₹0</span>
-              <span>₹{maxPrice.toLocaleString('en-IN')}+</span>
-            </div>
-            <input
-              type="range"
-              min="500"
-              max="50000"
-              step="500"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full accent-[#0d5c46] cursor-pointer"
-            />
-          </div>
-
-          {/* Sort By Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
-            <h3 className="text-xs font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Sort By
-            </h3>
-            <div className="space-y-2 text-xs font-medium text-gray-700">
-              {[
-                { label: 'Popularity', val: 'popularity' },
-                { label: 'Newest First', val: 'newest' },
-                { label: 'Price: Low to High', val: 'lowToHigh' },
-                { label: 'Price: High to Low', val: 'highToLow' },
-                { label: 'Discount: High to Low', val: 'discount' }
-              ].map((opt) => (
-                <label
-                  key={opt.val}
-                  className="flex items-center space-x-2.5 cursor-pointer hover:text-gray-900"
-                >
-                  <input
-                    type="radio"
-                    name="sortByRadio"
-                    checked={sortBy === opt.val}
-                    onChange={() => setSortBy(opt.val)}
-                    className="w-3.5 h-3.5 text-[#0d5c46] focus:ring-[#0d5c46] cursor-pointer"
-                  />
-                  <span>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Right Products Grid Area (9 cols) */}
-        <main className="lg:col-span-9">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-            {initialDealsProducts.map((product) => (
-              <div
-                key={product.id}
-                onClick={() => navigateTo('product-detail', product)}
-                className="bg-white border border-gray-200/90 rounded-2xl p-3 flex flex-col justify-between hover:shadow-lg transition-all duration-200 relative group cursor-pointer"
-              >
-                {/* Discount Tag Top-Left */}
-                <div className="bg-[#ff5100] text-white font-extrabold text-[10px] px-2 py-0.5 rounded-br-lg rounded-tl-xl absolute top-0 left-0 z-10 shadow-2xs">
-                  {product.discount}
-                </div>
-
-                {/* Wishlist Heart Icon Top-Right */}
+            {/* Filters Card */}
+            <div className="bg-white rounded-2xl p-5 shadow-xs border border-gray-100/90 space-y-5">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                <span className="font-extrabold text-sm text-gray-900">Filters</span>
                 <button
-                  onClick={(e) => handleToggleWishlist(e, product)}
-                  className="absolute top-2 right-2 z-10 p-1 rounded-full bg-white/80 backdrop-blur-xs border border-gray-100 hover:bg-emerald-50 transition-colors shadow-2xs"
-                  title="Add to Wishlist"
+                  onClick={clearAllFilters}
+                  className="text-xs font-bold text-[#0d5c46] hover:underline cursor-pointer"
                 >
-                  <Heart
-                    className={`w-3.5 h-3.5 transition-colors ${
-                      wishlistActive[product.id]
-                        ? 'fill-red-500 text-red-500'
-                        : 'text-[#0d5c46] hover:text-red-500'
-                    }`}
-                  />
+                  Clear All
+                </button>
+              </div>
+
+              {/* Discount Filter Accordion */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => toggleSection('discount')}
+                  className="w-full flex items-center justify-between text-xs font-bold text-gray-800 cursor-pointer"
+                >
+                  <span>Discount</span>
+                  {openSections.discount ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
                 </button>
 
-                {/* Image Container */}
-                <div className="h-32 w-full bg-white rounded-xl flex items-center justify-center p-2 overflow-hidden mt-2">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
+                {openSections.discount && (
+                  <div className="space-y-2.5 pt-1">
+                    {discountOptions.map((opt) => (
+                      <label
+                        key={opt.label}
+                        className="flex items-center justify-between text-xs text-gray-600 cursor-pointer hover:text-gray-900 select-none"
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedDiscounts.includes(opt.label)}
+                            onChange={() => {
+                              setSelectedDiscounts((prev) =>
+                                prev.includes(opt.label)
+                                  ? prev.filter((d) => d !== opt.label)
+                                  : [...prev, opt.label]
+                              );
+                            }}
+                            className="w-3.5 h-3.5 rounded text-[#063328] focus:ring-[#063328] border-gray-300 cursor-pointer"
+                          />
+                          <span>{opt.label}</span>
+                        </div>
+                        <span className="text-gray-400 font-medium">({opt.count})</span>
+                      </label>
+                    ))}
 
-                {/* Product Info */}
-                <div className="mt-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-xs leading-tight hover:text-[#0d5c46] transition-colors cursor-pointer line-clamp-1">
-                      {product.name}
-                    </h3>
+                    {/* Dual Range Bar */}
+                    <div className="pt-2">
+                      <div className="relative flex items-center my-1.5">
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#063328] rounded-full w-4/5" />
+                        </div>
+                        <div className="absolute left-0 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
+                        <div className="absolute right-1/5 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
+                      </div>
+                      <div className="flex justify-between text-[11px] text-gray-500 font-bold mt-1">
+                        <span>10%</span>
+                        <span>70%+</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                    {/* Price Block */}
-                    <div className="flex items-baseline space-x-1.5 mt-1.5">
-                      <span className="text-xs font-black text-gray-900">
-                        ₹{product.price.toLocaleString('en-IN')}
-                      </span>
-                      {product.originalPrice && (
-                        <span className="text-[10px] text-gray-400 line-through">
-                          ₹{product.originalPrice.toLocaleString('en-IN')}
-                        </span>
-                      )}
+              {/* Price Range Accordion */}
+              <div className="space-y-3 pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => toggleSection('price')}
+                  className="w-full flex items-center justify-between text-xs font-bold text-gray-800 cursor-pointer"
+                >
+                  <span>Price Range</span>
+                  {openSections.price ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+
+                {openSections.price && (
+                  <div className="space-y-3 pt-1">
+                    {/* Track */}
+                    <div className="relative flex items-center my-1.5">
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#063328] rounded-full w-full" />
+                      </div>
+                      <div className="absolute left-0 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
+                      <div className="absolute right-0 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
                     </div>
 
-                    {/* Rating Row */}
-                    <div className="flex items-center space-x-1 mt-1">
+                    {/* Inputs */}
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 font-semibold">
+                        ₹ {priceMin}
+                      </div>
+                      <span className="text-gray-400 font-bold">-</span>
+                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 font-semibold">
+                        ₹ {priceMax}+
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Categories Accordion */}
+              <div className="space-y-3 pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => toggleSection('categories')}
+                  className="w-full flex items-center justify-between text-xs font-bold text-gray-800 cursor-pointer"
+                >
+                  <span>Categories</span>
+                  {openSections.categories ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+
+                {openSections.categories && (
+                  <div className="space-y-2.5 pt-1">
+                    {categoryFilterOptions.map((cat) => (
+                      <label
+                        key={cat.label}
+                        className="flex items-center justify-between text-xs text-gray-600 cursor-pointer hover:text-gray-900 select-none"
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(cat.label)}
+                            onChange={() => {
+                              setSelectedCategories((prev) =>
+                                prev.includes(cat.label)
+                                  ? prev.filter((c) => c !== cat.label)
+                                  : [...prev, cat.label]
+                              );
+                            }}
+                            className="w-3.5 h-3.5 rounded text-[#063328] focus:ring-[#063328] border-gray-300 cursor-pointer"
+                          />
+                          <span>{cat.label}</span>
+                        </div>
+                        <span className="text-gray-400 font-medium">({cat.count})</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </aside>
+
+          {/* ================= RIGHT MAIN AREA (9 COLS) ================= */}
+          <main className="lg:col-span-9 space-y-6">
+            
+            {/* Top Row: Deal of the Day Card + Rakhi Special Banner */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+              
+              {/* Deal of the Day Card (6 cols) */}
+              <div className="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100/90 shadow-xs flex flex-col justify-between">
+                {/* Header with Title and Countdown */}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    Deal of the Day
+                  </h2>
+                  
+                  {/* Ends In Countdown Badge */}
+                  <div className="flex items-center space-x-2 bg-[#fff2ea] px-3 py-1.5 rounded-xl border border-orange-100">
+                    <span className="text-xs font-bold text-[#ff5100]">Ends in</span>
+                    <div className="flex items-center space-x-1 font-black text-white text-xs">
+                      <span className="bg-[#ff5100] px-1.5 py-0.5 rounded-md leading-tight">
+                        {String(timeLeft.hrs).padStart(2, '0')}
+                      </span>
+                      <span className="text-[#ff5100] font-black">:</span>
+                      <span className="bg-[#ff5100] px-1.5 py-0.5 rounded-md leading-tight">
+                        {String(timeLeft.mins).padStart(2, '0')}
+                      </span>
+                      <span className="text-[#ff5100] font-black">:</span>
+                      <span className="bg-[#ff5100] px-1.5 py-0.5 rounded-md leading-tight">
+                        {String(timeLeft.secs).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Content: Image Left, Details Right */}
+                <div className="grid grid-cols-12 gap-5 items-center mt-4">
+                  {/* Product Image in Container */}
+                  <div className="col-span-5 bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center h-44 shadow-2xs">
+                    <img
+                      src={featuredDeal.image}
+                      alt={featuredDeal.name}
+                      className="max-h-36 max-w-full object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="col-span-7 space-y-2">
+                    <h3 className="text-base font-bold text-gray-900 leading-snug">
+                      {featuredDeal.name}
+                    </h3>
+
+                    {/* Star Rating */}
+                    <div className="flex items-center space-x-1.5">
                       <div className="flex text-amber-400">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-2.5 h-2.5 fill-current ${
-                              i < Math.floor(product.rating)
-                                ? 'text-amber-400'
-                                : 'text-gray-200 fill-none'
+                            className={`w-3.5 h-3.5 fill-current ${
+                              i < 4 ? 'text-amber-400' : 'text-gray-200 fill-none'
                             }`}
                           />
                         ))}
                       </div>
-                      <span className="text-[10px] font-semibold text-gray-500">
-                        ({product.rating})
+                      <span className="text-xs font-semibold text-gray-700">({featuredDeal.rating})</span>
+                      <span className="text-xs text-gray-400">{featuredDeal.soldCount}</span>
+                    </div>
+
+                    {/* Price Row */}
+                    <div className="flex items-baseline space-x-2 pt-0.5">
+                      <span className="text-lg font-black text-gray-900">
+                        ₹{featuredDeal.price.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs text-gray-400 line-through">
+                        ₹{featuredDeal.originalPrice.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs font-extrabold text-[#ff5100]">
+                        {featuredDeal.discount}
                       </span>
                     </div>
+
+                    {/* Save Amount */}
+                    <div className="text-xs text-gray-500 font-medium">
+                      Save ₹{featuredDeal.saveAmount}
+                    </div>
+
+                    {/* View Deal Button */}
+                    <button
+                      onClick={() => navigateTo('product-detail', featuredDeal)}
+                      className="mt-2 w-full py-2.5 bg-[#ff5100] hover:bg-[#e04700] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-orange-500/25 transition-all cursor-pointer"
+                    >
+                      View Deal
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rakhi Promo Banner (Exact Design 100% Matching Uploaded Asset) */}
+              <div
+                onClick={() => setActiveCategory('Fashion')}
+                className="lg:col-span-6 rounded-3xl overflow-hidden shadow-md border border-emerald-500/20 group relative cursor-pointer flex items-center justify-center bg-[#042820] transition-all hover:shadow-xl"
+              >
+                <img
+                  src={rakhiDealsExactCardImg}
+                  alt="Rakhi Special - More Love. More Gifts. More Savings."
+                  className="w-full h-full object-cover object-center select-none transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+              </div>
+
+            </div>
+
+            {/* Top Deals Section */}
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-base sm:text-lg font-black text-gray-900">Top Deals</h2>
+                <button
+                  onClick={() => setActiveCategory('All')}
+                  className="text-xs font-bold text-[#063328] hover:underline flex items-center space-x-1 cursor-pointer"
+                >
+                  <span>View All Deals</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none select-none">
+                {categoryTabs.map((tab) => {
+                  const isActive = activeCategory === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveCategory(tab)}
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#063328] text-white shadow-xs'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 5 Product Cards Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                {displayedProducts.map((product) => {
+                  const inWish = wishlistActive[product.id];
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => navigateTo('product-detail', product)}
+                      className="bg-white rounded-2xl border border-gray-200 hover:border-[#063328] p-3 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between relative group cursor-pointer"
+                    >
+                      {/* Top Badges: Discount on Left, Wishlist on Right */}
+                      <div className="flex items-center justify-between mb-1 relative z-10">
+                        <span className="bg-[#ff5100] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow-xs">
+                          {product.discount}
+                        </span>
+
+                        <button
+                          onClick={(e) => handleToggleWishlist(e, product)}
+                          className="p-1 rounded-full text-gray-400 hover:text-rose-500 hover:bg-gray-50 transition-colors"
+                          title="Save to Wishlist"
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 ${
+                              inWish ? 'fill-rose-500 text-rose-500' : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Image Container */}
+                      <div className="h-28 sm:h-32 w-full flex items-center justify-center p-2 overflow-hidden">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      {/* Info */}
+                      <div className="mt-2 space-y-1">
+                        <h3 className="text-xs font-medium text-gray-800 leading-snug line-clamp-2 min-h-[32px]">
+                          {product.name}
+                        </h3>
+
+                        {/* Price Line */}
+                        <div className="flex items-baseline space-x-1.5 pt-0.5">
+                          <span className="text-xs font-black text-gray-900">
+                            ₹{product.price.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-gray-400 line-through">
+                            ₹{product.originalPrice.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+
+                        {/* Savings in Orange */}
+                        <div className="text-[11px] font-bold text-[#ff5100]">
+                          {product.saveText}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom Banners Row (Flash Deals + Weekend Bonanza) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+              
+              {/* Flash Deals Card */}
+              <div className="bg-[#e4f1ed] rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-emerald-900/10 shadow-xs">
+                {/* Left Icon + Text */}
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#063328] shadow-xs">
+                    <Zap className="w-5 h-5 fill-[#063328]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-gray-900">Flash Deals</h3>
+                    <p className="text-[11px] sm:text-xs text-gray-600">Limited time offers on top products</p>
+                  </div>
+                </div>
+
+                {/* Right Timer + Arrow */}
+                <div className="flex items-center space-x-3">
+                  {/* Timer Pills */}
+                  <div className="flex items-center space-x-1 text-xs font-bold text-white">
+                    <span className="bg-[#063328] px-1.5 py-1 rounded">
+                      {String(flashTimeLeft.hrs).padStart(2, '0')}
+                    </span>
+                    <span className="text-[#063328] font-bold">:</span>
+                    <span className="bg-[#063328] px-1.5 py-1 rounded">
+                      {String(flashTimeLeft.mins).padStart(2, '0')}
+                    </span>
+                    <span className="text-[#063328] font-bold">:</span>
+                    <span className="bg-[#063328] px-1.5 py-1 rounded">
+                      {String(flashTimeLeft.secs).padStart(2, '0')}
+                    </span>
                   </div>
 
-                  {/* Add to Cart Button */}
+                  {/* Arrow Button */}
                   <button
-                    onClick={(e) => handleAddToCart(e, product)}
-                    className="w-full mt-2 py-1.5 px-2 bg-[#0d5c46] hover:bg-[#094736] text-white font-bold text-[11px] rounded-lg shadow-2xs transition-all active:scale-[0.98] flex items-center justify-center space-x-1"
+                    onClick={() => setActiveCategory('Electronics')}
+                    className="w-8 h-8 rounded-full bg-white text-[#063328] flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
                   >
-                    <ShoppingCart className="w-3 h-3 stroke-[2.2]" />
-                    <span>Add to Cart</span>
+                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Load More Deals Button */}
-          <div className="mt-8 text-center">
-            <button className="py-2.5 px-6 bg-white border border-gray-300 hover:border-[#0d5c46] hover:text-[#0d5c46] text-gray-800 font-bold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center space-x-1">
-              <span>Load More Deals</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </main>
+              {/* Weekend Bonanza Card */}
+              <div className="bg-[#fff1e8] rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-orange-200/50 shadow-xs">
+                {/* Left Icon + Text */}
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#ff5100] shadow-xs">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-gray-900">Weekend Bonanza</h3>
+                    <p className="text-[11px] sm:text-xs text-gray-600">Exciting offers for the weekend</p>
+                  </div>
+                </div>
+
+                {/* Right CTA + Arrow */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-gray-900">View Offers</span>
+                  <button
+                    onClick={() => setActiveCategory('Fashion')}
+                    className="w-8 h-8 rounded-full bg-[#ff5100]/15 text-[#ff5100] flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </main>
+
+        </div>
       </div>
     </div>
   );

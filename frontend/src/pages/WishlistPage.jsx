@@ -224,7 +224,7 @@ export default function WishlistPage() {
                       <div className="flex items-center justify-end space-x-2.5">
                         {/* Remove Heart Button */}
                         <button
-                          onClick={() => removeFromWishlist(item.id)}
+                          onClick={() => removeFromWishlist(item.productId || item.id)}
                           title="Remove from wishlist"
                           className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors cursor-pointer"
                         >

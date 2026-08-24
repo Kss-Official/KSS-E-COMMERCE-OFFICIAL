@@ -1,0 +1,15 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Traditional Kurti / Sherwani with Mandarian Collar -->
+  <path d="M12 18L7 24L11 27L14 24V43H34V24L37 27L41 24L36 18L28 19L24 14L20 19L12 18Z" fill="#064E3B"/>
+  <!-- Gold Mandarin Collar -->
+  <path d="M20 19C20 17 21.5 15 24 15C26.5 15 28 17 28 19" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+  <!-- Gold Zari Embroidery Center Strip -->
+  <rect x="23" y="19" width="2" height="18" fill="#F59E0B"/>
+  <circle cx="24" cy="22" r="1.2" fill="#FEF08A"/>
+  <circle cx="24" cy="27" r="1.2" fill="#FEF08A"/>
+  <circle cx="24" cy="32" r="1.2" fill="#FEF08A"/>
+  <!-- Side Slits & Gold Hem -->
+  <path d="M14 41H34" stroke="#F59E0B" stroke-width="2"/>
+  <path d="M14 36V43" stroke="#F59E0B" stroke-width="1.5"/>
+  <path d="M34 36V43" stroke="#F59E0B" stroke-width="1.5"/>
+</svg>

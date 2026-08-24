@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   RotateCcw,
   Tag,
-  Award
+  Award,
+  ShoppingCart
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
@@ -237,6 +238,14 @@ export default function ShopPage() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [sortBy, setSortBy] = useState('popularity');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const handleAddToCart = (product, e) => {
+    e.stopPropagation();
+    addToCart(product);
+    setToastMessage(`"${product.name}" added to cart!`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Filter & Sort
   const filteredProducts = useMemo(() => {
@@ -262,12 +271,20 @@ export default function ShopPage() {
   }, [selectedCategory, sortBy]);
 
   const isWishlisted = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
+    return wishlistItems?.some((item) => item.id === id || item.productId === id);
   };
 
   return (
-    <div className="w-full bg-[#f8faf9] min-h-screen pb-16">
-
+    <div className="w-full bg-[#f8faf9] min-h-screen pb-16 relative">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3.5 rounded-xl shadow-2xl font-semibold text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+          <div className="bg-emerald-500 text-white rounded-full p-1">
+            <Check className="w-4 h-4" />
+          </div>
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-6 sm:pt-8">
@@ -408,15 +425,22 @@ export default function ShopPage() {
                 </button>
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-4.5">
                 {filteredProducts.map((product) => {
                   const activeWish = isWishlisted(product.id);
                   return (
                     <div
                       key={product.id}
                       onClick={() => navigateTo('product-detail', product)}
-                      className="bg-white rounded-2xl border border-gray-100 p-3 relative flex flex-col justify-between hover:shadow-md transition-all duration-200 group cursor-pointer"
+                      className="bg-white rounded-2xl border border-gray-100 hover:border-[#063328] p-3.5 relative flex flex-col justify-between hover:shadow-lg transition-all duration-300 group cursor-pointer"
                     >
+                      {/* NEW Badge */}
+                      {product.isNew && (
+                        <span className="absolute top-2.5 left-2.5 z-10 bg-[#0d5c46] text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg uppercase tracking-wider shadow-2xs">
+                          NEW
+                        </span>
+                      )}
+
                       {/* Wishlist Icon */}
                       <button
                         onClick={(e) => {
@@ -433,7 +457,7 @@ export default function ShopPage() {
                       </button>
 
                       {/* Product Image */}
-                      <div className="w-full h-32 sm:h-36 flex items-center justify-center mb-3 bg-gray-50/50 rounded-xl overflow-hidden p-2 group-hover:bg-gray-50 transition-colors">
+                      <div className="w-full h-36 sm:h-40 flex items-center justify-center mb-3 bg-gray-50/50 rounded-xl overflow-hidden p-2 group-hover:bg-gray-50 transition-colors">
                         <img
                           src={product.image}
                           alt={product.name}
@@ -441,34 +465,45 @@ export default function ShopPage() {
                         />
                       </div>
 
-                      {/* Details */}
-                      <div>
-                        {/* Category Name */}
-                        <span className="text-[11px] font-semibold text-gray-400 block mb-0.5 leading-tight">
-                          {product.category}
-                        </span>
-
-                        {/* Title */}
-                        <h3 className="text-xs sm:text-sm font-bold text-gray-900 truncate mb-1.5 leading-tight group-hover:text-[#063328] transition-colors">
-                          {product.name}
-                        </h3>
-
-                        {/* Price Block */}
-                        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                          <span className="text-xs sm:text-sm font-black text-gray-900">
-                            ₹{product.price.toLocaleString()}
+                      {/* Details & Action */}
+                      <div className="flex flex-col justify-between flex-1">
+                        <div>
+                          {/* Category Name */}
+                          <span className="text-[11px] font-semibold text-gray-400 block mb-0.5 leading-tight">
+                            {product.category}
                           </span>
-                          {product.originalPrice && (
-                            <span className="text-[10px] sm:text-xs text-gray-400 line-through font-medium">
-                              ₹{product.originalPrice.toLocaleString()}
+
+                          {/* Title */}
+                          <h3 className="text-xs sm:text-sm font-bold text-gray-900 truncate mb-1.5 leading-tight group-hover:text-[#063328] transition-colors">
+                            {product.name}
+                          </h3>
+
+                          {/* Price Block */}
+                          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                            <span className="text-xs sm:text-sm font-black text-gray-900">
+                              ₹{product.price.toLocaleString()}
                             </span>
-                          )}
-                          {product.discount && (
-                            <span className="text-[10px] sm:text-xs font-bold text-[#ff5100]">
-                              {product.discount}
-                            </span>
-                          )}
+                            {product.originalPrice && (
+                              <span className="text-[10px] sm:text-xs text-gray-400 line-through font-medium">
+                                ₹{product.originalPrice.toLocaleString()}
+                              </span>
+                            )}
+                            {product.discount && (
+                              <span className="text-[10px] sm:text-xs font-bold text-[#ff5100]">
+                                {product.discount}
+                              </span>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Add to Cart CTA Button */}
+                        <button
+                          onClick={(e) => handleAddToCart(product, e)}
+                          className="w-full mt-3 py-2 px-3 bg-[#063328] hover:bg-[#084839] text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer transform active:scale-98"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>Add to Cart</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -483,7 +518,7 @@ export default function ShopPage() {
                     <div
                       key={product.id}
                       onClick={() => navigateTo('product-detail', product)}
-                      className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between gap-4 hover:shadow-md transition-all duration-200 group cursor-pointer"
+                      className="bg-white rounded-2xl border border-gray-100 hover:border-[#063328] p-4 flex items-center justify-between gap-4 hover:shadow-md transition-all duration-200 group cursor-pointer"
                     >
                       <div className="flex items-center space-x-4">
                         <div className="w-20 h-20 bg-gray-50 rounded-xl p-2 flex items-center justify-center shrink-0">
@@ -527,13 +562,11 @@ export default function ShopPage() {
                           <Heart className={`w-5 h-5 ${activeWish ? 'fill-rose-500 stroke-rose-500' : ''}`} />
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                          className="bg-[#063328] hover:bg-[#084839] text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+                          onClick={(e) => handleAddToCart(product, e)}
+                          className="bg-[#063328] hover:bg-[#084839] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs hover:shadow-md cursor-pointer active:scale-98"
                         >
-                          Add to Cart
+                          <ShoppingCart className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>Add to Cart</span>
                         </button>
                       </div>
                     </div>

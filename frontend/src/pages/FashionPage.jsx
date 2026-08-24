@@ -1,592 +1,1004 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Heart,
-  ShoppingCart,
-  Star,
-  ChevronDown,
-  ChevronUp,
   LayoutGrid,
   List,
-  ArrowRight,
+  ChevronRight,
+  Filter,
+  ChevronDown,
   Check,
-  Search,
+  Star,
+  ShoppingBag,
   Sparkles,
+  Percent,
+  SlidersHorizontal,
+  Flame,
+  ArrowRight,
+  TrendingUp,
   Tag,
-  RotateCcw,
   ShieldCheck,
-  Headphones
+  Truck,
+  RotateCcw
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 
-// Import assets
-import fashionHeroImg from '../assets/images/fashion_hero.jpg';
+// Import images
+import fashionHeroImg from '../assets/images/fashion_hero.png';
+import womenDressImg from '../assets/images/women_dress.jpg';
 import roadsterShirtImg from '../assets/images/roadster_shirt.jpg';
+import usPoloTshirtImg from '../assets/images/us_polo_tshirt.jpg';
+import bibaKurtaImg from '../assets/images/biba_kurta.jpg';
+import lavieHandbagImg from '../assets/images/lavie_handbag.jpg';
+import pumaShoesImg from '../assets/images/puma_shoes.jpg';
+import tealBackpackImg from '../assets/images/teal_backpack.jpg';
+import fashionChinosImg from '../assets/images/fashion_chinos.jpg';
+import fashionDenimJacketImg from '../assets/images/fashion_denim_jacket.jpg';
+import fashionSilkKurtiImg from '../assets/images/fashion_silk_kurti.jpg';
+import fashionStreetSneakersImg from '../assets/images/fashion_street_sneakers.jpg';
+import fashionSweatshirtImg from '../assets/images/fashion_sweatshirt.jpg';
 
-// Import SVG category assets
-import fashionSvg from '../assets/category/categoryFashion.svg';
-import shoesSvg from '../assets/category/categoryShoes.svg';
-import bagsSvg from '../assets/category/categoryBags & luddages.svg';
+// Category SVGs
+import fashionCategorySvg from '../assets/category/categoryFashion.svg';
+import allFashionCategorySvg from '../assets/category/categoryAllFashion.svg';
+import mensWearCategorySvg from '../assets/category/categoryMensWear.svg';
+import ethnicWearCategorySvg from '../assets/category/categoryEthnicWear.svg';
+import shoesCategorySvg from '../assets/category/categoryShoes.svg';
+import bagsCategorySvg from '../assets/category/categoryBags & luddages.svg';
+import beautyCategorySvg from '../assets/category/categoryBeauty.svg';
+
+const fashionCategories = [
+  { id: 'All', name: 'All Fashion', icon: allFashionCategorySvg, count: 184 },
+  { id: "Women's Wear", name: "Women's Wear", icon: fashionCategorySvg, count: 68 },
+  { id: "Men's Wear", name: "Men's Wear", icon: mensWearCategorySvg, count: 52 },
+  { id: 'Ethnic Wear', name: 'Ethnic Wear', icon: ethnicWearCategorySvg, count: 26 },
+  { id: 'Footwear', name: 'Footwear', icon: shoesCategorySvg, count: 34 },
+  { id: 'Bags & Luggage', name: 'Bags & Handbags', icon: bagsCategorySvg, count: 18 },
+  { id: 'Accessories', name: 'Accessories', icon: beautyCategorySvg, count: 14 }
+];
 
 const initialFashionProducts = [
   {
     id: 'fash-1',
-    name: 'Roadster Men Checked Casual Shirt',
-    image: roadsterShirtImg,
-    price: 899,
-    originalPrice: 1499,
-    discount: '40% OFF',
-    rating: 4.3,
-    gender: 'Men',
-    category: 'Top Wear',
-    brand: 'Roadster'
+    name: "Women's Floral Fit & Flare Summer Dress",
+    brand: 'Zara',
+    category: "Women's Wear",
+    image: womenDressImg,
+    price: 1499,
+    originalPrice: 2999,
+    discount: '50% OFF',
+    rating: 4.6,
+    reviews: 840,
+    badge: 'Trending',
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    colors: ['Emerald Green', 'Floral Mint', 'Navy'],
+    isBestseller: true,
+    popularity: 98,
+    description: 'Breezy botanical print A-line dress crafted from breathable modal cotton.'
   },
   {
     id: 'fash-2',
-    name: 'Biba Women Floral Printed Kurta',
+    name: "Men's Regular Fit Casual Oxford Shirt",
+    brand: 'Roadster',
+    category: "Men's Wear",
     image: roadsterShirtImg,
-    price: 1299,
+    price: 899,
     originalPrice: 1999,
-    discount: '35% OFF',
-    rating: 4.5,
-    gender: 'Women',
-    category: 'Ethnic Wear',
-    brand: 'Biba'
+    discount: '55% OFF',
+    rating: 4.4,
+    reviews: 1250,
+    badge: 'Hot Deal',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    colors: ['Olive Green', 'Classic Navy', 'White'],
+    isBestseller: true,
+    popularity: 95,
+    description: 'Pure cotton washed oxford button-down shirt designed for all-day comfort.'
   },
   {
     id: 'fash-3',
-    name: 'U.S. Polo Assn. Men Polo T-Shirt',
-    image: roadsterShirtImg,
-    price: 749,
-    originalPrice: 1499,
-    discount: '50% OFF',
-    rating: 4.2,
-    gender: 'Men',
-    category: 'Top Wear',
-    brand: 'U.S. Polo Assn.'
+    name: "Men's Solid Slim Fit Polo T-Shirt",
+    brand: 'U.S. Polo Assn.',
+    category: "Men's Wear",
+    image: usPoloTshirtImg,
+    price: 1199,
+    originalPrice: 2499,
+    discount: '52% OFF',
+    rating: 4.5,
+    reviews: 960,
+    badge: 'Popular',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Mustard Gold', 'Charcoal', 'Maroon'],
+    isBestseller: false,
+    popularity: 92,
+    description: 'Signature pique cotton polo shirt featuring iconic embroidered crest.'
   },
   {
     id: 'fash-4',
-    name: 'ONLY Women Fit & Flare Dress',
-    image: roadsterShirtImg,
-    price: 1399,
-    originalPrice: 1999,
-    discount: '30% OFF',
-    rating: 4.4,
-    gender: 'Women',
-    category: 'Dresses',
-    brand: 'ONLY'
+    name: "Women's Printed Anarkali Kurta Set with Dupatta",
+    brand: 'Biba',
+    category: 'Ethnic Wear',
+    image: bibaKurtaImg,
+    price: 2499,
+    originalPrice: 4999,
+    discount: '50% OFF',
+    rating: 4.7,
+    reviews: 620,
+    badge: 'Festive Pick',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Deep Teal', 'Ruby Red', 'Golden Mustard'],
+    isBestseller: true,
+    popularity: 97,
+    description: 'Handcrafted gold foil print Anarkali kurta accompanied by matching trousers and dupatta.'
   },
   {
     id: 'fash-5',
-    name: 'Puma Men Running Shoes',
-    image: roadsterShirtImg,
-    price: 2999,
-    originalPrice: 3999,
-    discount: '25% OFF',
-    rating: 4.3,
-    gender: 'Men',
-    category: 'Footwear',
-    brand: 'Puma'
+    name: "Women's Structured Structured Satchel Handbag",
+    brand: 'Lavie',
+    category: 'Bags & Luggage',
+    image: lavieHandbagImg,
+    price: 1899,
+    originalPrice: 3990,
+    discount: '52% OFF',
+    rating: 4.5,
+    reviews: 430,
+    badge: 'Bestseller',
+    sizes: ['Free Size'],
+    colors: ['Dusty Rose', 'Midnight Black', 'Tan Brown'],
+    isBestseller: true,
+    popularity: 94,
+    description: 'Premium faux-leather structured handbag with multi-compartment storage and detachable sling strap.'
   },
   {
     id: 'fash-6',
-    name: 'Lavie Women Solid Handbag',
-    image: roadsterShirtImg,
-    price: 1199,
-    originalPrice: 1499,
-    discount: '20% OFF',
-    rating: 4.1,
-    gender: 'Women',
-    category: 'Bags',
-    brand: 'Lavie'
+    name: "Unisex Flyer Flex Running & Training Shoes",
+    brand: 'Puma',
+    category: 'Footwear',
+    image: pumaShoesImg,
+    price: 2799,
+    originalPrice: 4999,
+    discount: '44% OFF',
+    rating: 4.6,
+    reviews: 1890,
+    badge: 'Top Rated',
+    sizes: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10'],
+    colors: ['Core Black', 'Steel Grey', 'Electric Blue'],
+    isBestseller: true,
+    popularity: 99,
+    description: 'Ultra-lightweight mesh upper cushioned with SoftFoam+ comfort insole for responsive workouts.'
+  },
+  {
+    id: 'fash-7',
+    name: 'Urban Ergonomic Everyday Laptop Backpack 28L',
+    brand: 'Wildcraft',
+    category: 'Bags & Luggage',
+    image: tealBackpackImg,
+    price: 1299,
+    originalPrice: 2499,
+    discount: '48% OFF',
+    rating: 4.3,
+    reviews: 780,
+    badge: 'Durable',
+    sizes: ['28 Litres'],
+    colors: ['Teal Cyan', 'Stealth Black', 'Navy'],
+    isBestseller: false,
+    popularity: 88,
+    description: 'Water-repellent heavy duty polyester backpack with dedicated 15.6 inch padded laptop compartment.'
+  },
+  {
+    id: 'fash-8',
+    name: "Women's Elegant High-Rise Straight Fit Chinos",
+    brand: 'H&M',
+    category: "Women's Wear",
+    image: fashionChinosImg,
+    price: 1399,
+    originalPrice: 2299,
+    discount: '39% OFF',
+    rating: 4.4,
+    reviews: 510,
+    badge: 'New Style',
+    sizes: ['26', '28', '30', '32', '34'],
+    colors: ['Beige', 'Olive', 'Charcoal'],
+    isBestseller: false,
+    popularity: 89,
+    description: 'Clean silhouette high-waisted cotton twill trousers tailored with stretch flexibility.'
+  },
+  {
+    id: 'fash-9',
+    name: "Men's Classic Stonewashed Denim Jacket",
+    brand: "Levi's",
+    category: "Men's Wear",
+    image: fashionDenimJacketImg,
+    price: 3499,
+    originalPrice: 6499,
+    discount: '46% OFF',
+    rating: 4.8,
+    reviews: 1420,
+    badge: 'Iconic',
+    sizes: ['M', 'L', 'XL'],
+    colors: ['Medium Vintage Wash', 'Deep Indigo'],
+    isBestseller: true,
+    popularity: 96,
+    description: 'Original trucker fit authentic heavyweight denim jacket with button flap chest pockets.'
+  },
+  {
+    id: 'fash-10',
+    name: "Women's Embellished Silk Blend Kurti",
+    brand: 'Biba',
+    category: 'Ethnic Wear',
+    image: fashionSilkKurtiImg,
+    price: 1799,
+    originalPrice: 3599,
+    discount: '50% OFF',
+    rating: 4.5,
+    reviews: 380,
+    badge: 'Festive',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Maroon Gold', 'Teal Green'],
+    isBestseller: false,
+    popularity: 87,
+    description: 'Lustrous silk blend straight kurti detailed with intricate zari thread embroidery.'
+  },
+  {
+    id: 'fash-11',
+    name: 'Casual Streetwear Chunky Sole Sneakers',
+    brand: 'Puma',
+    category: 'Footwear',
+    image: fashionStreetSneakersImg,
+    price: 3299,
+    originalPrice: 5999,
+    discount: '45% OFF',
+    rating: 4.5,
+    reviews: 670,
+    badge: 'Hot Trend',
+    sizes: ['UK 7', 'UK 8', 'UK 9', 'UK 10'],
+    colors: ['Chalk White', 'Mono Black'],
+    isBestseller: false,
+    popularity: 91,
+    description: 'Retro chunky street trainer built with premium synthetic leather and rugged gum rubber outsole.'
+  },
+  {
+    id: 'fash-12',
+    name: "Men's Crewneck Organic Cotton Minimal Sweatshirt",
+    brand: 'Zara',
+    category: "Men's Wear",
+    image: fashionSweatshirtImg,
+    price: 1990,
+    originalPrice: 2990,
+    discount: '33% OFF',
+    rating: 4.4,
+    reviews: 310,
+    badge: 'Cozy',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Oatmeal Melange', 'Forest Green', 'Black'],
+    isBestseller: false,
+    popularity: 86,
+    description: 'Plush brushed fleece interior crafted from 100% sustainably sourced organic cotton.'
   }
 ];
 
-const subCategoryQuick = [
-  { name: 'Men', count: '124 Items', svg: fashionSvg },
-  { name: 'Women', count: '168 Items', svg: fashionSvg },
-  { name: 'Kids', count: '42 Items', svg: fashionSvg },
-  { name: 'Footwear', count: '86 Items', svg: shoesSvg },
-  { name: 'Bags', count: '65 Items', svg: bagsSvg },
-  { name: 'Watches', count: '28 Items', svg: fashionSvg }
+const brandFilters = [
+  { name: 'Zara', count: 28 },
+  { name: 'Roadster', count: 34 },
+  { name: 'U.S. Polo Assn.', count: 22 },
+  { name: 'Biba', count: 19 },
+  { name: 'Lavie', count: 15 },
+  { name: 'Puma', count: 24 },
+  { name: "Levi's", count: 18 },
+  { name: 'H&M', count: 26 }
 ];
 
-const sideCategories = [
-  { name: 'All Fashion', count: 356 },
-  { name: 'Men', count: 124 },
-  { name: 'Women', count: 168 },
-  { name: 'Kids', count: 42 },
-  { name: 'Footwear', count: 86 },
-  { name: 'Bags & Accessories', count: 65 },
-  { name: 'Watches', count: 28 }
-];
+const sizeFilters = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
 export default function FashionPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
-  const [selectedCategory, setSelectedCategory] = useState('All Fashion');
-  const [selectedGenders, setSelectedGenders] = useState([]);
+  const isProductInWishlist = (id) => isWishlisted(id);
+
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [maxPrice, setMaxPrice] = useState(10000);
-  const [brandSearch, setBrandSearch] = useState('');
-  const [addedToast, setAddedToast] = useState(null);
-  const [wishlistActive, setWishlistActive] = useState({});
+  const [minRating, setMinRating] = useState(0);
+  const [sortBy, setSortBy] = useState('popularity');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [toastMessage, setToastMessage] = useState(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const handleGenderChange = (gender) => {
-    setSelectedGenders((prev) =>
-      prev.includes(gender) ? prev.filter((g) => g !== gender) : [...prev, gender]
+  // Toggle brand
+  const handleToggleBrand = (brandName) => {
+    setSelectedBrands((prev) =>
+      prev.includes(brandName)
+        ? prev.filter((b) => b !== brandName)
+        : [...prev, brandName]
     );
   };
 
-  const handleSizeToggle = (size) => {
+  // Toggle size
+  const handleToggleSize = (size) => {
     setSelectedSizes((prev) =>
       prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
     );
   };
 
-  const handleAddToCart = (e, product) => {
-    e.stopPropagation();
-    addToCart(product);
-    setAddedToast(`Added "${product.name}" to cart!`);
-    setTimeout(() => setAddedToast(null), 3000);
+  // Filter & sort products
+  const filteredProducts = useMemo(() => {
+    return initialFashionProducts
+      .filter((p) => {
+        if (activeCategory !== 'All' && p.category !== activeCategory) return false;
+        if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
+        if (selectedSizes.length > 0 && !p.sizes.some((sz) => selectedSizes.includes(sz))) return false;
+        if (p.price > maxPrice) return false;
+        if (minRating > 0 && p.rating < minRating) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'lowToHigh') return a.price - b.price;
+        if (sortBy === 'highToLow') return b.price - a.price;
+        if (sortBy === 'rating') return b.rating - a.rating;
+        if (sortBy === 'discount') return parseInt(b.discount) - parseInt(a.discount);
+        return b.popularity - a.popularity;
+      });
+  }, [activeCategory, selectedBrands, selectedSizes, maxPrice, minRating, sortBy]);
+
+  const handleAddToCart = (product, e) => {
+    if (e) e.stopPropagation();
+    addToCart({
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      discount: product.discount,
+      selectedColor: product.colors?.[0] || 'Default',
+      selectedSize: product.sizes?.[0] || 'M',
+      quantity: 1
+    });
+    setToastMessage(`Added "${product.name}" to cart!`);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleToggleWishlist = (e, product) => {
-    e.stopPropagation();
-    addToWishlist(product);
-    setWishlistActive((prev) => ({ ...prev, [product.id]: !prev[product.id] }));
+  const handleToggleWishlist = (product, e) => {
+    if (e) e.stopPropagation();
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to your wishlist!`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleProductClick = (product) => {
+    navigateTo('product-detail', {
+      ...product,
+      soldCount: '1.2k+ sold',
+      features: [
+        '100% Premium Fabric & Finish',
+        'Machine Washable & Shrink Resistant',
+        'Tailored Modern Ergonomic Fit',
+        '7-Day Easy Exchange & Returns Policy'
+      ]
+    });
+  };
+
+  const clearAllFilters = () => {
+    setActiveCategory('All');
+    setSelectedBrands([]);
+    setSelectedSizes([]);
+    setMaxPrice(10000);
+    setMinRating(0);
+    setSortBy('popularity');
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-4 font-sans text-gray-800 relative">
+    <div className="bg-gray-50 min-h-screen pb-16 font-sans text-gray-800 relative">
       {/* Toast Notification */}
-      {addedToast && (
-        <div className="fixed bottom-6 right-6 bg-[#0d5c46] text-white px-5 py-3 rounded-lg shadow-xl font-medium text-sm z-50 flex items-center space-x-2 animate-bounce">
-          <Check className="w-5 h-5 text-emerald-300" />
-          <span>{addedToast}</span>
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+          <div className="bg-emerald-500 text-white rounded-full p-1">
+            <Check className="w-4 h-4" />
+          </div>
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Breadcrumbs */}
-      <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500 mb-5">
-        <button
-          onClick={() => navigateTo('home')}
-          className="hover:text-[#0d5c46] transition-colors"
-        >
-          Home
-        </button>
-        <span className="text-gray-400 font-bold">&gt;</span>
-        <span className="text-gray-900 font-bold">Fashion</span>
-      </nav>
+      {/* Hero Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 sm:pt-4">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#e4f1ed] text-gray-900 border border-emerald-900/10 shadow-xs">
+          {/* Subtle decorative elements */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-[#ff5100]/10 rounded-full blur-2xl pointer-events-none"></div>
 
-      {/* Page Title & Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Fashion</h1>
-          <p className="text-xs text-gray-500 font-medium mt-0.5">
-            Trendy styles for every you. Explore the latest in fashion.
-          </p>
-        </div>
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-end p-5 sm:p-7 lg:p-8 pb-0 sm:pb-0 lg:pb-0 gap-6">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-3 sm:space-y-4 pb-4 sm:pb-6 lg:pb-8">
+              <div className="inline-flex items-center space-x-2 bg-emerald-900/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-[#063328] border border-emerald-900/15">
+                <Sparkles className="w-3.5 h-3.5 text-[#ff5100]" />
+                <span>Summer 2026 Collection — Live Now</span>
+              </div>
 
-        {/* Right Controls */}
-        <div className="flex items-center space-x-4 self-end sm:self-auto">
-          <span className="text-xs font-medium text-gray-500">
-            Showing 1-{initialFashionProducts.length} of 356 products
-          </span>
-          <div className="flex items-center space-x-1 border border-gray-300 rounded-lg p-1 bg-white shadow-xs">
-            <button className="p-1.5 rounded bg-emerald-50 text-[#0d5c46] border border-emerald-200">
-              <LayoutGrid className="w-4 h-4 stroke-[2.2]" />
-            </button>
-            <button className="p-1.5 rounded text-gray-500 hover:text-gray-800">
-              <List className="w-4 h-4 stroke-[2.2]" />
-            </button>
-          </div>
-          <div className="flex items-center space-x-2 text-xs font-semibold text-gray-700">
-            <span>Sort By:</span>
-            <select className="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 outline-none font-bold text-gray-800 cursor-pointer">
-              <option>Popularity</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Newest First</option>
-            </select>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight text-gray-900">
+                Redefine Your Everyday Style with <span className="text-[#063328]">BuyZo Fashion</span>
+              </h1>
+
+              <p className="text-xs sm:text-sm text-gray-600 max-w-lg font-normal leading-relaxed">
+                Discover trending apparel, designer handbags, handcrafted ethnic wear, and comfort footwear with up to <span className="text-gray-900 font-bold underline decoration-[#ff5100] decoration-2">70% OFF</span> top tier global brands.
+              </p>
+
+              {/* Quick Feature Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                <div className="flex items-center space-x-2 text-xs text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-emerald-900/10 shadow-2xs">
+                  <Tag className="w-3.5 h-3.5 text-[#ff5100] shrink-0" />
+                  <span className="font-medium">Up to 70% Off Deals</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-emerald-900/10 shadow-2xs">
+                  <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="font-medium">Express Fast Shipping</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-emerald-900/10 shadow-2xs col-span-2 sm:col-span-1">
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="font-medium">7-Day Easy Returns</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <button
+                  onClick={() => {
+                    setActiveCategory("Women's Wear");
+                    window.scrollTo({ top: 440, behavior: 'smooth' });
+                  }}
+                  className="px-5 py-2.5 bg-[#ff5100] hover:bg-[#e04700] text-white text-xs font-bold rounded-xl transition-all shadow-md hover:shadow-orange-500/30 flex items-center space-x-1.5 cursor-pointer transform hover:-translate-y-0.5"
+                >
+                  <span>Shop Women</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveCategory("Men's Wear");
+                    window.scrollTo({ top: 440, behavior: 'smooth' });
+                  }}
+                  className="px-5 py-2.5 bg-white hover:bg-emerald-50 text-gray-800 text-xs font-bold rounded-xl border border-emerald-900/15 transition-all shadow-2xs backdrop-blur-md cursor-pointer transform hover:-translate-y-0.5"
+                >
+                  <span>Shop Men</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveCategory('Ethnic Wear');
+                    window.scrollTo({ top: 440, behavior: 'smooth' });
+                  }}
+                  className="px-5 py-2.5 bg-white hover:bg-emerald-50 text-gray-800 text-xs font-bold rounded-xl border border-emerald-900/15 transition-all shadow-2xs backdrop-blur-md cursor-pointer transform hover:-translate-y-0.5"
+                >
+                  <span>Ethnic &amp; Festive</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right Banner Image (Anchored & Moved Down) */}
+            <div className="lg:col-span-5 flex justify-center items-end self-end">
+              <div className="relative w-full max-w-xs lg:max-w-sm group flex flex-col items-center justify-end">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#ff5100]/15 to-emerald-500/15 rounded-3xl filter blur-xl transform group-hover:scale-105 transition-all pointer-events-none"></div>
+                <img
+                  src={fashionHeroImg}
+                  alt="Fashion trends"
+                  className="relative z-10 w-full h-auto max-h-[300px] lg:max-h-[340px] object-contain object-bottom drop-shadow-xl transition-transform duration-500 group-hover:scale-105 translate-y-1 sm:translate-y-2 lg:translate-y-3"
+                />
+                <div className="absolute bottom-3 left-0 sm:bottom-4 sm:left-2 bg-white/95 backdrop-blur-md text-gray-900 px-3 py-1.5 rounded-xl shadow-lg border border-emerald-900/10 z-20 flex items-center space-x-2">
+                  <Flame className="w-4 h-4 text-[#ff5100] animate-pulse" />
+                  <div>
+                    <div className="text-[9px] font-bold uppercase text-gray-500">Bestselling Brand</div>
+                    <div className="text-[11px] font-black text-[#063328]">Biba &amp; Zara 50% OFF</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Sidebar (3 cols) + Main Content (9 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Sidebar (3 cols) */}
-        <aside className="lg:col-span-3 space-y-4">
-          {/* Categories Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
-            <h3 className="text-xs font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Categories
-            </h3>
-            <ul className="space-y-1.5 text-xs font-medium text-gray-700">
-              {sideCategories.map((c) => (
-                <li key={c.name}>
-                  <button
-                    onClick={() => setSelectedCategory(c.name)}
-                    className={`w-full text-left py-1 px-2 rounded-md transition-colors flex items-center justify-between ${
-                      selectedCategory === c.name
-                        ? 'bg-[#0d5c46] text-white font-bold'
-                        : 'hover:bg-gray-200/60'
-                    }`}
-                  >
-                    <span>{c.name}</span>
-                    <span
-                      className={
-                        selectedCategory === c.name
-                          ? 'text-emerald-200 font-semibold'
-                          : 'text-gray-400 font-normal'
-                      }
-                    >
-                      {c.count}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+      {/* Category Pills Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <TrendingUp className="w-5 h-5 text-[#ff5100]" />
+            <h2 className="text-lg font-bold text-gray-900">Explore Fashion Collections</h2>
           </div>
+          <span className="text-xs text-gray-500 font-medium">Showing {filteredProducts.length} Items</span>
+        </div>
 
-          {/* Filter By Box */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs space-y-5">
-            <h3 className="text-xs font-bold text-gray-900 border-b border-gray-200 pb-2">
-              Filter By
-            </h3>
-
-            {/* Gender Filter */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 mb-2">Gender</h4>
-              <div className="space-y-1.5 text-xs font-medium text-gray-700">
-                {[
-                  { label: 'Men', count: 124 },
-                  { label: 'Women', count: 168 },
-                  { label: 'Kids', count: 42 },
-                  { label: 'Unisex', count: 22 }
-                ].map((g) => (
-                  <label key={g.label} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedGenders.includes(g.label)}
-                      onChange={() => handleGenderChange(g.label)}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-[#0d5c46] focus:ring-[#0d5c46]"
-                    />
-                    <span>
-                      {g.label} <span className="text-gray-400 font-normal">({g.count})</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <div className="flex justify-between items-center text-xs font-bold text-gray-900 mb-2">
-                <span>Category</span>
-                <ChevronUp className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-              <div className="space-y-1.5 text-xs font-medium text-gray-700">
-                {['Top Wear', 'Bottom Wear', 'Dresses', 'Ethnic Wear', 'Inner Wear'].map((cat) => (
-                  <label key={cat} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-[#0d5c46]"
-                    />
-                    <span>{cat}</span>
-                  </label>
-                ))}
-              </div>
-              <button className="text-[11px] text-[#0d5c46] font-bold mt-1.5 hover:underline">
-                + View More
+        <div className="flex items-center space-x-3 overflow-x-auto pb-3 scrollbar-thin select-none">
+          {fashionCategories.map((cat) => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex items-center space-x-2.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${isActive
+                  ? 'bg-[#063328] text-white border-[#063328] shadow-md shadow-[#063328]/20 scale-105'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-[#063328] border-gray-200 shadow-sm'
+                  }`}
+              >
+                <img src={cat.icon} alt={cat.name} className="w-4 h-4 object-contain" />
+                <span>{cat.name}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-emerald-200' : 'bg-gray-100 text-gray-500'
+                    }`}
+                >
+                  {cat.count}
+                </span>
               </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content Area: Filter Sidebar + Products Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        {/* Mobile Filter Toggle */}
+        <div className="lg:hidden flex items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-200 mb-4">
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="flex items-center space-x-2 text-xs font-bold text-[#063328] cursor-pointer"
+          >
+            <SlidersHorizontal className="w-4 h-4 text-[#ff5100]" />
+            <span>Filters & Refinements</span>
+            {(selectedBrands.length > 0 || selectedSizes.length > 0 || minRating > 0) && (
+              <span className="w-2 h-2 rounded-full bg-[#ff5100]"></span>
+            )}
+          </button>
+          <div className="flex items-center space-x-2 text-xs font-semibold text-gray-600">
+            <span>Sort:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-gray-100 border border-gray-200 rounded-lg px-2 py-1 text-xs font-semibold text-gray-800 outline-none cursor-pointer"
+            >
+              <option value="popularity">Popularity</option>
+              <option value="lowToHigh">Price: Low to High</option>
+              <option value="highToLow">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+              <option value="discount">Biggest Discount</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Filter Sidebar */}
+          <div
+            className={`lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-6 ${showMobileFilters ? 'block' : 'hidden lg:block'
+              }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center space-x-2">
+                <SlidersHorizontal className="w-4 h-4 text-[#ff5100]" />
+                <span className="font-bold text-sm text-gray-900">Filters</span>
+              </div>
+              {(selectedBrands.length > 0 || selectedSizes.length > 0 || minRating > 0 || activeCategory !== 'All' || maxPrice < 10000) && (
+                <button
+                  onClick={clearAllFilters}
+                  className="text-xs font-semibold text-[#ff5100] hover:underline cursor-pointer"
+                >
+                  Clear All
+                </button>
+              )}
             </div>
 
-            {/* Price Range */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 mb-1">Price Range</h4>
-              <div className="flex justify-between text-[11px] text-gray-500 font-medium mb-1.5">
-                <span>₹0</span>
-                <span>₹{maxPrice.toLocaleString('en-IN')}+</span>
+            {/* Brand Filter */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Brands</span>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+                {brandFilters.map((brand) => {
+                  const isChecked = selectedBrands.includes(brand.name);
+                  return (
+                    <label
+                      key={brand.name}
+                      onClick={() => handleToggleBrand(brand.name)}
+                      className="flex items-center justify-between text-xs text-gray-700 hover:text-black cursor-pointer select-none py-0.5"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${isChecked
+                            ? 'bg-[#063328] border-[#063328] text-white'
+                            : 'border-gray-300 bg-white'
+                            }`}
+                        >
+                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <span className={isChecked ? 'font-bold text-gray-900' : 'font-medium'}>
+                          {brand.name}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-gray-400">({brand.count})</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Size Filter */}
+            <div className="space-y-3 pt-3 border-t border-gray-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Sizes</span>
+              <div className="flex flex-wrap gap-2">
+                {sizeFilters.map((sz) => {
+                  const isSelected = selectedSizes.includes(sz);
+                  return (
+                    <button
+                      key={sz}
+                      onClick={() => handleToggleSize(sz)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${isSelected
+                        ? 'bg-[#063328] text-white border-[#063328]'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200'
+                        }`}
+                    >
+                      {sz}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Price Filter */}
+            <div className="space-y-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="uppercase tracking-wider text-gray-500">Max Price</span>
+                <span className="text-[#063328] font-black">₹{maxPrice.toLocaleString('en-IN')}</span>
               </div>
               <input
                 type="range"
                 min="500"
                 max="10000"
-                step="500"
+                step="250"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-[#0d5c46] cursor-pointer"
+                className="w-full accent-[#063328] cursor-pointer"
               />
-            </div>
-
-            {/* Discount */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 mb-2">Discount</h4>
-              <div className="space-y-1.5 text-xs font-medium text-gray-700">
-                {[
-                  { label: '10% and above', count: 98 },
-                  { label: '20% and above', count: 76 },
-                  { label: '30% and above', count: 48 },
-                  { label: '50% and above', count: 22 }
-                ].map((d) => (
-                  <label key={d.label} className="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-[#0d5c46]" />
-                    <span>
-                      {d.label} <span className="text-gray-400 font-normal">({d.count})</span>
-                    </span>
-                  </label>
-                ))}
+              <div className="flex justify-between text-[10px] text-gray-400 font-semibold">
+                <span>₹500</span>
+                <span>₹10,000</span>
               </div>
             </div>
 
-            {/* Size */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 mb-2">Size</h4>
-              <div className="flex flex-wrap gap-1.5">
-                {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((sz) => (
-                  <button
-                    key={sz}
-                    onClick={() => handleSizeToggle(sz)}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors ${
-                      selectedSizes.includes(sz)
-                        ? 'bg-[#0d5c46] text-white border-[#0d5c46]'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
+            {/* Rating Filter */}
+            <div className="space-y-3 pt-3 border-t border-gray-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Minimum Rating</span>
+              <div className="space-y-1.5">
+                {[4, 3, 2].map((rt) => (
+                  <label
+                    key={rt}
+                    onClick={() => setMinRating(minRating === rt ? 0 : rt)}
+                    className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer select-none py-0.5 hover:text-black"
                   >
-                    {sz}
-                  </button>
-                ))}
-              </div>
-              <button className="text-[11px] text-[#0d5c46] font-bold mt-2 hover:underline">
-                + View More
-              </button>
-            </div>
-
-            {/* Brand */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 mb-2">Brand</h4>
-              <div className="relative mb-2">
-                <input
-                  type="text"
-                  placeholder="Search brand"
-                  value={brandSearch}
-                  onChange={(e) => setBrandSearch(e.target.value)}
-                  className="w-full pl-7 pr-3 py-1 bg-white border border-gray-300 rounded-md text-[11px] text-gray-800 placeholder-gray-400 outline-none"
-                />
-                <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 text-xs font-medium text-gray-700">
-                {['Nike', 'Puma', 'U.S. Polo Assn.', 'Adidas', "Levi's"].map((br) => (
-                  <label key={br} className="flex items-center space-x-1.5 cursor-pointer">
-                    <input type="checkbox" className="w-3 h-3 rounded border-gray-300 text-[#0d5c46]" />
-                    <span className="truncate">{br}</span>
+                    <div
+                      className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors ${minRating === rt
+                        ? 'bg-[#ff5100] border-[#ff5100] text-white'
+                        : 'border-gray-300 bg-white'
+                        }`}
+                    >
+                      {minRating === rt && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                    </div>
+                    <div className="flex items-center space-x-1 text-amber-500 font-semibold">
+                      <span>{rt}★ & Above</span>
+                    </div>
                   </label>
                 ))}
               </div>
-              <button className="text-[11px] text-[#0d5c46] font-bold mt-2 hover:underline">
-                + View More
-              </button>
+            </div>
+
+            {/* Trust Perks */}
+            <div className="pt-4 border-t border-gray-100 space-y-2 text-xs text-gray-600">
+              <div className="flex items-center space-x-2 text-emerald-700 font-semibold">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>100% Authentic Apparel</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Truck className="w-4 h-4 text-gray-500" />
+                <span>Free shipping above ₹999</span>
+              </div>
             </div>
           </div>
-        </aside>
 
-        {/* Main Content Area (9 cols) */}
-        <main className="lg:col-span-9 space-y-6">
-          {/* Fashion Hero Banner */}
-          <div className="bg-gradient-to-r from-teal-50/70 via-[#e4f3ef] to-emerald-50/60 rounded-3xl p-8 border border-gray-200/70 flex flex-col md:flex-row items-center justify-between shadow-2xs relative overflow-hidden gap-6">
-            <div className="max-w-md space-y-2 z-10">
-              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight tracking-tight">
-                Stay Ahead in <br />
-                Style &amp; <span className="text-[#ff5100]">Comfort</span>
-              </h2>
-              <p className="text-xs text-gray-500 font-medium pt-1">
-                Discover the latest trends in fashion. <br />
-                Limited time offers!
-              </p>
-              <div className="pt-3">
-                <button
-                  onClick={() => navigateTo('deals')}
-                  className="py-2.5 px-6 bg-[#0d5c46] hover:bg-[#094736] text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] inline-flex items-center space-x-1.5 cursor-pointer"
-                >
-                  <span>Shop Now</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+          {/* Product Grid / List Section */}
+          <div className="lg:col-span-9 space-y-6">
+            {/* Top Toolbar */}
+            <div className="hidden lg:flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-sm">
+              <div className="flex items-center space-x-2 text-xs text-gray-600 font-medium">
+                <span>Showing</span>
+                <span className="font-bold text-gray-900">{filteredProducts.length}</span>
+                <span>fashion items</span>
+                {activeCategory !== 'All' && (
+                  <span className="bg-emerald-50 text-[#063328] px-2 py-0.5 rounded-md font-semibold text-[11px] border border-emerald-200">
+                    Category: {activeCategory}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-4">
+                {/* Sort dropdown */}
+                <div className="flex items-center space-x-2 text-xs font-semibold text-gray-600">
+                  <span>Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-800 outline-none cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
+                    <option value="popularity">Popularity</option>
+                    <option value="lowToHigh">Price: Low to High</option>
+                    <option value="highToLow">Price: High to Low</option>
+                    <option value="rating">Customer Rating</option>
+                    <option value="discount">Biggest Discount</option>
+                  </select>
+                </div>
+
+                {/* View toggles */}
+                <div className="flex items-center space-x-1 border border-gray-200 rounded-lg p-1 bg-gray-50">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-md cursor-pointer transition-colors ${viewMode === 'grid'
+                      ? 'bg-white text-[#063328] shadow-xs'
+                      : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    title="Grid View"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-md cursor-pointer transition-colors ${viewMode === 'list'
+                      ? 'bg-white text-[#063328] shadow-xs'
+                      : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    title="List View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="relative w-full md:w-1/2 flex justify-center md:justify-end items-center">
-              <img
-                src={fashionHeroImg}
-                alt="Fashion Models"
-                className="w-full max-w-lg h-auto object-contain rounded-2xl drop-shadow-xs"
-              />
-            </div>
-          </div>
-
-          {/* Sub-Categories Quick Selector Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {subCategoryQuick.map((sc) => (
-              <div
-                key={sc.name}
-                onClick={() => setSelectedCategory(sc.name)}
-                className="bg-white border border-gray-200/90 rounded-2xl p-3 flex items-center space-x-3 cursor-pointer hover:shadow-md transition-all group"
-              >
-                <div className="w-10 h-10 bg-emerald-50/50 rounded-xl flex items-center justify-center p-1.5 shrink-0 border border-emerald-100/60">
-                  <img src={sc.svg} alt={sc.name} className="w-full h-full object-contain" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#0d5c46] transition-colors">
-                    {sc.name}
-                  </h4>
-                  <p className="text-[10px] text-gray-400 font-medium">{sc.count}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Products Grid (6 Cols) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-            {initialFashionProducts.map((product) => (
-              <div
-                key={product.id}
-                onClick={() => navigateTo('product-detail', product)}
-                className="bg-white border border-gray-200/90 rounded-2xl p-3 flex flex-col justify-between hover:shadow-lg transition-all duration-200 relative group cursor-pointer"
-              >
-                {/* Discount Tag Top-Left */}
-                <div className="bg-[#ff5100] text-white font-extrabold text-[10px] px-2 py-0.5 rounded-br-lg rounded-tl-xl absolute top-0 left-0 z-10 shadow-2xs">
-                  {product.discount}
-                </div>
-
-                {/* Wishlist Heart Icon Top-Right */}
+            {/* Products Container */}
+            {filteredProducts.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 space-y-4">
+                <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto" />
+                <h3 className="text-base font-bold text-gray-800">No fashion items match your filter</h3>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                  Try adjusting or clearing your filters to view more products from our summer catalog.
+                </p>
                 <button
-                  onClick={(e) => handleToggleWishlist(e, product)}
-                  className="absolute top-2 right-2 z-10 p-1 rounded-full bg-white/80 backdrop-blur-xs border border-gray-100 hover:bg-emerald-50 transition-colors shadow-2xs"
-                  title="Add to Wishlist"
+                  onClick={clearAllFilters}
+                  className="px-5 py-2.5 bg-[#063328] text-white text-xs font-bold rounded-xl hover:bg-[#0b4d3c] transition-colors cursor-pointer"
                 >
-                  <Heart
-                    className={`w-3.5 h-3.5 transition-colors ${
-                      wishlistActive[product.id]
-                        ? 'fill-red-500 text-red-500'
-                        : 'text-[#0d5c46] hover:text-red-500'
-                    }`}
-                  />
+                  Reset All Filters
                 </button>
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5">
+                {filteredProducts.map((product) => {
+                  const inWish = isProductInWishlist(product.id);
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductClick(product)}
+                      className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+                    >
+                      {/* Image Container */}
+                      <div className="relative bg-gray-50 p-4 aspect-[4/3] flex items-center justify-center overflow-hidden">
+                        {/* Discount Badge */}
+                        <div className="absolute top-3 left-3 z-10 bg-[#ff5100] text-white text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm">
+                          {product.discount}
+                        </div>
 
-                {/* Image Container */}
-                <div className="h-40 w-full bg-white rounded-xl flex items-center justify-center p-2 overflow-hidden mt-2">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
+                        {/* Top Tag Badge if present */}
+                        {product.badge && (
+                          <div className="absolute top-3 right-12 z-10 bg-[#063328] text-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">
+                            {product.badge}
+                          </div>
+                        )}
 
-                {/* Product Info */}
-                <div className="mt-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-xs leading-tight hover:text-[#0d5c46] transition-colors cursor-pointer line-clamp-2">
-                      {product.name}
-                    </h3>
-
-                    {/* Price Block */}
-                    <div className="flex items-baseline space-x-1.5 mt-1.5">
-                      <span className="text-xs font-black text-gray-900">
-                        ₹{product.price.toLocaleString('en-IN')}
-                      </span>
-                      {product.originalPrice && (
-                        <span className="text-[10px] text-gray-400 line-through">
-                          ₹{product.originalPrice.toLocaleString('en-IN')}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Rating Row */}
-                    <div className="flex items-center space-x-1 mt-1">
-                      <div className="flex text-amber-400">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-2.5 h-2.5 fill-current ${
-                              i < Math.floor(product.rating)
-                                ? 'text-amber-400'
-                                : 'text-gray-200 fill-none'
+                        {/* Wishlist Button */}
+                        <button
+                          onClick={(e) => handleToggleWishlist(product, e)}
+                          className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-sm ${inWish
+                            ? 'bg-rose-50 text-rose-500 border border-rose-200'
+                            : 'bg-white/80 text-gray-500 hover:text-rose-500 hover:bg-white border border-gray-200/50'
                             }`}
-                          />
-                        ))}
+                          title="Save to Wishlist"
+                        >
+                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                        </button>
+
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500"
+                        />
                       </div>
-                      <span className="text-[10px] font-semibold text-gray-500">
-                        ({product.rating})
-                      </span>
+
+                      {/* Product Details */}
+                      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                        <div>
+                          {/* Brand & Category */}
+                          <div className="flex items-center justify-between text-[11px] text-gray-400 font-semibold">
+                            <span className="uppercase tracking-wider text-emerald-700 font-bold">{product.brand}</span>
+                            <span>{product.category}</span>
+                          </div>
+
+                          {/* Product Name */}
+                          <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-[#063328] transition-colors leading-snug">
+                            {product.name}
+                          </h3>
+
+                          {/* Rating & Reviews */}
+                          <div className="flex items-center space-x-2 mt-2">
+                            <div className="flex items-center space-x-1 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md text-xs font-bold border border-emerald-200/60">
+                              <span>{product.rating}</span>
+                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            </div>
+                            <span className="text-[11px] text-gray-400">({product.reviews} reviews)</span>
+                          </div>
+
+                          {/* Sizes Available */}
+                          <div className="flex items-center space-x-1.5 mt-2.5 overflow-hidden">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase">Sizes:</span>
+                            {product.sizes.slice(0, 4).map((sz, idx) => (
+                              <span
+                                key={idx}
+                                className="text-[10px] bg-gray-100 text-gray-600 font-semibold px-1.5 py-0.5 rounded"
+                              >
+                                {sz}
+                              </span>
+                            ))}
+                            {product.sizes.length > 4 && (
+                              <span className="text-[10px] text-gray-400">+{product.sizes.length - 4}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Price & Action */}
+                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-2">
+                          <div>
+                            <div className="flex items-baseline space-x-2">
+                              <span className="text-base font-black text-gray-900">
+                                ₹{product.price.toLocaleString('en-IN')}
+                              </span>
+                              <span className="text-xs text-gray-400 line-through">
+                                ₹{product.originalPrice.toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-semibold text-emerald-600">Free Delivery</span>
+                          </div>
+
+                          <button
+                            onClick={(e) => handleAddToCart(product, e)}
+                            className="p-2.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
+                            title="Add to Cart"
+                          >
+                            <ShoppingBag className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={(e) => handleAddToCart(e, product)}
-                    className="w-full mt-2 py-1.5 px-2 bg-[#0d5c46] hover:bg-[#094736] text-white font-bold text-[11px] rounded-lg shadow-2xs transition-all active:scale-[0.98] flex items-center justify-center space-x-1"
-                  >
-                    <ShoppingCart className="w-3 h-3 stroke-[2.2]" />
-                    <span>Add to Cart</span>
-                  </button>
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            ) : (
+              /* List View */
+              <div className="space-y-4">
+                {filteredProducts.map((product) => {
+                  const inWish = isProductInWishlist(product.id);
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductClick(product)}
+                      className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
+                    >
+                      {/* Image */}
+                      <div className="relative w-full sm:w-44 h-44 shrink-0 bg-gray-50 rounded-xl p-3 flex items-center justify-center overflow-hidden">
+                        <div className="absolute top-2 left-2 z-10 bg-[#ff5100] text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
+                          {product.discount}
+                        </div>
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
 
-          {/* Load More Products Button */}
-          <div className="mt-8 text-center">
-            <button className="py-2.5 px-6 bg-white border border-gray-300 hover:border-[#0d5c46] hover:text-[#0d5c46] text-gray-800 font-bold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center space-x-1">
-              <span>Load More Products</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </main>
-      </div>
+                      {/* Content */}
+                      <div className="flex-1 space-y-2 w-full">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">{product.brand}</span>
+                          <button
+                            onClick={(e) => handleToggleWishlist(product, e)}
+                            className={`p-1.5 rounded-full transition-colors cursor-pointer ${inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
+                              }`}
+                          >
+                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                          </button>
+                        </div>
 
-      {/* Value Proposition Banner */}
-      <div className="bg-white border border-gray-200/90 rounded-2xl p-5 shadow-2xs mt-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
-          <div className="flex items-center space-x-3 sm:pr-3 py-2 sm:py-0">
-            <Sparkles className="w-6 h-6 text-[#0d5c46] shrink-0 stroke-[2]" />
-            <div>
-              <h4 className="font-bold text-gray-900 text-xs">Trendy Collections</h4>
-              <p className="text-[10px] text-gray-500 font-medium">Stay ahead with latest styles</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 sm:px-3 py-2 sm:py-0">
-            <Tag className="w-6 h-6 text-[#0d5c46] shrink-0 stroke-[2]" />
-            <div>
-              <h4 className="font-bold text-gray-900 text-xs">Best Prices</h4>
-              <p className="text-[10px] text-gray-500 font-medium">Top brands at best prices</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 sm:px-3 py-2 sm:py-0">
-            <RotateCcw className="w-6 h-6 text-[#0d5c46] shrink-0 stroke-[2]" />
-            <div>
-              <h4 className="font-bold text-gray-900 text-xs">Easy Returns</h4>
-              <p className="text-[10px] text-gray-500 font-medium">7 days easy return policy</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 sm:px-3 py-2 sm:py-0">
-            <ShieldCheck className="w-6 h-6 text-[#0d5c46] shrink-0 stroke-[2]" />
-            <div>
-              <h4 className="font-bold text-gray-900 text-xs">Secure Payments</h4>
-              <p className="text-[10px] text-gray-500 font-medium">100% secure &amp; trusted</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 sm:pl-3 py-2 sm:py-0">
-            <Headphones className="w-6 h-6 text-[#0d5c46] shrink-0 stroke-[2]" />
-            <div>
-              <h4 className="font-bold text-gray-900 text-xs">24/7 Support</h4>
-              <p className="text-[10px] text-gray-500 font-medium">We're here to help you</p>
-            </div>
+                        <h3 className="text-base font-bold text-gray-900 group-hover:text-[#063328] transition-colors">
+                          {product.name}
+                        </h3>
+
+                        <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
+
+                        <div className="flex items-center space-x-3 pt-1">
+                          <div className="flex items-center space-x-1 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-xs font-bold border border-emerald-200/60">
+                            <span>{product.rating}</span>
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          </div>
+                          <span className="text-xs text-gray-400">({product.reviews} reviews)</span>
+                          <span className="text-xs text-gray-300">•</span>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-[11px] text-gray-400">Sizes:</span>
+                            <span className="text-xs font-semibold text-gray-700">{product.sizes.join(', ')}</span>
+                          </div>
+                        </div>
+
+                        {/* Price & Add to Cart button */}
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                          <div className="flex items-baseline space-x-2">
+                            <span className="text-lg font-black text-gray-900">₹{product.price.toLocaleString('en-IN')}</span>
+                            <span className="text-xs text-gray-400 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                            <span className="text-xs font-bold text-emerald-600">({product.discount})</span>
+                          </div>
+
+                          <button
+                            onClick={(e) => handleAddToCart(product, e)}
+                            className="px-5 py-2.5 bg-[#063328] hover:bg-[#ff5100] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
+                          >
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                            <span>Add to Cart</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Featured Style Perks Footer Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-start space-x-4">
+            <div className="p-3 bg-emerald-50 text-[#063328] rounded-2xl shrink-0">
+              <ShieldCheck className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-900">100% Genuine Apparel</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                Directly sourced from certified brand partners and verified designer distributors.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-4">
+            <div className="p-3 bg-orange-50 text-[#ff5100] rounded-2xl shrink-0">
+              <RotateCcw className="w-6 h-6 text-[#ff5100]" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-900">Hassle-Free 7 Day Returns</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                Instant doorstep pickup and swift size exchange with zero questions asked.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-4">
+            <div className="p-3 bg-teal-50 text-teal-700 rounded-2xl shrink-0">
+              <Truck className="w-6 h-6 text-teal-600" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-900">Free Express Delivery</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                Complimentary tracked priority shipping on all fashion orders above ₹999.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

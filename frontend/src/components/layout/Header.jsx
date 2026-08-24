@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Heart, ShoppingCart, ChevronDown, Search, ArrowRight, X } from 'lucide-react';
+import { User, Heart, ShoppingCart, ChevronDown, Search, ArrowRight, X, LogOut, Package, Shield, LayoutDashboard } from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
+import { getCurrentUser, logoutUser, fetchCategories, fetchSearchSuggestions } from '../../services/api';
 import logo from '../../assets/logo.png';
 
 // Import product images for search suggestions
@@ -134,20 +135,43 @@ export default function Header() {
   const context = useCartContext();
   const navContext = useNavigationContext();
   const navigateTo = navContext?.navigateTo || (() => {});
-  const cartCount = context?.cartItems?.length || 2;
-  const wishlistCount = context?.wishlistItems?.length || 1;
+  const cartCount = context?.cartCount ?? (context?.cartItems ? context.cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0) : 0);
+  const wishlistCount = context?.wishlistCount ?? (context?.wishlistItems ? context.wishlistItems.length : 0);
 
-  // Search state
+  // Search & Navigation State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [categoriesList, setCategoriesList] = useState(['All Categories', 'Mobiles', 'Electronics', 'Fashion', 'Laptops', 'Home & Kitchen', 'Beauty']);
+  const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const searchRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // Sync auth state
+  useEffect(() => {
+    const handleAuthChange = () => setCurrentUser(getCurrentUser());
+    window.addEventListener('buyzo_auth_change', handleAuthChange);
+    return () => window.removeEventListener('buyzo_auth_change', handleAuthChange);
+  }, []);
+
+  // Fetch categories dynamically
+  useEffect(() => {
+    fetchCategories().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) {
+        setCategoriesList(['All Categories', ...cats.map(c => c.name)]);
+      }
+    });
+  }, []);
 
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -179,6 +203,10 @@ export default function Header() {
       navigateTo('electronics');
     } else if (val === 'Fashion') {
       navigateTo('fashion');
+    } else if (val === 'Beauty') {
+      navigateTo('beauty');
+    } else if (val === 'Home & Kitchen') {
+      navigateTo('home-kitchen');
     } else if (val === 'Mobiles') {
       navigateTo('shop');
     }
@@ -198,6 +226,24 @@ export default function Header() {
     }
   };
 
+  const handleUserClick = () => {
+    if (!currentUser) {
+      navigateTo('login');
+    } else {
+      setIsUserMenuOpen((prev) => !prev);
+    }
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setIsUserMenuOpen(false);
+    navigateTo('home');
+  };
+
+  const userName = currentUser?.profile?.first_name 
+    ? `${currentUser.profile.first_name} ${currentUser.profile.last_name || ''}`.trim()
+    : currentUser?.email?.split('@')[0] || 'User';
+
   return (
     <header className="bg-white border-b border-gray-200 py-3 px-3 sm:px-6 flex flex-wrap items-center justify-between gap-y-2 shadow-xs relative z-40">
       {/* Brand Logo */}
@@ -216,12 +262,9 @@ export default function Header() {
               onChange={handleCategorySelect}
               className="appearance-none bg-transparent pr-5 text-xs sm:text-sm font-bold text-gray-800 outline-none cursor-pointer z-10"
             >
-              <option value="All Categories">All Categories</option>
-              <option value="Mobiles">Mobiles</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Fashion">Fashion</option>
-              <option value="Laptops">Laptops</option>
-              <option value="Home & Kitchen">Home & Kitchen</option>
+              {categoriesList.map((catName) => (
+                <option key={catName} value={catName}>{catName}</option>
+              ))}
             </select>
             <ChevronDown className="w-4 h-4 text-[#1b4d3e] stroke-[2.5] absolute right-3 pointer-events-none" />
           </div>
@@ -246,7 +289,7 @@ export default function Header() {
                   setSearchQuery('');
                   setIsDropdownOpen(false);
                 }}
-                className="absolute right-3 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -328,24 +371,114 @@ export default function Header() {
         )}
       </div>
 
-      {/* Right Side Icons & Account - Matched to Image */}
-      <div className="flex items-center space-x-3 sm:space-x-8 shrink-0">
+      {/* Right Side Icons & Account */}
+      <div className="flex items-center space-x-3 sm:space-x-8 shrink-0 relative">
         {/* User Account */}
-        <div
-          onClick={() => navigateTo('login')}
-          className="flex items-center space-x-2.5 cursor-pointer group"
-          title="Click to Login"
-        >
-          <div className="p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
-            <User className="w-7 h-7 stroke-[1.8]" />
-          </div>
-          <div className="hidden sm:flex flex-col text-left">
-            <span className="text-[12px] text-gray-500 font-normal leading-tight">Welcome Guest</span>
-            <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-[#1b4d3e] transition-colors">
-              <span>Login / Account</span>
-              <ChevronDown className="w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5" />
+        <div ref={userMenuRef} className="relative">
+          <div
+            onClick={handleUserClick}
+            className="flex items-center space-x-2.5 cursor-pointer group"
+            title={currentUser ? `Logged in as ${userName}` : "Click to Login"}
+          >
+            <div className="p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
+              <User className="w-7 h-7 stroke-[1.8]" />
+            </div>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-[12px] text-gray-500 font-normal leading-tight">
+                {currentUser ? `Welcome ${currentUser.profile?.first_name || userName}` : 'Welcome Guest'}
+              </span>
+              <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-[#1b4d3e] transition-colors">
+                <span>{currentUser ? (currentUser.role === 'ADMIN' ? 'Admin Panel' : 'My Account') : 'Login / Account'}</span>
+                <ChevronDown className={`w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+              </div>
             </div>
           </div>
+
+          {/* User Account Dropdown Menu */}
+          {currentUser && isUserMenuOpen && (
+            <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 rounded-t-xl">
+                <p className="text-xs font-bold text-gray-900 leading-tight">{userName}</p>
+                <p className="text-[11px] text-gray-500 truncate mt-0.5">{currentUser.email || currentUser.phone}</p>
+                <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                  {currentUser.role || 'Customer'}
+                </span>
+              </div>
+
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    navigateTo('orders');
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50/70 hover:text-[#0d5c46] flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <Package className="w-4 h-4 text-gray-400" />
+                  <span>My Orders</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    navigateTo('wishlist');
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50/70 hover:text-[#0d5c46] flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <Heart className="w-4 h-4 text-gray-400" />
+                  <span>My Wishlist</span>
+                </button>
+
+                {currentUser.role === 'ADMIN' && (
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('admin');
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-semibold text-purple-700 hover:bg-purple-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                    <span>Admin Dashboard</span>
+                  </button>
+                )}
+
+                {(currentUser.role === 'ADMIN' || currentUser.role === 'WAREHOUSE_STAFF') && (
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('warehouse');
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4 text-amber-500" />
+                    <span>Warehouse Portal</span>
+                  </button>
+                )}
+
+                {(currentUser.role === 'ADMIN' || currentUser.role === 'DELIVERY_AGENT') && (
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('delivery-agent');
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-semibold text-cyan-700 hover:bg-cyan-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                  >
+                    <Package className="w-4 h-4 text-cyan-500" />
+                    <span>Delivery Portal</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 pt-1">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-red-400" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Wishlist */}

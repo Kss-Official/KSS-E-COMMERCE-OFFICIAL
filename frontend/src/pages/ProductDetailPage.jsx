@@ -49,7 +49,7 @@ const defaultProduct = {
 };
 
 export default function ProductDetailPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { selectedProduct, navigateTo } = useNavigationContext();
 
   const product = selectedProduct || defaultProduct;
@@ -61,7 +61,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [addedToast, setAddedToast] = useState(null);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const activeWish = isWishlisted(product);
 
   const galleryThumbnails = [
     product.image || boatRockerzImg,
@@ -77,13 +78,13 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     addToCart({ ...product, selectedColor, quantity });
-    setAddedToast(`Redirecting to checkout for "${product.name}"...`);
-    setTimeout(() => setAddedToast(null), 3000);
+    navigateTo('checkout');
   };
 
   const handleToggleWishlist = () => {
-    addToWishlist(product);
-    setIsWishlisted((prev) => !prev);
+    toggleWishlist(product);
+    setAddedToast(activeWish ? `Removed "${product.name}" from wishlist` : `Added "${product.name}" to wishlist`);
+    setTimeout(() => setAddedToast(null), 3000);
   };
 
   return (
@@ -161,7 +162,7 @@ export default function ProductDetailPage() {
             >
               <Heart
                 className={`w-5 h-5 ${
-                  isWishlisted
+                  activeWish
                     ? 'fill-red-500 text-red-500'
                     : 'text-gray-600 hover:text-red-500'
                 }`}

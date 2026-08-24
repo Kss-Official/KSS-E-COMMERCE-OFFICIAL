@@ -10,6 +10,12 @@ import sonyHeadphonesImg from '../assets/images/sony_headphones.jpg';
 import jblSpeakerImg from '../assets/images/jbl_speaker.jpg';
 import dellLaptopImg from '../assets/images/dell_laptop.jpg';
 import hpLaptopImg from '../assets/images/hp_laptop.jpg';
+import appleIphone15Img from '../assets/images/apple_iphone15.jpg';
+import samsungS23Img from '../assets/images/samsung_s23.png';
+import boatAirdopesImg from '../assets/images/boat_airdopes.png';
+import sonySoundbarImg from '../assets/images/sony_soundbar.png';
+import jblWaveTwsImg from '../assets/images/jbl_wave_tws.png';
+import appleMacbookImg from '../assets/images/apple_macbook.png';
 
 const initialProducts = [
   {
@@ -93,7 +99,7 @@ const initialProducts = [
   {
     id: 'elec-7',
     name: 'Samsung Galaxy S23 5G',
-    image: boatRockerzImg, // Fallback/styled container
+    image: samsungS23Img,
     price: 64999,
     originalPrice: 89999,
     discount: '27% OFF',
@@ -106,7 +112,7 @@ const initialProducts = [
   {
     id: 'elec-8',
     name: 'Apple iPhone 15 (128 GB)',
-    image: noiseSmartwatchImg,
+    image: appleIphone15Img,
     price: 71990,
     originalPrice: 79900,
     discount: '10% OFF',
@@ -119,7 +125,7 @@ const initialProducts = [
   {
     id: 'elec-9',
     name: 'boAt Airdopes 141',
-    image: boatRockerzImg,
+    image: boatAirdopesImg,
     price: 1299,
     originalPrice: 4490,
     discount: '71% OFF',
@@ -132,7 +138,7 @@ const initialProducts = [
   {
     id: 'elec-10',
     name: 'Sony HT-S20R Soundbar',
-    image: jblSpeakerImg,
+    image: sonySoundbarImg,
     price: 17990,
     originalPrice: 23990,
     discount: '25% OFF',
@@ -145,7 +151,7 @@ const initialProducts = [
   {
     id: 'elec-11',
     name: 'JBL Wave 200 TWS',
-    image: sonyHeadphonesImg,
+    image: jblWaveTwsImg,
     price: 2799,
     originalPrice: 5999,
     discount: '53% OFF',
@@ -158,7 +164,7 @@ const initialProducts = [
   {
     id: 'elec-12',
     name: 'Apple MacBook Air M2',
-    image: hpLaptopImg,
+    image: appleMacbookImg,
     price: 92900,
     originalPrice: 114900,
     discount: '19% OFF',
@@ -189,7 +195,7 @@ const brandList = [
 ];
 
 export default function ElectronicsPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -199,7 +205,6 @@ export default function ElectronicsPage() {
   const [sortBy, setSortBy] = useState('popularity');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [addedToast, setAddedToast] = useState(null);
-  const [wishlistActive, setWishlistActive] = useState({});
 
   // Toggle brand selection
   const handleBrandChange = (brandName) => {
@@ -235,8 +240,10 @@ export default function ElectronicsPage() {
   };
 
   const handleToggleWishlist = (product) => {
-    addToWishlist(product);
-    setWishlistActive((prev) => ({ ...prev, [product.id]: !prev[product.id] }));
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setAddedToast(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist`);
+    setTimeout(() => setAddedToast(null), 3000);
   };
 
   return (
@@ -466,7 +473,7 @@ export default function ElectronicsPage() {
                 <div
                   key={product.id}
                   onClick={() => navigateTo('product-detail', product)}
-                  className={`bg-white border border-gray-200/90 rounded-2xl p-4 flex cursor-pointer ${
+                  className={`bg-white border border-gray-200/90 hover:border-[#063328] rounded-2xl p-4 flex cursor-pointer ${
                     viewMode === 'grid'
                       ? 'flex-col justify-between'
                       : 'flex-row items-center space-x-6'
@@ -483,7 +490,7 @@ export default function ElectronicsPage() {
                   >
                     <Heart
                       className={`w-4 h-4 transition-colors ${
-                        wishlistActive[product.id]
+                        isWishlisted(product.id)
                           ? 'fill-red-500 text-red-500'
                           : 'text-[#0d5c46] hover:text-red-500'
                       }`}
