@@ -28,23 +28,31 @@ def resolve_product(product_id, product_name=None, price=None):
 
     product = None
 
-    # 1. Match by integer ID
-    if str(product_id).isdigit():
-        product = Product.objects.filter(id=int(product_id), is_active=True).first()
-
-    # 2. Match by exact slug
-    if not product and isinstance(product_id, str):
-        product = Product.objects.filter(slug=product_id, is_active=True).first()
-
-    # 3. Match by exact title
-    if not product and product_name:
+    # 1. Match by exact title first if product_name is provided
+    if product_name:
         product = Product.objects.filter(title__iexact=product_name, is_active=True).first()
 
-    # 4. Match by title containing product_name
+    # 2. Match by title containing product_name
     if not product and product_name:
         product = Product.objects.filter(title__icontains=product_name, is_active=True).first()
 
-    # 5. Match by cleaned product_id (e.g. 'apple-iphone-15' -> 'apple iphone 15')
+    # 3. Match by integer ID (if digit) and verify title consistency
+    if not product and str(product_id).isdigit():
+        candidate = Product.objects.filter(id=int(product_id), is_active=True).first()
+        if candidate:
+            if not product_name:
+                product = candidate
+            else:
+                c_title = candidate.title.lower()
+                p_name = product_name.lower()
+                if c_title in p_name or p_name in c_title or any(w in c_title for w in p_name.split() if len(w) > 3):
+                    product = candidate
+
+    # 4. Match by exact slug
+    if not product and isinstance(product_id, str):
+        product = Product.objects.filter(slug=product_id, is_active=True).first()
+
+    # 5. Match by cleaned product_id (e.g. 'apple-iphone-15')
     if not product and isinstance(product_id, str):
         cleaned = product_id.replace('-', ' ').replace('_', ' ').strip()
         if cleaned:
@@ -59,7 +67,11 @@ def resolve_product(product_id, product_name=None, price=None):
                 product = candidate
                 break
 
-    # 7. Auto-create product if missing in DB to preserve exact item title and price
+    # 7. Fallback to candidate by ID if still no match and product_id is digit
+    if not product and str(product_id).isdigit():
+        product = Product.objects.filter(id=int(product_id), is_active=True).first()
+
+    # 8. Auto-create product if missing in DB to preserve exact item title and price
     if not product and (product_name or product_id):
         name_to_use = str(product_name or product_id).replace('-', ' ').replace('_', ' ').title().strip()
         sku_val = f"AUTO-{uuid.uuid4().hex[:8].upper()}"
@@ -89,7 +101,7 @@ class CartView(APIView):
 
     def delete(self, request):
         cart = get_or_create_cart(request)
-        cart.items.all().delete()
+        CartItem.objects.filter(cart=cart).delete()
         serializer = CartSerializer(cart, context={'request': request})
         return APIResponse.success(data=serializer.data, message="Cart cleared successfully.")
 
@@ -273,9 +285,9 @@ class MoveWishlistToCartView(APIView):
         wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
         item = None
         if str(product_id).isdigit():
-            item = WishlistItem.objects.filter(wishlist=wishlist, product_id=int(product_id)).first()
+            item = WishlistItem.objects.filter(wishlist=wishlist, id=int(product_id)).first()
             if not item:
-                item = WishlistItem.objects.filter(wishlist=wishlist, id=int(product_id)).first()
+                item = WishlistItem.objects.filter(wishlist=wishlist, product_id=int(product_id)).first()
         else:
             item = WishlistItem.objects.filter(wishlist=wishlist, product__slug=product_id).first()
 

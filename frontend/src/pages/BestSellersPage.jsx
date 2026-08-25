@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Heart,
   LayoutGrid,
@@ -18,10 +18,13 @@ import {
   Check,
   SlidersHorizontal,
   Award,
+  Filter,
   Crown
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
+import { fetchProducts } from '../services/api';
 
 // Import assets
 import bestSellersHeroImg from '../assets/images/bestsellers_hero.png';
@@ -49,232 +52,15 @@ import shoesCategorySvg from '../assets/category/categoryShoes.svg';
 import bagsCategorySvg from '../assets/category/categoryBags & luddages.svg';
 
 const bestSellerCategories = [
-  { id: 'All', name: 'All Best Sellers', icon: electronicsCategorySvg, count: 140 },
-  { id: 'Electronics', name: 'Electronics & Audio', icon: electronicsCategorySvg, count: 42 },
-  { id: 'Mobiles', name: 'Mobiles & Tabs', icon: mobileCategorySvg, count: 35 },
-  { id: 'Fashion', name: 'Fashion & Apparel', icon: fashionCategorySvg, count: 38 },
-  { id: 'Laptops', name: 'Laptops & Computers', icon: laptopCategorySvg, count: 24 },
-  { id: 'Footwear', name: 'Footwear & Shoes', icon: shoesCategorySvg, count: 28 },
-  { id: 'Bags', name: 'Bags & Handbags', icon: bagsCategorySvg, count: 19 }
-];
-
-const bestSellerProducts = [
-  {
-    id: 'bs-1',
-    rank: 1,
-    name: 'boAt Rockerz 450 Wireless Bluetooth On-Ear Headphone',
-    brand: 'boAt',
-    category: 'Electronics',
-    image: boatRockerzImg,
-    price: 1499,
-    originalPrice: 3999,
-    discount: '62% OFF',
-    rating: 4.8,
-    reviews: 14820,
-    soldCount: '45k+ bought this month',
-    badge: '#1 BEST SELLER',
-    badgeColor: 'bg-amber-500',
-    popularity: 100,
-    description: 'High definition audio with up to 15 hours battery backup and plush ear cushions.'
-  },
-  {
-    id: 'bs-2',
-    rank: 2,
-    name: 'Redmi Note 13 Pro 5G (8GB RAM, 128GB Storage)',
-    brand: 'Xiaomi',
-    category: 'Mobiles',
-    image: redmiNote13Img,
-    price: 18999,
-    originalPrice: 24999,
-    discount: '24% OFF',
-    rating: 4.7,
-    reviews: 9400,
-    soldCount: '30k+ bought this month',
-    badge: '#2 BEST SELLER',
-    badgeColor: 'bg-amber-500',
-    popularity: 98,
-    description: '200MP OIS camera with 120Hz curved AMOLED display and 67W Turbo Charge.'
-  },
-  {
-    id: 'bs-3',
-    rank: 3,
-    name: "Women's Floral Fit & Flare Casual Summer Dress",
-    brand: 'Zara',
-    category: 'Fashion',
-    image: womenDressImg,
-    price: 1499,
-    originalPrice: 2999,
-    discount: '50% OFF',
-    rating: 4.6,
-    reviews: 5820,
-    soldCount: '18k+ bought this month',
-    badge: '#3 BEST SELLER',
-    badgeColor: 'bg-amber-500',
-    popularity: 96,
-    description: 'Flowy A-line breathable cotton silhouette with elegant sweetheart neckline.'
-  },
-  {
-    id: 'bs-4',
-    rank: 4,
-    name: 'Noise ColorFit Pro 5 Smartwatch with 1.85" HD Display',
-    brand: 'Noise',
-    category: 'Electronics',
-    image: noiseSmartwatchImg,
-    price: 2999,
-    originalPrice: 4999,
-    discount: '40% OFF',
-    rating: 4.6,
-    reviews: 7300,
-    soldCount: '22k+ bought this month',
-    badge: 'TOP RATED',
-    badgeColor: 'bg-emerald-600',
-    popularity: 95,
-    description: 'Bluetooth calling, 100+ sports modes, stainless steel crown and 7-day battery.'
-  },
-  {
-    id: 'bs-5',
-    rank: 5,
-    name: 'HP 15s 12th Gen Intel Core i5 Thin & Light Laptop',
-    brand: 'HP',
-    category: 'Laptops',
-    image: hpLaptopImg,
-    price: 44990,
-    originalPrice: 58900,
-    discount: '23% OFF',
-    rating: 4.5,
-    reviews: 3200,
-    soldCount: '8k+ bought this month',
-    badge: 'MOST POPULAR',
-    badgeColor: 'bg-[#ff5100]',
-    popularity: 93,
-    description: '16GB DDR4, 512GB NVMe SSD, 15.6 inch FHD anti-glare micro-edge display.'
-  },
-  {
-    id: 'bs-6',
-    rank: 6,
-    name: "Women's Printed Anarkali Kurta Set with Dupatta",
-    brand: 'Biba',
-    category: 'Fashion',
-    image: bibaKurtaImg,
-    price: 2499,
-    originalPrice: 4999,
-    discount: '50% OFF',
-    rating: 4.7,
-    reviews: 4100,
-    soldCount: '12k+ bought this month',
-    badge: 'FESTIVE HIT',
-    badgeColor: 'bg-rose-600',
-    popularity: 94,
-    description: 'Handcrafted gold foil print royal Anarkali with silk blend finish.'
-  },
-  {
-    id: 'bs-7',
-    rank: 7,
-    name: 'Unisex Flyer Flex Training & Gym Running Shoes',
-    brand: 'Puma',
-    category: 'Footwear',
-    image: pumaShoesImg,
-    price: 2799,
-    originalPrice: 4999,
-    discount: '44% OFF',
-    rating: 4.6,
-    reviews: 6900,
-    soldCount: '15k+ bought this month',
-    badge: 'TOP PICK',
-    badgeColor: 'bg-emerald-600',
-    popularity: 92,
-    description: 'SoftFoam+ cushioning with rugged traction outsole for supreme athletic comfort.'
-  },
-  {
-    id: 'bs-8',
-    rank: 8,
-    name: "Women's Structured Handbag with Detachable Sling",
-    brand: 'Lavie',
-    category: 'Bags',
-    image: lavieHandbagImg,
-    price: 1899,
-    originalPrice: 3990,
-    discount: '52% OFF',
-    rating: 4.5,
-    reviews: 2900,
-    soldCount: '11k+ bought this month',
-    badge: 'TRENDING',
-    badgeColor: 'bg-purple-600',
-    popularity: 90,
-    description: 'Premium textured faux-leather bag with dual handles and secure zip compartments.'
-  },
-  {
-    id: 'bs-9',
-    rank: 9,
-    name: "Men's Classic Stonewashed Heavy Denim Jacket",
-    brand: "Levi's",
-    category: 'Fashion',
-    image: fashionDenimJacketImg,
-    price: 3499,
-    originalPrice: 6499,
-    discount: '46% OFF',
-    rating: 4.8,
-    reviews: 5200,
-    soldCount: '9k+ bought this month',
-    badge: 'ICONIC',
-    badgeColor: 'bg-blue-600',
-    popularity: 91,
-    description: 'Authentic 100% durable cotton denim with vintage wash and button flap pockets.'
-  },
-  {
-    id: 'bs-10',
-    rank: 10,
-    name: 'Dell Inspiron 15 Core i5 16GB RAM Laptop',
-    brand: 'Dell',
-    category: 'Laptops',
-    image: dellLaptopImg,
-    price: 54990,
-    originalPrice: 68000,
-    discount: '19% OFF',
-    rating: 4.6,
-    reviews: 2400,
-    soldCount: '6k+ bought this month',
-    badge: 'PRO PERFORMANCE',
-    badgeColor: 'bg-indigo-600',
-    popularity: 89,
-    description: 'Intel Core i5-1235U, 16GB RAM, 512GB SSD, Windows 11 + MS Office 2021.'
-  },
-  {
-    id: 'bs-11',
-    rank: 11,
-    name: 'Casual Streetwear Chunky Sole Sneakers',
-    brand: 'Puma',
-    category: 'Footwear',
-    image: fashionStreetSneakersImg,
-    price: 3299,
-    originalPrice: 5999,
-    discount: '45% OFF',
-    rating: 4.6,
-    reviews: 3100,
-    soldCount: '7.5k+ bought this month',
-    badge: 'HOT TREND',
-    badgeColor: 'bg-[#ff5100]',
-    popularity: 88,
-    description: 'Retro chunky street sneaker built with soft cushioned sole and durable leather panels.'
-  },
-  {
-    id: 'bs-12',
-    rank: 12,
-    name: 'Urban Ergonomic Everyday Laptop Backpack 28L',
-    brand: 'Wildcraft',
-    category: 'Bags',
-    image: tealBackpackImg,
-    price: 1299,
-    originalPrice: 2499,
-    discount: '48% OFF',
-    rating: 4.4,
-    reviews: 4800,
-    soldCount: '14k+ bought this month',
-    badge: 'VALUE PICK',
-    badgeColor: 'bg-teal-600',
-    popularity: 87,
-    description: 'Triple compartment water-resistant nylon backpack with padded back airflow mesh.'
-  }
+  { id: 'All', name: 'All Best Sellers', icon: electronicsCategorySvg },
+  { id: 'Electronics', name: 'Electronics & Audio', icon: electronicsCategorySvg },
+  { id: 'Mobiles', name: 'Mobiles & Tabs', icon: mobileCategorySvg },
+  { id: 'Fashion', name: 'Fashion & Apparel', icon: fashionCategorySvg },
+  { id: 'Laptops', name: 'Laptops & Computers', icon: laptopCategorySvg },
+  { id: 'Footwear', name: 'Footwear & Shoes', icon: shoesCategorySvg },
+  { id: 'Bags & Luggage', name: 'Bags & Handbags', icon: bagsCategorySvg },
+  { id: 'Beauty', name: 'Beauty & Personal Care', icon: beautyCategorySvg },
+  { id: 'Home & Kitchen', name: 'Home & Living', icon: homeCategorySvg }
 ];
 
 export default function BestSellersPage() {
@@ -283,17 +69,110 @@ export default function BestSellersPage() {
 
   const isProductInWishlist = (id) => isWishlisted(id);
 
+  const [dbProducts, setDbProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [minRating, setMinRating] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(70000);
+  const [maxPrice, setMaxPrice] = useState(150000);
   const [sortBy, setSortBy] = useState('rank'); // 'rank' | 'priceLow' | 'priceHigh' | 'rating'
   const [viewMode, setViewMode] = useState('grid');
   const [toastMessage, setToastMessage] = useState(null);
 
+  useEffect(() => {
+    setIsLoading(true);
+    fetchProducts({ no_page: 'true' })
+      .then((data) => {
+        const rawList = Array.isArray(data) && data.length > 0 ? data : [];
+        
+        // Deduplicate database items by normalized title key
+        const uniqueItems = [];
+        const seen = new Set();
+        for (const item of rawList) {
+          const rawTitle = String(item.title || item.name || '').trim().toLowerCase();
+          const titleKey = rawTitle.replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').slice(0, 16);
+          if (titleKey && !seen.has(titleKey)) {
+            seen.add(titleKey);
+            uniqueItems.push(item);
+          }
+        }
+
+        const mapped = uniqueItems.map((p, idx) => {
+          const rawPrice = Number(p.current_price || p.price || p.base_price || 0);
+          const origPrice = Number(p.original_price || p.originalPrice || p.base_price || (rawPrice > 0 ? Math.round(rawPrice * 1.25) : 0));
+          const titleName = p.title || p.name || 'Product';
+          
+          let catName = 'General';
+          if (typeof p.category === 'object' && p.category?.name) {
+            catName = p.category.name;
+          } else if (p.category_name) {
+            catName = p.category_name;
+          } else if (typeof p.category === 'string') {
+            catName = p.category;
+          }
+
+          const disc = origPrice > rawPrice
+            ? `${Math.round(((origPrice - rawPrice) / origPrice) * 100)}% OFF`
+            : (p.discount_percentage ? `${Math.round(p.discount_percentage)}% OFF` : '15% OFF');
+
+          const reviewsCount = Number(p.review_count || p.reviews || 0);
+          const ratingVal = Number(p.average_rating || p.rating || 4.5).toFixed(1);
+
+          return {
+            id: p.id,
+            rank: idx + 1,
+            name: titleName,
+            brand: (typeof p.brand === 'object' && p.brand?.name) ? p.brand.name : (p.brand || 'BuyZo Verified'),
+            category: catName,
+            image: getProductImage(titleName, p.primary_image || p.image),
+            price: rawPrice,
+            originalPrice: Math.round(origPrice),
+            discount: disc,
+            rating: parseFloat(ratingVal),
+            reviews: reviewsCount,
+            soldCount: reviewsCount > 0 ? `${reviewsCount}+ bought this month` : 'Top Seller',
+            badge: idx < 3 ? `#${idx + 1} BEST SELLER` : idx < 7 ? 'TOP RATED' : 'MOST POPULAR',
+            badgeColor: idx < 3 ? 'bg-amber-500' : idx < 7 ? 'bg-emerald-600' : 'bg-[#ff5100]',
+            popularity: 100 - idx,
+            description: p.description || `${titleName} with premium build quality and official brand warranty.`
+          };
+        });
+
+        setDbProducts(mapped);
+      })
+      .catch((err) => {
+        console.warn('Best sellers fetch failed:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  // Compute dynamic category counts
+  const categoryCounts = useMemo(() => {
+    const counts = { All: dbProducts.length };
+    dbProducts.forEach((p) => {
+      const c = (p.category || 'General').toLowerCase();
+      bestSellerCategories.forEach(cat => {
+        if (cat.id === 'All') return;
+        const target = cat.id.toLowerCase();
+        if (c.includes(target) || target.includes(c)) {
+          counts[cat.id] = (counts[cat.id] || 0) + 1;
+        }
+      });
+    });
+    return counts;
+  }, [dbProducts]);
+
   const filteredProducts = useMemo(() => {
-    return bestSellerProducts
+    return dbProducts
       .filter((p) => {
-        if (activeCategory !== 'All' && p.category !== activeCategory) return false;
+        if (activeCategory !== 'All') {
+          const prodCat = (p.category || '').toLowerCase();
+          const activeCat = activeCategory.toLowerCase();
+          if (!prodCat.includes(activeCat) && !activeCat.includes(prodCat)) {
+            return false;
+          }
+        }
         if (p.price > maxPrice) return false;
         if (minRating > 0 && p.rating < minRating) return false;
         return true;
@@ -304,7 +183,7 @@ export default function BestSellersPage() {
         if (sortBy === 'rating') return b.rating - a.rating;
         return a.rank - b.rank;
       });
-  }, [activeCategory, minRating, maxPrice, sortBy]);
+  }, [dbProducts, activeCategory, minRating, maxPrice, sortBy]);
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
@@ -426,7 +305,7 @@ export default function BestSellersPage() {
                     isActive ? 'bg-white/20 text-emerald-200' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
-                  {cat.count}
+                  {categoryCounts[cat.id] || (cat.id === 'All' ? dbProducts.length : 0)}
                 </span>
               </button>
             );
@@ -487,7 +366,7 @@ export default function BestSellersPage() {
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {filteredProducts.map((product) => {
-              const inWish = isProductInWishlist(product.id);
+              const inWish = isWishlisted(product);
               return (
                 <div
                   key={product.id}
@@ -517,12 +396,16 @@ export default function BestSellersPage() {
                       }`}
                       title="Save to Wishlist"
                     >
-                      <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                      <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                     </button>
 
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                      alt={product.name || product.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = getProductImage(product.name || product.title, '');
+                      }}
                       className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500"
                     />
                   </div>
@@ -593,8 +476,12 @@ export default function BestSellersPage() {
                       <span>#{product.rank}</span>
                     </div>
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                      alt={product.name || product.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = getProductImage(product.name || product.title, '');
+                      }}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
@@ -608,7 +495,7 @@ export default function BestSellersPage() {
                           inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
                         }`}
                       >
-                        <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                        <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                       </button>
                     </div>
 

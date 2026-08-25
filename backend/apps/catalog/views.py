@@ -68,18 +68,21 @@ class ProductListView(generics.ListAPIView):
 
     def get_queryset(self):
         qs = Product.objects.filter(is_active=True).select_related('category', 'brand').prefetch_related('images')
+        if not self.request:
+            return qs
         
-        category_slug = self.request.query_params.get('category')
-        brand_slug = self.request.query_params.get('brand')
-        min_price = self.request.query_params.get('min_price')
-        max_price = self.request.query_params.get('max_price')
-        min_rating = self.request.query_params.get('min_rating')
-        is_featured = self.request.query_params.get('is_featured')
-        is_new_arrival = self.request.query_params.get('is_new_arrival')
-        is_deal_of_day = self.request.query_params.get('is_deal_of_day')
-        in_stock = self.request.query_params.get('in_stock')
-        sort_by = self.request.query_params.get('sort_by')
-        search_query = self.request.query_params.get('search') or self.request.query_params.get('q')
+        query_params = getattr(self.request, 'query_params', self.request.GET)
+        category_slug = query_params.get('category')
+        brand_slug = query_params.get('brand')
+        min_price = query_params.get('min_price')
+        max_price = query_params.get('max_price')
+        min_rating = query_params.get('min_rating')
+        is_featured = query_params.get('is_featured')
+        is_new_arrival = query_params.get('is_new_arrival')
+        is_deal_of_day = query_params.get('is_deal_of_day')
+        in_stock = query_params.get('in_stock')
+        sort_by = query_params.get('sort_by')
+        search_query = query_params.get('search') or query_params.get('q')
 
         if search_query:
             qs = qs.filter(
@@ -155,10 +158,12 @@ class ProductDetailView(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         lookup = kwargs.get('slug')
-        if lookup.isdigit():
+        if lookup and str(lookup).isdigit():
             instance = self.get_queryset().filter(id=int(lookup)).first()
-        else:
+        elif lookup:
             instance = self.get_queryset().filter(slug=lookup).first()
+        else:
+            instance = None
 
         if not instance:
             instance = self.get_queryset().first()
@@ -314,7 +319,7 @@ class AdminCategoryViewSet(viewsets.ModelViewSet):
         return APIResponse.error(message="Could not create category.", errors=serializer.errors)
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = True
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
         if serializer.is_valid():
@@ -351,7 +356,7 @@ class AdminProductViewSet(viewsets.ModelViewSet):
         return APIResponse.success(data=serializer.data, message="Product retrieved.")
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = True
         instance = self.get_object()
         serializer = AdminProductCreateUpdateSerializer(instance, data=request.data, partial=partial)
         if serializer.is_valid():

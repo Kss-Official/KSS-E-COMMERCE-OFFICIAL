@@ -63,6 +63,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
+    wallet_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
@@ -75,6 +77,26 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
+
+class WalletTransaction(models.Model):
+    TRANSACTION_TYPE_CHOICES = (
+        ('CREDIT', 'Credit'),
+        ('DEBIT', 'Debit'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallet_transactions')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES, default='CREDIT')
+    reason = models.CharField(max_length=255)
+    related_order = models.ForeignKey('orders.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='wallet_transactions')
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = 'buyzo_wallet_transactions'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.transaction_type} ₹{self.amount} for {self.user.email} ({self.reason})"
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')

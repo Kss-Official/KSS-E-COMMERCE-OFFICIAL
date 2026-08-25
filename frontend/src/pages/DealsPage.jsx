@@ -27,6 +27,7 @@ import rakhiVisualImg from '../assets/rakhi_hero_visual.png';
 import rakhiDealsExactCardImg from '../assets/images/rakhi_deals_exact_card.png';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
 
 // Import local images
 import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
@@ -37,7 +38,7 @@ import accentChairImg from '../assets/images/accent_chair.jpg';
 import beautyPerfumeImg from '../assets/images/boat_rockerz.jpg';
 
 export default function DealsPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
   // Navigation and Filter states
@@ -86,9 +87,8 @@ export default function DealsPage() {
   };
 
   const handleToggleWishlist = (e, product) => {
-    e.stopPropagation();
-    addToWishlist(product);
-    setWishlistActive((prev) => ({ ...prev, [product.id]: !prev[product.id] }));
+    if (e && e.stopPropagation) e.stopPropagation();
+    toggleWishlist(product);
   };
 
   const handleAddToCart = (e, product) => {
@@ -576,7 +576,7 @@ export default function DealsPage() {
               {/* 5 Product Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
                 {displayedProducts.map((product) => {
-                  const inWish = wishlistActive[product.id];
+                  const inWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -596,7 +596,7 @@ export default function DealsPage() {
                         >
                           <Heart
                             className={`w-3.5 h-3.5 ${
-                              inWish ? 'fill-rose-500 text-rose-500' : ''
+                              inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''
                             }`}
                           />
                         </button>
@@ -605,8 +605,12 @@ export default function DealsPage() {
                       {/* Image Container */}
                       <div className="h-28 sm:h-32 w-full flex items-center justify-center p-2 overflow-hidden">
                         <img
-                          src={product.image}
-                          alt={product.name}
+                          src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                          alt={product.name || product.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getProductImage(product.name || product.title, '');
+                          }}
                           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>

@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from core.response import APIResponse
 from core.permissions import IsAdminUserRole
 from apps.cart.views import get_or_create_cart
+from apps.cart.models import CartItem
 from .models import Coupon, CouponUsage
 from .serializers import CouponSerializer, ApplyCouponSerializer, AdminCouponSerializer
 
@@ -23,7 +24,7 @@ class ApplyCouponView(APIView):
             return APIResponse.error(message="Invalid or non-existent coupon code.")
 
         cart = get_or_create_cart(request)
-        if cart.items.count() == 0:
+        if not CartItem.objects.filter(cart=cart).exists():
             return APIResponse.error(message="Your cart is empty.")
 
         discount, msg = coupon.calculate_discount(cart.subtotal, user=request.user if request.user.is_authenticated else None)

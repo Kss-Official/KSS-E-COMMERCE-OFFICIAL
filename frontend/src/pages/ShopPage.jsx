@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Heart,
   LayoutGrid,
@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
+import { fetchProducts } from '../services/api';
 
 // Import assets
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -234,11 +236,53 @@ export default function ShopPage() {
   const { navigateTo } = useNavigationContext();
   const { toggleWishlist, wishlistItems, addToCart } = useCartContext();
 
+  const [dbProducts, setDbProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [sortBy, setSortBy] = useState('popularity');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchProducts({ no_page: 'true' })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((p) => {
+            const rawPrice = Number(p.price || p.current_price || 0);
+            const origPrice = Number(p.originalPrice || p.original_price || rawPrice * 1.3);
+            const titleName = p.name || p.title || 'Product';
+            return {
+              id: p.id,
+              name: titleName,
+              category: p.category || p.category_name || 'General',
+              image: getProductImage(titleName, p.image || p.primary_image),
+              price: rawPrice,
+              originalPrice: Math.round(origPrice),
+              discount: p.discount || p.discount_percentage || '25% OFF',
+              rating: Number(p.rating || p.average_rating || 4.5),
+              popularity: Number(p.popularity || 90)
+            };
+          });
+          setDbProducts(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Shop page fetch failed:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  const handleToggleWishlist = (product, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    toggleWishlist(product);
+    const isWish = isWishlisted(product.id);
+    setToastMessage(isWish ? 'Removed from wishlist' : 'Added to wishlist!');
+    setTimeout(() => setToastMessage(null), 2500);
+  };
 
   const handleAddToCart = (product, e) => {
     e.stopPropagation();
@@ -249,7 +293,7 @@ export default function ShopPage() {
 
   // Filter & Sort
   const filteredProducts = useMemo(() => {
-    let result = [...initialShopProducts];
+    let result = [...dbProducts];
 
     if (selectedCategory !== 'All') {
       result = result.filter(
@@ -268,7 +312,7 @@ export default function ShopPage() {
     }
 
     return result;
-  }, [selectedCategory, sortBy]);
+  }, [dbProducts, selectedCategory, sortBy]);
 
   const isWishlisted = (id) => {
     return wishlistItems?.some((item) => item.id === id || item.productId === id);
@@ -427,7 +471,7 @@ export default function ShopPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-4.5">
                 {filteredProducts.map((product) => {
-                  const activeWish = isWishlisted(product.id);
+                  const activeWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -443,10 +487,7 @@ export default function ShopPage() {
 
                       {/* Wishlist Icon */}
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleWishlist(product);
-                        }}
+                        onClick={(e) => handleToggleWishlist(product, e)}
                         className={`absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full transition-all ${
                           activeWish
                             ? 'bg-rose-50 text-rose-500 shadow-xs'
@@ -459,8 +500,12 @@ export default function ShopPage() {
                       {/* Product Image */}
                       <div className="w-full h-36 sm:h-40 flex items-center justify-center mb-3 bg-gray-50/50 rounded-xl overflow-hidden p-2 group-hover:bg-gray-50 transition-colors">
                         <img
-                          src={product.image}
-                          alt={product.name}
+                          src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                          alt={product.name || product.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getProductImage(product.name || product.title, '');
+                          }}
                           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -513,7 +558,7 @@ export default function ShopPage() {
               /* List View */
               <div className="space-y-3">
                 {filteredProducts.map((product) => {
-                  const activeWish = isWishlisted(product.id);
+                  const activeWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -523,8 +568,12 @@ export default function ShopPage() {
                       <div className="flex items-center space-x-4">
                         <div className="w-20 h-20 bg-gray-50 rounded-xl p-2 flex items-center justify-center shrink-0">
                           <img
-                            src={product.image}
-                            alt={product.name}
+                            src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                            alt={product.name || product.title}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = getProductImage(product.name || product.title, '');
+                            }}
                             className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                           />
                         </div>
@@ -553,10 +602,7 @@ export default function ShopPage() {
 
                       <div className="flex items-center space-x-3">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleWishlist(product);
-                          }}
+                          onClick={(e) => handleToggleWishlist(product, e)}
                           className="p-2 rounded-full border border-gray-200 hover:bg-rose-50 hover:border-rose-200 text-gray-400 hover:text-rose-500"
                         >
                           <Heart className={`w-5 h-5 ${activeWish ? 'fill-rose-500 stroke-rose-500' : ''}`} />

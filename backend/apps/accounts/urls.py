@@ -12,7 +12,8 @@ from .views import (
     ProfileView,
     ChangePasswordView,
     AddressViewSet,
-    AdminUserViewSet
+    AdminUserViewSet,
+    CustomerWalletView
 )
 
 router = DefaultRouter()
@@ -34,8 +35,9 @@ urlpatterns = [
     path('reset-password/', ResetPasswordView.as_view(), name='reset_password'),
     path('change-password/', ChangePasswordView.as_view(), name='change_password'),
 
-    # Profile & Addresses
+    # Profile, Wallet & Addresses
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('wallet/', CustomerWalletView.as_view(), name='customer_wallet'),
     path('', include(router.urls)),
 
     # Admin User CRUD

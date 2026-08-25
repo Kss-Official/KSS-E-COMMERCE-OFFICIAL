@@ -13,8 +13,8 @@ import { loginUser, registerUser } from '../services/api';
 import loginShoppingBagImg from '../assets/loginPage/loginPageBag.png';
 
 export default function LoginPage() {
-  const { navigateTo } = useNavigationContext();
-  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'signup'
+  const { navigateTo, selectedSubCategory } = useNavigationContext();
+  const [activeTab, setActiveTab] = useState(selectedSubCategory === 'signup' ? 'signup' : 'login'); // 'login' | 'signup'
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     emailOrPhone: '',
@@ -27,6 +27,14 @@ export default function LoginPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const getTargetPortal = (user) => {
+    const role = (user?.role || '').toUpperCase();
+    if (role === 'ADMIN') return 'admin';
+    if (role === 'WAREHOUSE_STAFF') return 'warehouse';
+    if (role === 'DELIVERY_AGENT') return 'delivery-agent';
+    return 'home';
   };
 
   const handleSubmit = async (e) => {
@@ -43,15 +51,18 @@ export default function LoginPage() {
       const res = await loginUser(formData.emailOrPhone, formData.password);
       setIsLoading(false);
       if (res?.status === 'success') {
-        const userName = res.data?.user?.profile?.first_name || res.data?.user?.email?.split('@')[0] || 'User';
-        setToastMessage(`Welcome back, ${userName}! Logged in successfully.`);
+        const userObj = res.data?.user;
+        const targetPage = getTargetPortal(userObj);
+        const userName = userObj?.profile?.first_name || userObj?.email?.split('@')[0] || 'User';
+        setToastMessage(`Welcome back, ${userName}! Redirecting...`);
         setTimeout(() => {
           setToastMessage(null);
-          navigateTo('home');
-        }, 1200);
+          navigateTo(targetPage);
+        }, 1000);
       } else {
-        setToastMessage(res?.message || res?.detail || 'Invalid email or password. Please try again.');
-        setTimeout(() => setToastMessage(null), 3500);
+        const errMsg = res?.message || res?.detail || 'Invalid email or password. If you don\'t have an account, click Sign Up above.';
+        setToastMessage(errMsg);
+        setTimeout(() => setToastMessage(null), 4000);
       }
     } else {
       const names = (formData.fullName || '').trim().split(' ');
@@ -66,11 +77,13 @@ export default function LoginPage() {
       });
       setIsLoading(false);
       if (res?.status === 'success') {
-        setToastMessage('Account created successfully! Welcome to BuyZo.');
+        const userObj = res.data?.user;
+        const targetPage = getTargetPortal(userObj);
+        setToastMessage('Account created successfully! Redirecting...');
         setTimeout(() => {
           setToastMessage(null);
-          navigateTo('home');
-        }, 1200);
+          navigateTo(targetPage);
+        }, 1000);
       } else {
         const errorMsg = res?.errors
           ? (typeof res.errors === 'object' ? Object.values(res.errors).flat().join(', ') : String(res.errors))

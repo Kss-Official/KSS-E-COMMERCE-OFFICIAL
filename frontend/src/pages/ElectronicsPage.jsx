@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Heart, LayoutGrid, List, ChevronRight, Star, ChevronDown, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { fetchProducts } from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 // Import images
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -186,18 +188,11 @@ const categoryList = [
   'Accessories'
 ];
 
-const brandList = [
-  { name: 'Samsung', count: 20 },
-  { name: 'Apple', count: 18 },
-  { name: 'boAt', count: 16 },
-  { name: 'Sony', count: 14 },
-  { name: 'JBL', count: 12 }
-];
-
 export default function ElectronicsPage() {
   const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
+  const [productsList, setProductsList] = useState(initialProducts);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [maxPrice, setMaxPrice] = useState(100000);
@@ -205,6 +200,42 @@ export default function ElectronicsPage() {
   const [sortBy, setSortBy] = useState('popularity');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [addedToast, setAddedToast] = useState(null);
+
+  const brandList = useMemo(() => {
+    const counts = {};
+    productsList.forEach((p) => {
+      const b = p.brand || p.brand_name;
+      if (b) {
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [productsList]);
+
+  useEffect(() => {
+    fetchProducts({ no_page: 'true' }).then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const elecData = data.filter(p => ['Electronics', 'Mobiles', 'Laptops', 'Headphones', 'Smartwatches', 'Speakers'].includes(p.category));
+        if (elecData.length > 0) {
+          const uniqueItems = [];
+          const seenImages = new Set();
+          for (const item of elecData) {
+            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
+            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
+            if (imgName && !seenImages.has(imgName)) {
+              seenImages.add(imgName);
+              uniqueItems.push({
+                ...item,
+                name: item.name || item.title,
+                image: resolvedImg
+              });
+            }
+          }
+          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialProducts);
+        }
+      }
+    });
+  }, []);
 
   // Toggle brand selection
   const handleBrandChange = (brandName) => {
@@ -217,7 +248,7 @@ export default function ElectronicsPage() {
 
   // Filter & Sort Logic
   const filteredProducts = useMemo(() => {
-    return initialProducts
+    return productsList
       .filter((p) => {
         if (selectedCategory && p.category !== selectedCategory) return false;
         if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
@@ -229,9 +260,9 @@ export default function ElectronicsPage() {
         if (sortBy === 'lowToHigh') return a.price - b.price;
         if (sortBy === 'highToLow') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        return b.popularity - a.popularity;
+        return (b.popularity || 90) - (a.popularity || 90);
       });
-  }, [selectedCategory, selectedBrands, maxPrice, selectedRating, sortBy]);
+  }, [productsList, selectedCategory, selectedBrands, maxPrice, selectedRating, sortBy]);
 
   const handleAddToCart = (product) => {
     addToCart(product);
@@ -490,8 +521,8 @@ export default function ElectronicsPage() {
                   >
                     <Heart
                       className={`w-4 h-4 transition-colors ${
-                        isWishlisted(product.id)
-                          ? 'fill-red-500 text-red-500'
+                        isWishlisted(product)
+                          ? 'fill-red-500 text-red-500 stroke-red-500'
                           : 'text-[#0d5c46] hover:text-red-500'
                       }`}
                     />
@@ -506,8 +537,12 @@ export default function ElectronicsPage() {
                     } bg-white rounded-xl flex items-center justify-center p-2 overflow-hidden`}
                   >
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                      alt={product.name || product.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = getProductImage(product.name || product.title, '');
+                      }}
                       className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>

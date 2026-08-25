@@ -18,11 +18,13 @@ class Cart(models.Model):
 
     @property
     def total_items(self):
-        return sum(item.quantity for item in self.items.all())
+        items = self.items.all() if hasattr(self, 'items') else CartItem.objects.filter(cart=self)
+        return sum(item.quantity for item in items)
 
     @property
     def subtotal(self):
-        return sum(item.total_price for item in self.items.all())
+        items = self.items.all() if hasattr(self, 'items') else CartItem.objects.filter(cart=self)
+        return sum(item.total_price for item in items)
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')

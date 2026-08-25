@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
+import { fetchProducts } from '../services/api';
 
 // Import product images
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -216,14 +218,50 @@ export default function NewArrivalsPage() {
   const { navigateTo } = useNavigationContext();
   const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
 
+  const [dbProducts, setDbProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All New Arrivals');
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [brandSearch, setBrandSearch] = useState('');
-  const [priceMax, setPriceMax] = useState(10000);
+  const [priceMax, setPriceMax] = useState(100000);
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('newest');
   const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchProducts({ no_page: 'true' })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((p) => {
+            const rawPrice = Number(p.price || p.current_price || 0);
+            const origPrice = Number(p.originalPrice || p.original_price || rawPrice * 1.3);
+            const titleName = p.name || p.title || 'Product';
+            return {
+              id: p.id,
+              name: titleName,
+              category: p.category || p.category_name || 'General',
+              brand: p.brand_name || p.brand || 'BuyZo',
+              image: getProductImage(titleName, p.image || p.primary_image),
+              price: rawPrice,
+              originalPrice: Math.round(origPrice),
+              discount: p.discount || p.discount_percentage || '15% OFF',
+              rating: Number(p.rating || p.average_rating || 4.5),
+              reviewsCount: Number(p.reviewsCount || p.review_count || 45),
+              isNew: true
+            };
+          });
+          setDbProducts(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('New arrivals fetch failed:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   // Banner Carousel State
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -244,7 +282,8 @@ export default function NewArrivalsPage() {
     return () => clearInterval(timer);
   }, [nextSlide]);
 
-  const handleToggleWishlist = (product) => {
+  const handleToggleWishlist = (product, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const wasWish = isWishlisted(product.id);
     toggleWishlist(product);
     setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist`);
@@ -274,10 +313,10 @@ export default function NewArrivalsPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    let list = [...newArrivalsProducts];
+    let list = [...dbProducts];
 
     if (activeCategory !== 'All New Arrivals') {
-      list = list.filter((p) => p.category === activeCategory);
+      list = list.filter((p) => p.category.toLowerCase() === activeCategory.toLowerCase());
     }
 
     if (selectedSubCategories.length > 0) {
@@ -288,7 +327,7 @@ export default function NewArrivalsPage() {
       list = list.filter((p) => selectedBrands.includes(p.brand));
     }
 
-    if (priceMax < 10000) {
+    if (priceMax < 100000) {
       list = list.filter((p) => p.price <= priceMax);
     }
 
@@ -301,7 +340,7 @@ export default function NewArrivalsPage() {
     }
 
     return list;
-  }, [activeCategory, selectedSubCategories, selectedBrands, priceMax, sortBy]);
+  }, [dbProducts, activeCategory, selectedSubCategories, selectedBrands, priceMax, sortBy]);
 
   const filteredBrandsList = brandsList.filter((b) =>
     b.toLowerCase().includes(brandSearch.toLowerCase())
@@ -694,14 +733,14 @@ export default function NewArrivalsPage() {
                         NEW
                       </span>
                       <button
-                        onClick={() => handleToggleWishlist(product)}
+                        onClick={(e) => handleToggleWishlist(product, e)}
                         className="w-6 h-6 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                         title="Add to Wishlist"
                       >
                         <Heart
                           className={`w-3.5 h-3.5 ${
-                            isWishlisted(product.id)
-                              ? 'fill-red-500 text-red-500'
+                            isWishlisted(product)
+                              ? 'fill-red-500 text-red-500 stroke-red-500'
                               : 'stroke-[1.8]'
                           }`}
                         />
@@ -714,8 +753,12 @@ export default function NewArrivalsPage() {
                       className="w-full h-36 sm:h-40 flex items-center justify-center p-2 cursor-pointer overflow-hidden rounded-xl bg-gray-50/50 mb-2"
                     >
                       <img
-                        src={product.image}
-                        alt={product.name}
+                        src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                        alt={product.name || product.title}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = getProductImage(product.name || product.title, '');
+                        }}
                         className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
@@ -778,8 +821,12 @@ export default function NewArrivalsPage() {
                       className="w-20 h-20 rounded-xl bg-gray-50 border border-gray-100 p-2 flex items-center justify-center shrink-0 cursor-pointer overflow-hidden"
                     >
                       <img
-                        src={product.image}
-                        alt={product.name}
+                        src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                        alt={product.name || product.title}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = getProductImage(product.name || product.title, '');
+                        }}
                         className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
@@ -822,13 +869,13 @@ export default function NewArrivalsPage() {
 
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleToggleWishlist(product)}
+                        onClick={(e) => handleToggleWishlist(product, e)}
                         className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                       >
                         <Heart
                           className={`w-4 h-4 ${
-                            isWishlisted(product.id)
-                              ? 'fill-red-500 text-red-500'
+                            isWishlisted(product)
+                              ? 'fill-red-500 text-red-500 stroke-red-500'
                               : 'stroke-[1.8]'
                           }`}
                         />

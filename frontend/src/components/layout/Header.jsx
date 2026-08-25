@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Heart, ShoppingCart, ChevronDown, Search, ArrowRight, X, LogOut, Package, Shield, LayoutDashboard } from 'lucide-react';
+import { User, Heart, ShoppingCart, ChevronDown, Search, ArrowRight, X, LogOut, Package, Shield, LayoutDashboard, Wallet } from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
-import { getCurrentUser, logoutUser, fetchCategories, fetchSearchSuggestions } from '../../services/api';
+import { getCurrentUser, logoutUser, fetchCategories, fetchSearchSuggestions, fetchProducts, fetchUserWalletApi } from '../../services/api';
+import WalletModal from '../WalletModal';
+import { getProductImage } from '../../utils/productAssets';
 import logo from '../../assets/logo.png';
 
 // Import product images for search suggestions
@@ -143,14 +145,23 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [categoriesList, setCategoriesList] = useState(['All Categories', 'Mobiles', 'Electronics', 'Fashion', 'Laptops', 'Home & Kitchen', 'Beauty']);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
 
-  // Sync auth state
+  // Sync auth state & wallet balance
   useEffect(() => {
-    const handleAuthChange = () => setCurrentUser(getCurrentUser());
+    const handleAuthChange = () => {
+      const u = getCurrentUser();
+      setCurrentUser(u);
+      if (u) {
+        fetchUserWalletApi().then(w => setWalletBalance(w?.wallet_balance || 0));
+      }
+    };
+    handleAuthChange();
     window.addEventListener('buyzo_auth_change', handleAuthChange);
     return () => window.removeEventListener('buyzo_auth_change', handleAuthChange);
   }, []);
@@ -178,12 +189,31 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const [liveCatalog, setLiveCatalog] = useState(searchProductsCatalog);
+
+  useEffect(() => {
+    fetchProducts({ no_page: 'true' }).then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map(p => ({
+          id: p.id,
+          name: p.title,
+          category: p.category_name || p.category || 'Catalog',
+          price: parseFloat(p.price || p.regular_price || 0),
+          originalPrice: parseFloat(p.regular_price || p.price || 0),
+          image: getProductImage(p.title, p.primary_image || p.image),
+          keywords: [p.title, p.category_name || '', p.brand_name || ''].join(' ').toLowerCase().split(' ')
+        }));
+        setLiveCatalog(mapped);
+      }
+    });
+  }, []);
+
   // Filter products based on search query and category
   const searchSuggestions = React.useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return [];
 
-    return searchProductsCatalog.filter((product) => {
+    return liveCatalog.filter((product) => {
       const matchesCategory =
         selectedCategory === 'All Categories' ||
         product.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -194,7 +224,7 @@ export default function Header() {
 
       return matchesCategory && (nameMatch || categoryMatch || keywordMatch);
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, liveCatalog]);
 
   const handleCategorySelect = (e) => {
     const val = e.target.value;
@@ -373,26 +403,43 @@ export default function Header() {
 
       {/* Right Side Icons & Account */}
       <div className="flex items-center space-x-3 sm:space-x-8 shrink-0 relative">
-        {/* User Account */}
+        {/* User Account / Auth Buttons */}
         <div ref={userMenuRef} className="relative">
-          <div
-            onClick={handleUserClick}
-            className="flex items-center space-x-2.5 cursor-pointer group"
-            title={currentUser ? `Logged in as ${userName}` : "Click to Login"}
-          >
-            <div className="p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
-              <User className="w-7 h-7 stroke-[1.8]" />
-            </div>
-            <div className="hidden sm:flex flex-col text-left">
-              <span className="text-[12px] text-gray-500 font-normal leading-tight">
-                {currentUser ? `Welcome ${currentUser.profile?.first_name || userName}` : 'Welcome Guest'}
-              </span>
-              <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-[#1b4d3e] transition-colors">
-                <span>{currentUser ? (currentUser.role === 'ADMIN' ? 'Admin Panel' : 'My Account') : 'Login / Account'}</span>
-                <ChevronDown className={`w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+          {currentUser ? (
+            <div
+              onClick={() => setIsUserMenuOpen((prev) => !prev)}
+              className="flex items-center space-x-2.5 cursor-pointer group"
+              title={`Logged in as ${userName}`}
+            >
+              <div className="p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
+                <User className="w-7 h-7 stroke-[1.8]" />
+              </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-[12px] text-gray-500 font-normal leading-tight">
+                  {`Welcome ${currentUser.profile?.first_name || userName}`}
+                </span>
+                <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-[#1b4d3e] transition-colors">
+                  <span>{currentUser.role === 'ADMIN' ? 'Admin Panel' : 'My Account'}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => navigateTo('login')}
+                className="px-3.5 py-1.5 border border-[#0d5c46] text-[#0d5c46] hover:bg-emerald-50 rounded-xl font-extrabold text-xs transition-all cursor-pointer shadow-2xs"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => navigateTo('login', 'signup')}
+                className="px-4 py-1.5 bg-[#0d5c46] hover:bg-[#063328] text-white rounded-xl font-extrabold text-xs transition-all cursor-pointer shadow-xs"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
 
           {/* User Account Dropdown Menu */}
           {currentUser && isUserMenuOpen && (
@@ -406,6 +453,17 @@ export default function Header() {
               </div>
 
               <div className="py-1">
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    setIsWalletOpen(true);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-emerald-800 hover:bg-emerald-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <Wallet className="w-4 h-4 text-emerald-600" />
+                  <span>BuyZo Wallet (₹{Number(walletBalance).toFixed(2)})</span>
+                </button>
+
                 <button
                   onClick={() => {
                     setIsUserMenuOpen(false);
@@ -513,6 +571,7 @@ export default function Header() {
           </span>
         </div>
       </div>
+      <WalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} />
     </header>
   );
 }
