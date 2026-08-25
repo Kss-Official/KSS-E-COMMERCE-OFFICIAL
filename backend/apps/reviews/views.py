@@ -15,8 +15,8 @@ class ProductReviewsView(APIView):
         return [IsAuthenticated()]
 
     def get(self, request, slug):
-        product = Product.objects.filter(slug=slug).first()
-        if not product and slug.isdigit():
+        product = Product.objects.filter(slug=slug).first() if slug else None
+        if not product and slug and str(slug).isdigit():
             product = Product.objects.filter(id=int(slug)).first()
 
         if not product:
@@ -36,8 +36,8 @@ class ProductReviewsView(APIView):
         return APIResponse.success(data=data, message="Product reviews retrieved.")
 
     def post(self, request, slug):
-        product = Product.objects.filter(slug=slug).first()
-        if not product and slug.isdigit():
+        product = Product.objects.filter(slug=slug).first() if slug else None
+        if not product and slug and str(slug).isdigit():
             product = Product.objects.filter(id=int(slug)).first()
 
         if not product:

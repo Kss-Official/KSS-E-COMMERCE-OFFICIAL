@@ -58,10 +58,10 @@ export default function OrderConfirmedPage() {
       totalPaid: '4,498',
       paymentMethod: 'UPI',
       address: {
-        name: 'Priya Sharma',
+        name: 'Customer',
         type: 'HOME',
-        details: '602, 2nd Cross Rd, Bengaluru, Karnataka 560033, India',
-        phone: '+91 98765 43210'
+        details: 'Delivery Address',
+        phone: ''
       },
       items: [
         {

@@ -275,3 +275,18 @@ class AdminUserManagementSerializer(serializers.ModelSerializer):
             profile.save()
 
         return instance
+
+class WalletTransactionSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(source='related_order.order_number', read_only=True, default=None)
+
+    class Meta:
+        from .models import WalletTransaction
+        model = WalletTransaction
+        fields = ['id', 'amount', 'transaction_type', 'reason', 'order_number', 'created_at']
+
+class UserWalletSerializer(serializers.ModelSerializer):
+    transactions = WalletTransactionSerializer(source='wallet_transactions', many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'wallet_balance', 'transactions']

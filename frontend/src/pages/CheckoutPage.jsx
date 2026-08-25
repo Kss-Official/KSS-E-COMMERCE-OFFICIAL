@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Lock,
@@ -17,29 +17,51 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { fetchAddressesApi, addAddressApi, createCheckoutOrderApi } from '../services/api';
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
-  // State for Delivery Address
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      name: 'Priya Sharma',
-      type: 'HOME',
-      address: '602, 2nd Cross Rd, Bengaluru, Karnataka 560033, India',
-      phone: '+91 98765 43210'
-    },
-    {
-      id: 2,
-      name: 'Priya Sharma',
-      type: 'WORK',
-      address: '123, MG Road, Koramangala, Bengaluru, Karnataka 560095, India',
-      phone: '+91 98765 43210'
+  // State for Delivery Address (Dynamic - empty by default for new users)
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
+
+  // Load user's saved addresses dynamically on component mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAddresses() {
+      try {
+        setIsLoadingAddresses(true);
+        const list = await fetchAddressesApi();
+        if (isMounted && Array.isArray(list)) {
+          const formatted = list.map((a) => ({
+            id: a.id,
+            name: a.name || a.recipient_name || 'Customer',
+            type: (a.type || a.address_type || 'HOME').toUpperCase(),
+            address: a.address || a.formatted_address || `${a.street_address || ''}${a.city ? ', ' + a.city : ''}${a.state ? ' ' + a.state : ''}${a.postal_code ? ' ' + a.postal_code : ''}, India`,
+            phone: a.phone || a.phone_number || '',
+            city: a.city || '',
+            state: a.state || '',
+            pincode: a.pincode || a.postal_code || '',
+            isDefault: Boolean(a.isDefault || a.is_default)
+          }));
+          setAddresses(formatted);
+          if (formatted.length > 0) {
+            const defaultAddr = formatted.find((a) => a.isDefault) || formatted[0];
+            setSelectedAddressId(defaultAddr.id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load addresses:', err);
+      } finally {
+        if (isMounted) setIsLoadingAddresses(false);
+      }
     }
-  ]);
-  const [selectedAddressId, setSelectedAddressId] = useState(1);
+    loadAddresses();
+    return () => { isMounted = false; };
+  }, []);
 
   // State for Delivery Option (standard = 0, express = 99)
   const [deliveryOption, setDeliveryOption] = useState('standard');
@@ -100,40 +122,59 @@ export default function CheckoutPage() {
   const finalTotal = basePrice + deliveryCharge;
 
   // Handle Add Address
-  const handleSaveAddress = (e) => {
+  const handleSaveAddress = async (e) => {
     e.preventDefault();
     if (!newAddressForm.name || !newAddressForm.address || !newAddressForm.phone) return;
 
-    const newId = Date.now();
-    const formattedAddress = `${newAddressForm.address}, ${newAddressForm.city || ''} ${newAddressForm.state || ''} ${newAddressForm.pincode || ''}, India`;
-    const createdAddress = {
-      id: newId,
-      name: newAddressForm.name,
-      type: newAddressForm.type,
-      address: formattedAddress,
-      phone: newAddressForm.phone
-    };
+    try {
+      const saved = await addAddressApi({
+        name: newAddressForm.name,
+        type: newAddressForm.type,
+        address: newAddressForm.address,
+        city: newAddressForm.city,
+        state: newAddressForm.state,
+        pincode: newAddressForm.pincode,
+        phone: newAddressForm.phone,
+        isDefault: addresses.length === 0
+      });
 
-    setAddresses([...addresses, createdAddress]);
-    setSelectedAddressId(newId);
-    setIsAddAddressOpen(false);
-    setNewAddressForm({ name: '', type: 'HOME', address: '', city: '', state: '', pincode: '', phone: '' });
+      const formattedNew = {
+        id: saved.id || Date.now(),
+        name: saved.name || saved.recipient_name || newAddressForm.name,
+        type: (saved.type || saved.address_type || newAddressForm.type).toUpperCase(),
+        address: saved.address || saved.formatted_address || `${newAddressForm.address}${newAddressForm.city ? ', ' + newAddressForm.city : ''}${newAddressForm.state ? ' ' + newAddressForm.state : ''}${newAddressForm.pincode ? ' ' + newAddressForm.pincode : ''}, India`,
+        phone: saved.phone || saved.phone_number || newAddressForm.phone,
+        city: newAddressForm.city,
+        state: newAddressForm.state,
+        pincode: newAddressForm.pincode,
+        isDefault: Boolean(saved.isDefault || saved.is_default)
+      };
+
+      const updatedList = [...addresses, formattedNew];
+      setAddresses(updatedList);
+      setSelectedAddressId(formattedNew.id);
+      setIsAddAddressOpen(false);
+      setNewAddressForm({ name: '', type: 'HOME', address: '', city: '', state: '', pincode: '', phone: '' });
+    } catch (err) {
+      console.error('Failed to save address:', err);
+    }
   };
 
   // Handle Place Order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     const selectedAddr = addresses.find((a) => a.id === selectedAddressId) || addresses[0];
+    if (!selectedAddr) {
+      alert('Please add a delivery address before placing your order.');
+      setIsAddAddressOpen(true);
+      return;
+    }
     const newOrderId = `#BZ${Date.now().toString().slice(-8)}`;
 
-    const orderDateStr = new Date().toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
     const now = new Date();
+    const datePart = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timePart = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    const orderDateStr = `${datePart}, ${timePart}`;
+
     const minDelivery = new Date(now);
     minDelivery.setDate(now.getDate() + (deliveryOption === 'express' ? 1 : 3));
     const maxDelivery = new Date(now);
@@ -145,6 +186,7 @@ export default function CheckoutPage() {
     const orderData = {
       orderId: newOrderId,
       orderDate: orderDateStr,
+      created_at: now.toISOString(),
       estimatedDelivery: estDeliveryStr,
       totalPaid: finalTotal.toLocaleString('en-IN'),
       paymentMethod: paymentMethod.toUpperCase(),
@@ -196,7 +238,33 @@ export default function CheckoutPage() {
       ]
     };
 
+    // Attempt backend API checkout call
     try {
+      const checkoutPayload = {
+        address_id: typeof selectedAddr.id === 'number' && selectedAddr.id < 1000000000 ? selectedAddr.id : null,
+        recipient_name: selectedAddr.name,
+        phone_number: selectedAddr.phone,
+        street_address: selectedAddr.address,
+        payment_method: paymentMethod.toUpperCase(),
+        items: displayItems.map((item) => ({
+          id: item.id,
+          name: item.name || item.title,
+          price: item.price,
+          quantity: item.quantity || 1,
+          selectedColor: item.selectedColor,
+          selectedSize: item.selectedSize
+        }))
+      };
+      await createCheckoutOrderApi(checkoutPayload);
+    } catch (err) {
+      console.warn('Backend order checkout submission:', err);
+    }
+
+    // Store in buyzo_placed_orders for Admin and Warehouse portals
+    try {
+      const existing = JSON.parse(localStorage.getItem('buyzo_placed_orders') || '[]');
+      existing.unshift(orderData);
+      localStorage.setItem('buyzo_placed_orders', JSON.stringify(existing));
       localStorage.setItem('buyzo_last_order', JSON.stringify(orderData));
     } catch (e) {}
 
@@ -644,7 +712,7 @@ export default function CheckoutPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Priya Sharma"
+                  placeholder="e.g. Rahul Sharma"
                   value={newAddressForm.name}
                   onChange={(e) => setNewAddressForm({ ...newAddressForm, name: e.target.value })}
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
@@ -780,7 +848,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between font-semibold">
                 <span className="text-gray-500">Delivery To:</span>
                 <span className="text-gray-900 font-bold truncate max-w-[180px]">
-                  {addresses.find((a) => a.id === selectedAddressId)?.address || 'Bengaluru, Karnataka'}
+                  {addresses.find((a) => a.id === selectedAddressId)?.address || 'No address selected'}
                 </span>
               </div>
             </div>

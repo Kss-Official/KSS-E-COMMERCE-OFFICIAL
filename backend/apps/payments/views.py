@@ -112,18 +112,13 @@ class RefundPaymentView(APIView):
         if not order:
             return APIResponse.error(message="Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        payment = Payment.objects.filter(order=order, status='COMPLETED').first()
-        if not payment:
-            return APIResponse.error(message="No successful payment found for this order to refund.")
+        from apps.orders.services import cancel_order
+        success, res_data, updated_order = cancel_order(order, cancelled_by=request.user, cancellation_reason="Payment refund requested")
 
-        payment.status = 'REFUNDED'
-        payment.save(update_fields=['status'])
-
-        order.payment_status = 'REFUNDED'
-        order.status = 'REFUNDED'
-        order.save(update_fields=['payment_status', 'status'])
+        if not success:
+            return APIResponse.error(message=res_data if isinstance(res_data, str) else "Refund process failed.")
 
         return APIResponse.success(
-            data={"order_number": order.order_number, "refund_amount": float(payment.amount)},
-            message=f"Refund of ₹{payment.amount} processed successfully."
+            data=res_data,
+            message=f"Refund of ₹{res_data['refund_amount']:,.2f} processed and credited to customer's BuyZo Wallet."
         )

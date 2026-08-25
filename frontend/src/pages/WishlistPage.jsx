@@ -26,7 +26,12 @@ export default function WishlistPage() {
   };
 
   const handleAddToCart = (product) => {
-    addToCart(product);
+    const targetProduct = {
+      ...product,
+      id: product.productId || product.id,
+      productId: product.productId || product.id
+    };
+    addToCart(targetProduct);
     setAddedToast(`Added "${product.name}" to your cart!`);
     setTimeout(() => setAddedToast(null), 3000);
   };

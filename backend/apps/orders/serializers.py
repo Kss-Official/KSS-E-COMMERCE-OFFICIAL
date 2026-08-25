@@ -39,14 +39,14 @@ class OrderListSerializer(serializers.ModelSerializer):
         ]
 
     def get_item_count(self, obj):
-        return obj.items.count()
+        return OrderItem.objects.filter(order=obj).count()
 
     def get_primary_image(self, obj):
-        first_item = obj.items.first()
+        first_item = OrderItem.objects.filter(order=obj).first()
         return first_item.product_image if first_item else None
 
     def get_primary_product_name(self, obj):
-        first_item = obj.items.first()
+        first_item = OrderItem.objects.filter(order=obj).first()
         return first_item.product_title if first_item else "BuyZo Package"
 
     def get_formatted_date(self, obj):

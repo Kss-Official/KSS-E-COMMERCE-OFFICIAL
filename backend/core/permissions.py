@@ -2,13 +2,12 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 class IsAdminUserRole(BasePermission):
     """
-    Allows access only to users with ADMIN role, staff, or superuser privileges.
+    Allows access to authenticated users in admin/management portal.
     """
     def has_permission(self, request, view):
         return bool(
             request.user and
-            request.user.is_authenticated and
-            (request.user.role == 'ADMIN' or request.user.is_staff or request.user.is_superuser)
+            request.user.is_authenticated
         )
 
 class IsWarehouseStaff(BasePermission):

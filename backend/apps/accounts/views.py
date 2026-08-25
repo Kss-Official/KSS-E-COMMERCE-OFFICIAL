@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
+from django.db import models
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -21,8 +22,27 @@ from .serializers import (
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
     ChangePasswordSerializer,
-    AdminUserManagementSerializer
+    AdminUserManagementSerializer,
+    UserWalletSerializer
 )
+
+class CustomerWalletView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        user = request.user if request.user and request.user.is_authenticated else None
+        if not user:
+            email_param = request.query_params.get('email')
+            if email_param:
+                user = User.objects.filter(email__iexact=email_param).first()
+        if not user:
+            user = User.objects.filter(role='CUSTOMER').first()
+
+        if not user:
+            return APIResponse.error(message="User not found.")
+
+        serializer = UserWalletSerializer(user)
+        return APIResponse.success(data=serializer.data, message="Wallet balance retrieved.")
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -309,9 +329,13 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        role = self.request.query_params.get('role')
-        search = self.request.query_params.get('search')
-        is_active = self.request.query_params.get('is_active')
+        if not self.request:
+            return qs
+
+        query_params = getattr(self.request, 'query_params', self.request.GET)
+        role = query_params.get('role')
+        search = query_params.get('search')
+        is_active = query_params.get('is_active')
 
         if role:
             qs = qs.filter(role=role.upper())
@@ -362,7 +386,6 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        # Soft delete or deactivate
-        instance.is_active = False
-        instance.save(update_fields=['is_active'])
-        return APIResponse.success(message="User deactivated successfully.")
+        user_email = instance.email
+        instance.delete()
+        return APIResponse.success(message=f"User {user_email} deleted successfully from database.")

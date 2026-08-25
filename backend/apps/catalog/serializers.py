@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import Category, SubCategory, Brand, Product, ProductImage, ProductVariant, HeroBanner
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -24,7 +25,7 @@ class CategorySerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.image.url)
-            return f"http://127.0.0.1:8000{obj.image.url}"
+            return f"{getattr(settings, 'BACKEND_HOST_URL', 'http://127.0.0.1:8000')}{obj.image.url}"
         return None
 
     def get_image(self, obj):
@@ -50,7 +51,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.image.url)
-            return f"http://127.0.0.1:8000{obj.image.url}"
+            return f"{getattr(settings, 'BACKEND_HOST_URL', 'http://127.0.0.1:8000')}{obj.image.url}"
         return None
 
 class ProductVariantSerializer(serializers.ModelSerializer):
@@ -129,7 +130,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(img.image.url)
-            return f"http://127.0.0.1:8000{img.image.url}"
+            return f"{getattr(settings, 'BACKEND_HOST_URL', 'http://127.0.0.1:8000')}{img.image.url}"
         return None
 
     def get_image(self, obj):

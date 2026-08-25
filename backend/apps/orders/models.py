@@ -55,6 +55,9 @@ class Order(models.Model):
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PENDING', db_index=True)
     payment_method = models.CharField(max_length=30, choices=PAYMENT_METHOD_CHOICES, default='MOCK')
     payment_status = models.CharField(max_length=30, choices=PAYMENT_STATUS_CHOICES, default='UNPAID')
+    is_revenue_counted = models.BooleanField(default=True, db_index=True)
+    cancellation_reason = models.CharField(max_length=255, blank=True, null=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
 
     # Last-Mile Verification
     delivery_otp = models.CharField(max_length=4, default='1234', help_text="4-digit customer verification code for delivery agent")
@@ -74,6 +77,10 @@ class Order(models.Model):
     def generate_order_number(cls):
         random_digits = ''.join(random.choices('0123456789', k=5))
         return f"ORD-{random_digits}"
+
+    @classmethod
+    def generate_otp(cls):
+        return ''.join(random.choices('0123456789', k=4))
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')

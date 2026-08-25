@@ -1,6 +1,6 @@
 // Centralized API Service for BuyZo E-Commerce Frontend
 
-export const API_BASE_URL = 'http://127.0.0.1:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 
 export function getSessionId() {
   let sessionId = localStorage.getItem('buyzo_session_id');
@@ -240,17 +240,25 @@ export async function clearCartApi() {
 // ----------------- WISHLIST API -----------------
 export async function fetchWishlistApi() {
   const token = getAuthToken();
-  if (!token) {
-    // For guest users, read local wishlist storage
-    const local = localStorage.getItem('buyzo_guest_wishlist');
-    if (local) {
-      try { return JSON.parse(local); } catch { return []; }
-    }
-    return [];
+  const local = localStorage.getItem('buyzo_guest_wishlist');
+  let localItems = [];
+  if (local) {
+    try { localItems = JSON.parse(local); } catch { localItems = []; }
   }
 
-  const res = await apiRequest('/cart/wishlist/');
-  return res?.data?.items || [];
+  if (!token) {
+    return localItems;
+  }
+
+  try {
+    const res = await apiRequest('/cart/wishlist/');
+    if (res?.data?.items && Array.isArray(res.data.items)) {
+      return res.data.items;
+    }
+  } catch (e) {
+    console.warn('[api.js] fetchWishlistApi error, returning local items:', e);
+  }
+  return localItems;
 }
 
 export async function addToWishlistApi(productData) {
@@ -258,48 +266,67 @@ export async function addToWishlistApi(productData) {
   const pid = productData.product_id || productData.productId || productData.id;
   const pname = productData.name || productData.title;
 
-  if (!token) {
-    const local = localStorage.getItem('buyzo_guest_wishlist');
-    let items = local ? JSON.parse(local) : [];
-    if (!items.some(i => (i.id === pid || i.productId === pid || i.name === pname))) {
-      items.push({
-        id: pid,
-        productId: pid,
-        name: pname,
-        price: productData.price,
-        originalPrice: productData.originalPrice,
-        discount: productData.discount,
-        image: productData.image,
-        category: productData.category || 'General',
-        inStock: true,
-        deliveryDate: 'Delivery in 2-4 days'
-      });
-      localStorage.setItem('buyzo_guest_wishlist', JSON.stringify(items));
-    }
-    return items;
+  const local = localStorage.getItem('buyzo_guest_wishlist');
+  let localItems = local ? JSON.parse(local) : [];
+  if (!localItems.some(i => (i.id === pid || i.productId === pid || i.name === pname))) {
+    localItems.push({
+      id: pid,
+      productId: pid,
+      name: pname,
+      price: productData.price || productData.current_price,
+      originalPrice: productData.originalPrice,
+      discount: productData.discount,
+      image: productData.image,
+      category: productData.category || 'General',
+      inStock: true,
+      deliveryDate: 'Delivery in 2-4 days'
+    });
+    localStorage.setItem('buyzo_guest_wishlist', JSON.stringify(localItems));
   }
 
-  const res = await apiRequest('/cart/wishlist/', {
-    method: 'POST',
-    body: JSON.stringify({ product_id: pid, name: pname, price: productData.price || productData.current_price })
-  });
-  return res?.data?.items || [];
+  if (!token) {
+    return localItems;
+  }
+
+  try {
+    const res = await apiRequest('/cart/wishlist/', {
+      method: 'POST',
+      body: JSON.stringify({ product_id: pid, name: pname, price: productData.price || productData.current_price })
+    });
+    if (res?.data?.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
+      return res.data.items;
+    }
+  } catch (e) {
+    console.warn('[api.js] addToWishlistApi error, returning local items:', e);
+  }
+
+  return localItems;
 }
 
 export async function removeFromWishlistApi(productId) {
   const token = getAuthToken();
+  const local = localStorage.getItem('buyzo_guest_wishlist');
+  let localItems = local ? JSON.parse(local) : [];
+  const strId = String(productId).toLowerCase();
+  localItems = localItems.filter(i => String(i.id).toLowerCase() !== strId && String(i.productId).toLowerCase() !== strId);
+  localStorage.setItem('buyzo_guest_wishlist', JSON.stringify(localItems));
+
   if (!token) {
-    const local = localStorage.getItem('buyzo_guest_wishlist');
-    let items = local ? JSON.parse(local) : [];
-    items = items.filter(i => i.id !== productId && i.productId !== productId);
-    localStorage.setItem('buyzo_guest_wishlist', JSON.stringify(items));
-    return items;
+    return localItems;
   }
 
-  const res = await apiRequest(`/cart/wishlist/items/${productId}/`, {
-    method: 'DELETE'
-  });
-  return res?.data?.items || [];
+  try {
+    const res = await apiRequest(`/cart/wishlist/items/${productId}/`, {
+      method: 'DELETE'
+    });
+    if (res?.data?.items && Array.isArray(res.data.items)) {
+      return res.data.items;
+    }
+  } catch (e) {
+    console.warn('[api.js] removeFromWishlistApi error, returning local items:', e);
+  }
+
+  return localItems;
 }
 
 export async function moveWishlistToCartApi(productId) {
@@ -460,10 +487,401 @@ export async function setDefaultAddressApi(id) {
   return res?.data || null;
 }
 
-// ----------------- ADMIN API -----------------
-export async function fetchAdminUsers() {
-  const res = await apiRequest('/auth/admin/users/');
-  if (Array.isArray(res?.data)) return res.data;
-  if (res?.data?.results) return res.data.results;
+// ----------------- ORDERS & CHECKOUT API -----------------
+export async function createCheckoutOrderApi(checkoutPayload) {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      const res = await apiRequest('/orders/checkout/', {
+        method: 'POST',
+        body: JSON.stringify(checkoutPayload)
+      });
+      if (res?.status === 'success' && res?.data) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend checkout API call failed, utilizing persistent local storage:', err);
+    }
+  }
+  return null;
+}
+
+// ----------------- CROSS-PORTAL ORDER LIFECYCLE API -----------------
+export async function fetchCustomerOrdersApi() {
+  let apiOrders = [];
+  try {
+    const res = await apiRequest('/orders/my-orders/?no_page=true');
+    if (Array.isArray(res?.data)) apiOrders = res.data;
+    else if (res?.data?.results) apiOrders = res.data.results;
+  } catch (err) {
+    console.warn('Customer orders API fetch failed:', err);
+  }
+
+  let localOrders = [];
+  try {
+    const raw = localStorage.getItem('buyzo_placed_orders');
+    if (raw) localOrders = JSON.parse(raw);
+  } catch (e) {}
+
+  return { apiOrders, localOrders };
+}
+
+export async function fetchOrderDetailApi(orderNumber) {
+  const token = getAuthToken();
+  if (token && orderNumber) {
+    try {
+      const res = await apiRequest(`/orders/detail/${orderNumber}/`);
+      if (res?.data) return res.data;
+    } catch (err) {
+      console.warn('Order detail fetch failed:', err);
+    }
+  }
+  return null;
+}
+
+export async function fetchUserWalletApi() {
+  try {
+    const res = await apiRequest('/auth/wallet/');
+    return res?.data || { wallet_balance: 0, transactions: [] };
+  } catch (err) {
+    console.warn('Failed to fetch user wallet balance:', err);
+    return { wallet_balance: 0, transactions: [] };
+  }
+}
+
+export async function cancelOrderApi(orderNumber, reason = 'Customer requested cancellation') {
+  if (orderNumber) {
+    try {
+      const res = await apiRequest(`/orders/${orderNumber}/cancel/`, {
+        method: 'POST',
+        body: JSON.stringify({ reason })
+      });
+      return res;
+    } catch (err) {
+      return { status: 'error', message: err.message || 'Failed to cancel order' };
+    }
+  }
+  return { status: 'error', message: 'Order number is required' };
+}
+
+export async function updateOrderStatusApi(orderId, statusVal) {
+  const token = getAuthToken();
+  if (token && orderId) {
+    try {
+      const res = await apiRequest(`/orders/admin/orders/${orderId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: statusVal })
+      });
+      return res?.data || res || null;
+    } catch (err) {
+      console.warn('Order status update failed:', err);
+    }
+  }
+  return null;
+}
+
+export async function fetchAdminOrdersApi() {
+  let apiOrders = [];
+  try {
+    const res = await apiRequest('/orders/admin/?no_page=true');
+    if (Array.isArray(res?.data)) apiOrders = res.data;
+    else if (res?.data?.results) apiOrders = res.data.results;
+  } catch (err) {
+    console.warn('Admin orders API fetch failed:', err);
+  }
+
+  let localOrders = [];
+  try {
+    const raw = localStorage.getItem('buyzo_placed_orders');
+    if (raw) localOrders = JSON.parse(raw);
+  } catch (e) {}
+
+  return { apiOrders, localOrders };
+}
+
+export async function fetchWarehouseOutboundApi() {
+  const token = getAuthToken();
+  let apiOutbound = [];
+  if (token) {
+    try {
+      const res = await apiRequest('/warehouse/outbound/');
+      if (Array.isArray(res?.data)) apiOutbound = res.data;
+      else if (res?.data?.results) apiOutbound = res.data.results;
+    } catch (err) {
+      console.warn('Warehouse outbound API fetch failed:', err);
+    }
+  }
+
+  let localOrders = [];
+  try {
+    const raw = localStorage.getItem('buyzo_placed_orders');
+    if (raw) localOrders = JSON.parse(raw);
+  } catch (e) {}
+
+  return { apiOutbound, localOrders };
+}
+
+export async function fetchWarehouseInboundApi() {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      const res = await apiRequest('/warehouse/inbound/');
+      if (Array.isArray(res?.data)) return res.data;
+      if (res?.data?.results) return res.data.results;
+    } catch (err) {
+      console.warn('Warehouse inbound API fetch failed:', err);
+    }
+  }
   return [];
+}
+
+export async function fetchWarehouseTransfersApi() {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      const res = await apiRequest('/warehouse/transfers/');
+      if (Array.isArray(res?.data)) return res.data;
+      if (res?.data?.results) return res.data.results;
+    } catch (err) {
+      console.warn('Warehouse transfers API fetch failed:', err);
+    }
+  }
+  return [];
+}
+
+export async function fetchDeliveryTasksApi() {
+  const token = getAuthToken();
+  let apiTasks = [];
+  if (token) {
+    try {
+      const res = await apiRequest('/delivery/tasks/');
+      if (Array.isArray(res?.data)) apiTasks = res.data;
+      else if (res?.data?.results) apiTasks = res.data.results;
+    } catch (err) {
+      console.warn('Delivery tasks API fetch failed:', err);
+    }
+  }
+  return apiTasks;
+}
+
+export async function updateDeliveryTaskStatusApi(taskId, statusVal) {
+  const token = getAuthToken();
+  if (token && taskId) {
+    try {
+      const res = await apiRequest(`/delivery/tasks/${taskId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: statusVal })
+      });
+      return res?.data || null;
+    } catch (err) {
+      console.warn('Delivery task status update failed:', err);
+    }
+  }
+  return null;
+}
+
+// ----------------- ADMIN API -----------------
+export async function fetchAdminUsers(params = {}) {
+  try {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.role && params.role !== 'All') query.append('role', params.role.toUpperCase().replace(/\s+/g, '_'));
+    if (typeof params.is_active !== 'undefined') query.append('is_active', params.is_active);
+
+    const url = `/auth/admin/users/${query.toString() ? `?${query.toString()}` : ''}`;
+    const res = await apiRequest(url);
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    if (res?.data?.results) return res.data.results;
+    if (res?.results) return res.results;
+  } catch (err) {
+    console.warn('Admin users API fetch failed:', err);
+  }
+  return [];
+}
+
+export async function createAdminUserApi(userData) {
+  const payload = {
+    email: userData.email,
+    password: userData.password || 'Buyzo@123',
+    role: (userData.role || 'CUSTOMER').toUpperCase().replace(/\s+/g, '_'),
+    first_name: userData.first_name || (userData.name ? userData.name.split(' ')[0] : ''),
+    last_name: userData.last_name || (userData.name && userData.name.split(' ').length > 1 ? userData.name.split(' ').slice(1).join(' ') : ''),
+    is_active: typeof userData.is_active !== 'undefined' ? userData.is_active : (userData.status === 'Active')
+  };
+
+  const res = await apiRequest('/auth/admin/users/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function updateAdminUserApi(id, userData) {
+  const payload = {};
+  if (userData.email) payload.email = userData.email;
+  if (userData.role) payload.role = userData.role.toUpperCase().replace(/\s+/g, '_');
+  if (typeof userData.is_active !== 'undefined') payload.is_active = userData.is_active;
+  if (userData.status) payload.is_active = userData.status === 'Active';
+  if (userData.name) {
+    const parts = userData.name.trim().split(' ');
+    payload.first_name = parts[0] || '';
+    payload.last_name = parts.slice(1).join(' ') || '';
+  }
+
+  const res = await apiRequest(`/auth/admin/users/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function deleteAdminUserApi(id) {
+  const res = await apiRequest(`/auth/admin/users/${id}/`, {
+    method: 'DELETE'
+  });
+  return res?.status === 'success' || true;
+}
+
+export async function fetchAdminDashboardSummaryApi() {
+  try {
+    const res = await apiRequest('/admin/dashboard/summary/');
+    if (res?.data) return res.data;
+  } catch (err) {
+    console.warn('Dashboard summary API fetch failed:', err);
+  }
+
+  // Fallback calculation directly from database endpoints
+  try {
+    const usersRes = await apiRequest('/auth/admin/users/');
+    const userList = Array.isArray(usersRes?.data) ? usersRes.data : (usersRes?.data?.results || []);
+    const customerCount = userList.length;
+
+    const prodRes = await apiRequest('/catalog/products/');
+    const prodList = Array.isArray(prodRes?.data) ? prodRes.data : (prodRes?.data?.results || []);
+
+    const orderRes = await apiRequest('/orders/admin/');
+    const orderList = Array.isArray(orderRes?.data) ? orderRes.data : (orderRes?.data?.results || []);
+    const totalRev = orderList.reduce((acc, o) => acc + (parseFloat(o.total_amount) || 0), 0);
+
+    return {
+      total_customers: customerCount,
+      total_products: prodList.length,
+      total_orders: orderList.length,
+      total_revenue: totalRev,
+      monthly_revenue: totalRev,
+      recent_orders: orderList.slice(0, 5)
+    };
+  } catch (e) {
+    console.warn('Fallback metrics calculation error:', e);
+  }
+  return null;
+}
+
+export async function createProductApi(productData) {
+  const payload = {
+    title: productData.name || productData.title,
+    category_id: productData.category_id || 1,
+    current_price: productData.price || productData.current_price || '0.00',
+    original_price: productData.originalPrice || productData.original_price || productData.price,
+    stock_quantity: Number(productData.stock || productData.stock_quantity || 0),
+    is_active: productData.status !== 'Inactive'
+  };
+
+  const res = await apiRequest('/catalog/admin/products/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function updateProductApi(id, productData) {
+  const payload = {};
+  if (productData.name || productData.title) payload.title = productData.name || productData.title;
+  if (productData.price !== undefined && productData.price !== '') {
+    payload.current_price = String(productData.price).replace(/[^0-9.]/g, '');
+  }
+  if (productData.stock !== undefined && productData.stock !== '') {
+    payload.stock_quantity = Number(productData.stock);
+  }
+  if (productData.status !== undefined) {
+    payload.is_active = productData.status === 'Active';
+  }
+
+  const res = await apiRequest(`/catalog/admin/products/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function deleteProductApi(id) {
+  const res = await apiRequest(`/catalog/admin/products/${id}/`, {
+    method: 'DELETE'
+  });
+  return res?.status === 'success' || true;
+}
+
+export async function fetchCategoriesApi() {
+  try {
+    const res = await apiRequest('/catalog/categories/');
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    if (res?.data?.results) return res.data.results;
+  } catch (err) {
+    console.warn('Categories API fetch failed:', err);
+  }
+  return [];
+}
+
+export async function createCategoryApi(categoryData) {
+  const payload = {
+    name: categoryData.name,
+    is_active: true
+  };
+  const res = await apiRequest('/catalog/categories/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function deleteCategoryApi(id) {
+  const res = await apiRequest(`/catalog/categories/${id}/`, {
+    method: 'DELETE'
+  });
+  return res?.status === 'success' || true;
+}
+
+export async function fetchCouponsApi() {
+  try {
+    const res = await apiRequest('/coupons/');
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    if (res?.data?.results) return res.data.results;
+  } catch (err) {
+    console.warn('Coupons API fetch failed:', err);
+  }
+  return [];
+}
+
+export async function createCouponApi(couponData) {
+  const payload = {
+    code: couponData.code.toUpperCase(),
+    discount_value: parseFloat(couponData.discount.replace(/[^0-9.]/g, '')) || 10,
+    discount_type: (couponData.type || 'PERCENTAGE').toUpperCase(),
+    is_active: couponData.status !== 'Inactive'
+  };
+  const res = await apiRequest('/coupons/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function deleteCouponApi(id) {
+  const res = await apiRequest(`/coupons/${id}/`, {
+    method: 'DELETE'
+  });
+  return res?.status === 'success' || true;
 }

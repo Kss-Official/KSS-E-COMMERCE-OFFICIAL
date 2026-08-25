@@ -165,10 +165,12 @@ export function CartProvider({ children }) {
 
     // Backend Sync
     try {
+      const targetPid = product.productId || product.id;
       const data = await addToCartApi({
-        product_id: product.id,
-        id: product.id,
+        product_id: targetPid,
+        id: targetPid,
         name: product.name || product.title,
+        price: product.price || product.current_price,
         quantity: qty,
         selected_color: color,
         selected_size: size,
@@ -271,12 +273,13 @@ export function CartProvider({ children }) {
 
   // Add Item to Wishlist
   const addToWishlist = async (product) => {
-    const pid = product.id;
+    if (!product) return;
+    const pid = product.id || product.productId;
     const pname = product.name || product.title;
 
     // Optimistic Update
     setWishlistItems((prev) => {
-      if (prev.some((i) => i.id === pid || i.productId === pid || i.name === pname)) {
+      if (prev.some((i) => isWishlistedItemMatch(i, product))) {
         return prev;
       }
       const unitPrice = Number(product.price || product.current_price || 0);
@@ -302,7 +305,7 @@ export function CartProvider({ children }) {
     // Backend Sync
     try {
       const items = await addToWishlistApi(product);
-      if (Array.isArray(items)) {
+      if (Array.isArray(items) && items.length > 0) {
         setWishlistItems(formatWishlistItems(items));
       }
     } catch (e) {
@@ -311,13 +314,15 @@ export function CartProvider({ children }) {
   };
 
   // Remove Item from Wishlist
-  const removeFromWishlist = async (productId) => {
+  const removeFromWishlist = async (productIdOrObject) => {
+    const targetId = typeof productIdOrObject === 'object' ? (productIdOrObject.id || productIdOrObject.productId) : productIdOrObject;
+
     // Optimistic Update
-    setWishlistItems((prev) => prev.filter((i) => i.id !== productId && i.productId !== productId));
+    setWishlistItems((prev) => prev.filter((i) => !isWishlistedItemMatch(i, productIdOrObject)));
 
     // Backend Sync
     try {
-      const items = await removeFromWishlistApi(productId);
+      const items = await removeFromWishlistApi(targetId);
       if (Array.isArray(items)) {
         setWishlistItems(formatWishlistItems(items));
       }
@@ -326,14 +331,38 @@ export function CartProvider({ children }) {
     }
   };
 
+  const isWishlistedItemMatch = (item, productOrId) => {
+    if (!item || !productOrId) return false;
+    let targetId = typeof productOrId === 'object' ? (productOrId.id || productOrId.productId) : productOrId;
+    let targetName = typeof productOrId === 'object' ? (productOrId.name || productOrId.title || '').trim().toLowerCase() : '';
+
+    const strTargetId = targetId ? String(targetId).toLowerCase() : '';
+    const iId = item.id ? String(item.id).toLowerCase() : '';
+    const iPid = item.productId ? String(item.productId).toLowerCase() : '';
+    const iName = (item.name || '').trim().toLowerCase();
+
+    if (strTargetId && (iId === strTargetId || iPid === strTargetId)) {
+      return true;
+    }
+
+    if (targetName && iName) {
+      if (iName === targetName || iName.includes(targetName) || targetName.includes(iName)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Toggle Wishlist
   const toggleWishlist = async (product) => {
-    const pid = product.id;
-    const pname = product.name || product.title;
-    const isWish = wishlistItems.some((i) => i.id === pid || i.productId === pid || i.name === pname);
+    if (!product) return;
+    const isWish = isWishlisted(product);
 
     if (isWish) {
-      await removeFromWishlist(pid);
+      const wishItem = wishlistItems.find((i) => isWishlistedItemMatch(i, product));
+      const targetId = wishItem ? (wishItem.productId || wishItem.id) : (product.id || product.productId);
+      await removeFromWishlist(targetId);
     } else {
       await addToWishlist(product);
     }
@@ -342,12 +371,7 @@ export function CartProvider({ children }) {
   // Check if Wishlisted
   const isWishlisted = (productOrId) => {
     if (!productOrId) return false;
-    if (typeof productOrId === 'object') {
-      const pid = productOrId.id;
-      const pname = productOrId.name || productOrId.title;
-      return wishlistItems.some((i) => (pid && (i.id === pid || i.productId === pid)) || (pname && i.name === pname));
-    }
-    return wishlistItems.some((i) => i.id === productOrId || i.productId === productOrId);
+    return wishlistItems.some((i) => isWishlistedItemMatch(i, productOrId));
   };
 
   // Clear Wishlist

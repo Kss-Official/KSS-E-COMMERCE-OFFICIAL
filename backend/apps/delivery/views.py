@@ -48,7 +48,10 @@ class DeliveryTaskListView(generics.ListAPIView):
 
     def get_queryset(self):
         qs = DeliveryTask.objects.filter(agent=self.request.user).select_related('order')
-        status_param = self.request.query_params.get('status')
+        if not self.request:
+            return qs
+        query_params = getattr(self.request, 'query_params', self.request.GET)
+        status_param = query_params.get('status')
         if status_param == 'active':
             qs = qs.filter(status='IN_TRANSIT')
         elif status_param == 'completed':

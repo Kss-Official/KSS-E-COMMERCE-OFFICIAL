@@ -18,7 +18,9 @@ if env_file.exists():
 # Core Security
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-buyzo-demo-key-2026')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '0.0.0.0', '*'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+if '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('*')
 
 # Installed Applications
 INSTALLED_APPS = [

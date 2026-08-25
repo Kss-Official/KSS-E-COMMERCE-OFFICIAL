@@ -23,12 +23,27 @@ import NewArrivalsPage from './pages/NewArrivalsPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmedPage from './pages/OrderConfirmedPage';
 
+import { getCurrentUser } from './services/api';
 import AdminPage from '../Admin';
 import DeliveryAgentPage from '../DeliveryAgentPortal';
 import WarehousePage from '../WarehousePortal';
 
 function AppContent() {
-  const { currentPage } = useNavigationContext();
+  const { currentPage, navigateTo } = useNavigationContext();
+
+  React.useEffect(() => {
+    const user = getCurrentUser();
+    if (user && user.role) {
+      const role = String(user.role).toUpperCase();
+      if (role === 'ADMIN' && currentPage !== 'admin') {
+        navigateTo('admin');
+      } else if (role === 'WAREHOUSE_STAFF' && currentPage !== 'warehouse') {
+        navigateTo('warehouse');
+      } else if (role === 'DELIVERY_AGENT' && currentPage !== 'delivery-agent') {
+        navigateTo('delivery-agent');
+      }
+    }
+  }, [currentPage]);
 
   if (currentPage === 'admin') {
     return <AdminPage />;

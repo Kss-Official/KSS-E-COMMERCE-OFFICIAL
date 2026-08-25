@@ -1,0 +1,19 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hanger Hook -->
+  <path d="M24 5C22.3431 5 21 6.34315 21 8C21 9.3 21.8 10.4 23 10.8V13H25V10.8C26.2 10.4 27 9.3 27 8C27 6.34315 25.6569 5 24 5Z" fill="#D97706"/>
+  <!-- Hanger Bar -->
+  <path d="M24 13L10 18L11.5 20L24 15.5L36.5 20L38 18L24 13Z" fill="#B45309"/>
+  <!-- Men's Shirt Body -->
+  <path d="M12 20L6 25L9.5 29L13 26V42H35V26L38.5 29L42 25L36 20L29 22L24 16L19 22L12 20Z" fill="#064E3B"/>
+  <!-- Shirt Collar -->
+  <path d="M24 16L17.5 22.5L21.5 24.5L24 18.5L26.5 24.5L30.5 22.5L24 16Z" fill="#047857"/>
+  <!-- Buttons Line / Placket -->
+  <rect x="23" y="23" width="2" height="19" rx="1" fill="#A7F3D0"/>
+  <circle cx="24" cy="26" r="1.1" fill="#064E3B"/>
+  <circle cx="24" cy="31" r="1.1" fill="#064E3B"/>
+  <circle cx="24" cy="36" r="1.1" fill="#064E3B"/>
+  <!-- Pocket on Left Chest -->
+  <path d="M16 27H20V32C20 32.5 19.5 33 19 33H17C16.5 33 16 32.5 16 32V27Z" fill="#047857"/>
+  <!-- Tie Accent -->
+  <path d="M23.2 20H24.8L25.3 26L24 28L22.7 26L23.2 20Z" fill="#EA580C"/>
+</svg>

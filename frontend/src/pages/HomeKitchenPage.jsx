@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Heart,
   LayoutGrid,
@@ -21,10 +21,13 @@ import {
   Lamp,
   Bed,
   Home,
-  CookingPot
+  CookingPot,
+  Blender
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { fetchProducts } from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 // Import assets
 import heroChairImg from '../assets/HeroHomeChair.png';
@@ -252,30 +255,56 @@ const initialHomeProducts = [
   }
 ];
 
-const homeBrands = [
-  { name: 'UrbanHome', count: 32 },
-  { name: 'Prestige', count: 28 },
-  { name: 'Philips', count: 22 },
-  { name: 'Solimo', count: 26 },
-  { name: 'Wakefit', count: 18 },
-  { name: 'Hawkins', count: 15 },
-  { name: 'Milton', count: 20 },
-  { name: 'Bombay Dyeing', count: 16 }
-];
-
 export default function HomeKitchenPage() {
   const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
   const isProductInWishlist = (id) => isWishlisted(id);
 
+  const [productsList, setProductsList] = useState(initialHomeProducts);
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [maxPrice, setMaxPrice] = useState(15000);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('popularity');
+
+  const homeBrands = useMemo(() => {
+    const counts = {};
+    productsList.forEach((p) => {
+      const b = p.brand || p.brand_name;
+      if (b) {
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [productsList]);
   const [viewMode, setViewMode] = useState('grid');
   const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    fetchProducts({ no_page: 'true' }).then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const homeData = data.filter(p => ['Home & Kitchen', 'Chairs & Furniture', 'Appliances'].includes(p.category));
+        if (homeData.length > 0) {
+          const uniqueItems = [];
+          const seenImages = new Set();
+          for (const item of homeData) {
+            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
+            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
+            if (imgName && !seenImages.has(imgName)) {
+              seenImages.add(imgName);
+              uniqueItems.push({
+                ...item,
+                name: item.name || item.title,
+                image: resolvedImg
+              });
+            }
+          }
+          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialHomeProducts);
+        }
+      }
+    });
+  }, []);
 
   const handleToggleBrand = (brandName) => {
     setSelectedBrands((prev) =>
@@ -284,7 +313,7 @@ export default function HomeKitchenPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    return initialHomeProducts
+    return productsList
       .filter((p) => {
         if (activeCategory !== 'All' && p.category !== activeCategory) return false;
         if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
@@ -296,10 +325,10 @@ export default function HomeKitchenPage() {
         if (sortBy === 'lowToHigh') return a.price - b.price;
         if (sortBy === 'highToLow') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        if (sortBy === 'discount') return parseInt(b.discount) - parseInt(a.discount);
-        return b.popularity - a.popularity;
+        if (sortBy === 'discount') return parseInt(b.discount || 0) - parseInt(a.discount || 0);
+        return (b.popularity || 90) - (a.popularity || 90);
       });
-  }, [activeCategory, selectedBrands, maxPrice, minRating, sortBy]);
+  }, [productsList, activeCategory, selectedBrands, maxPrice, minRating, sortBy]);
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
@@ -585,7 +614,7 @@ export default function HomeKitchenPage() {
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5">
                 {filteredProducts.map((product) => {
-                  const inWish = isProductInWishlist(product.id);
+                  const inWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -611,12 +640,16 @@ export default function HomeKitchenPage() {
                               : 'bg-white/80 text-gray-500 hover:text-rose-500 hover:bg-white border border-gray-200/50'
                           }`}
                         >
-                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                         </button>
 
                         <img
-                          src={product.image}
-                          alt={product.name}
+                          src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                          alt={product.name || product.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getProductImage(product.name || product.title, '');
+                          }}
                           className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500"
                         />
                       </div>
@@ -693,7 +726,7 @@ export default function HomeKitchenPage() {
                               inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
                             }`}
                           >
-                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                           </button>
                         </div>
 

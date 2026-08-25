@@ -17,9 +17,15 @@ class AdminDashboardSummaryView(APIView):
         now = timezone.now()
         thirty_days_ago = now - timedelta(days=30)
 
-        # Revenue
-        total_revenue = Order.objects.filter(payment_status='PAID').aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
-        monthly_revenue = Order.objects.filter(payment_status='PAID', created_at__gte=thirty_days_ago).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+        # Revenue (Strictly exclude CANCELLED orders and is_revenue_counted=False)
+        revenue_filter = Q(is_revenue_counted=True) & ~Q(status='CANCELLED') & (Q(status='DELIVERED') | (Q(payment_status='PAID') & ~Q(payment_method__iexact='COD')))
+        total_revenue = Order.objects.filter(revenue_filter).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+        monthly_revenue = Order.objects.filter(revenue_filter, created_at__gte=thirty_days_ago).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+
+        # Refunds Issued Metric
+        refunds_filter = Q(payment_status='REFUNDED') | Q(status='CANCELLED', payment_status='REFUNDED')
+        total_refunds_amount = Order.objects.filter(refunds_filter).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+        refunded_orders_count = Order.objects.filter(refunds_filter).count()
 
         # Counts
         total_orders = Order.objects.count()
@@ -51,6 +57,8 @@ class AdminDashboardSummaryView(APIView):
         data = {
             "total_revenue": float(total_revenue),
             "monthly_revenue": float(monthly_revenue),
+            "total_refunds_amount": float(total_refunds_amount),
+            "refunded_orders_count": refunded_orders_count,
             "total_orders": total_orders,
             "total_products": total_products,
             "total_customers": total_customers,
@@ -64,16 +72,16 @@ class AdminRevenueAnalyticsView(APIView):
 
     def get(self, request):
         now = timezone.now()
-        # Return 8 chart points over the last 30 days
         chart_data = []
         for i in range(7, -1, -1):
             day_start = (now - timedelta(days=i*4)).replace(hour=0, minute=0, second=0)
             day_end = day_start + timedelta(days=4)
-            rev = Order.objects.filter(payment_status='PAID', created_at__gte=day_start, created_at__lt=day_end).aggregate(total=Sum('total_amount'))['total'] or 0
+            rev_filter = Q(is_revenue_counted=True) & ~Q(status='CANCELLED') & (Q(status='DELIVERED') | (Q(payment_status='PAID') & ~Q(payment_method__iexact='COD')))
+            rev = Order.objects.filter(rev_filter, created_at__gte=day_start, created_at__lt=day_end).aggregate(total=Sum('total_amount'))['total'] or 0
             chart_data.append({
                 "label": day_start.strftime('%b %d'),
                 "sales": float(rev),
-                "orders_count": Order.objects.filter(created_at__gte=day_start, created_at__lt=day_end).count()
+                "orders_count": Order.objects.filter(created_at__gte=day_start, created_at__lt=day_end).exclude(status='CANCELLED').count()
             })
 
         return APIResponse.success(data={"timeline": chart_data}, message="Revenue analytics retrieved.")
@@ -82,7 +90,8 @@ class AdminTopProductsView(APIView):
     permission_classes = [IsAdminUserRole]
 
     def get(self, request):
-        top_items = OrderItem.objects.values('product__id', 'product__title', 'product__sku')\
+        top_items = OrderItem.objects.filter(order__is_revenue_counted=True).exclude(order__status='CANCELLED')\
+            .values('product__id', 'product__title', 'product__sku')\
             .annotate(total_sold=Sum('quantity'), revenue_generated=Sum('total_price'))\
             .order_by('-total_sold')[:10]
 
