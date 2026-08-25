@@ -352,7 +352,8 @@ export function CartProvider({ children }) {
     return wishlistItems.some((item) => item.id === productId);
   };
 
-  const clearWishlist = () => {
+  const clearWishlist = async () => {
+    const items = wishlistItems;
     setWishlistItems([]);
     for (const it of items) {
       try {

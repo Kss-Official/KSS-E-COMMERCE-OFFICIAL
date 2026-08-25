@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Package, 
-  FolderTree, 
-  Users, 
-  ShoppingBag, 
-  CreditCard, 
-  Boxes, 
-  Ticket, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Package,
+  FolderTree,
+  Users,
+  ShoppingBag,
+  CreditCard,
+  Boxes,
+  Ticket,
+  BarChart3,
+  Settings,
   LogOut,
   ChevronLeft
 } from 'lucide-react';
@@ -55,11 +55,10 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'bg-[#ff5100] text-white shadow-md font-bold transform translate-x-1'
-                    : 'text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white'
-                }`}
+                className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${isActive
+                  ? 'bg-[#ff5100] text-white shadow-md font-bold transform translate-x-1'
+                  : 'text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white'
+                  }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-emerald-300'}`} />
                 <span className="hidden lg:inline">{item.label}</span>
@@ -82,7 +81,6 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
                 <stop offset="100%" stopColor="#0e7a6e" stopOpacity="0.7" />
               </linearGradient>
             </defs>
-            <path d="M0,0 L0,18 C40,6 80,30 120,18 C155,8 180,22 200,14 L200,0 Z" fill="url(#sw1)" />
           </svg>
           {/* Layer 2: mid wave */}
           <svg viewBox="0 0 200 50" preserveAspectRatio="none"
@@ -106,11 +104,10 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
         <div className="p-3 space-y-1.5">
           <button
             onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
-              activeTab === 'settings'
-                ? 'bg-[#ff5100] text-white shadow-md font-bold'
-                : 'text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white'
-            }`}
+            className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${activeTab === 'settings'
+              ? 'bg-[#ff5100] text-white shadow-md font-bold'
+              : 'text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white'
+              }`}
           >
             <Settings className="w-5 h-5 text-emerald-300" />
             <span className="hidden lg:inline">Settings</span>

@@ -230,6 +230,29 @@ export default function Header() {
   const navigateTo = navContext?.navigateTo || (() => {});
   const cartCount = context?.cartCount ?? (context?.cartItems ? context.cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0) : 0);
   const wishlistCount = context?.wishlistCount ?? (context?.wishlistItems ? context.wishlistItems.length : 0);
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const userName = currentUser?.name || currentUser?.first_name || currentUser?.email?.split('@')[0] || 'Customer';
+
+  useEffect(() => {
+    if (!currentUser) {
+      setWalletBalance(0);
+      return;
+    }
+
+    fetchUserWalletApi().then((wallet) => {
+      setWalletBalance(Number(wallet?.wallet_balance ?? wallet?.balance ?? 0));
+    });
+  }, [currentUser]);
+
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+    setIsUserMenuOpen(false);
+    navigateTo('home');
+  };
 
   // Search & Category state
   const [searchQuery, setSearchQuery] = useState('');
@@ -566,11 +589,13 @@ export default function Header() {
           <div className="p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
             <User className="w-7 h-7 stroke-[1.8]" />
           </div>
-          <div className="hidden sm:flex flex-col text-left">
+          {currentUser ? (
+            <div className="hidden sm:flex flex-col text-left">
             <span className="text-[12px] text-gray-500 font-normal leading-tight">Welcome Guest</span>
             <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
               <span>Login / Account</span>
               <ChevronDown className="w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5" />
+            </div>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
