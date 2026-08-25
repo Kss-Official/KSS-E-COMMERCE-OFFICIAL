@@ -44,7 +44,7 @@ export default function WishlistPage() {
   };
 
   return (
-    <div className="bg-[#f8f9fa] min-h-screen py-6 px-4 sm:px-8 md:px-12 lg:px-16 font-sans">
+    <div className="bg-cream min-h-screen py-6 px-4 sm:px-8 md:px-12 lg:px-16 font-sans">
       {/* Toast Notification */}
       {addedToast && (
         <div className="fixed bottom-6 right-6 bg-emerald-800 text-white px-5 py-3 rounded-lg shadow-xl text-sm font-semibold flex items-center space-x-2 z-50 animate-bounce">
@@ -108,7 +108,7 @@ export default function WishlistPage() {
           </p>
           <button
             onClick={() => navigateTo('shop')}
-            className="bg-[#ff5100] hover:bg-[#e64900] text-white text-sm font-bold px-6 py-2.5 rounded-lg shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
+            className="bg-accent hover:bg-accent-600 text-white text-sm font-bold px-6 py-2.5 rounded-lg shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Continue Shopping</span>
@@ -121,13 +121,13 @@ export default function WishlistPage() {
             <table className="w-full text-left border-collapse min-w-[700px]">
               {/* Table Header */}
               <thead>
-                <tr className="bg-[#f8f9fa] border-b border-gray-200 text-[11px] font-bold tracking-wider text-gray-500 uppercase">
+                <tr className="bg-cream border-b border-gray-200 text-[11px] font-bold tracking-wider text-gray-500 uppercase">
                   <th className="py-3.5 px-4 w-12 text-center">
                     <input
                       type="checkbox"
                       checked={selectedItems.length === wishlistItems.length && wishlistItems.length > 0}
                       onChange={toggleSelectAll}
-                      className="rounded border-gray-300 text-[#ff5100] focus:ring-[#ff5100] w-4 h-4 cursor-pointer accent-[#ff5100]"
+                      className="rounded border-gray-300 text-accent focus:ring-[#ff5100] w-4 h-4 cursor-pointer accent-[#ff5100]"
                     />
                   </th>
                   <th className="py-3.5 px-4">PRODUCT</th>
@@ -150,7 +150,7 @@ export default function WishlistPage() {
                         type="checkbox"
                         checked={selectedItems.includes(item.id)}
                         onChange={() => toggleSelectItem(item.id)}
-                        className="rounded border-gray-300 text-[#ff5100] focus:ring-[#ff5100] w-4 h-4 cursor-pointer accent-[#ff5100]"
+                        className="rounded border-gray-300 text-accent focus:ring-[#ff5100] w-4 h-4 cursor-pointer accent-[#ff5100]"
                       />
                     </td>
 
@@ -198,7 +198,7 @@ export default function WishlistPage() {
                             </span>
                           )}
                           {item.discount && (
-                            <span className="text-xs font-bold text-[#ff5100]">
+                            <span className="text-xs font-bold text-accent">
                               {item.discount}
                             </span>
                           )}
@@ -234,7 +234,7 @@ export default function WishlistPage() {
                         {/* Add to Cart Button */}
                         <button
                           onClick={() => handleAddToCart(item)}
-                          className="bg-[#ff5100] hover:bg-[#e64900] text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                          className="bg-accent hover:bg-accent-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer"
                         >
                           <span>Add to Cart</span>
                         </button>
@@ -250,3 +250,5 @@ export default function WishlistPage() {
     </div>
   );
 }
+
+

@@ -98,11 +98,11 @@ export default function Navbar() {
   return (
     <>
       {/* Top Navigation Bar */}
-      <nav className="w-full bg-[#063328] text-white text-xs font-semibold px-3 sm:px-6 flex items-center gap-0 overflow-x-auto select-none relative z-30 shadow-sm">
+      <nav className="w-full bg-brand-800 text-white text-xs font-semibold px-3 sm:px-6 flex items-center gap-0 overflow-x-auto select-none relative z-30 shadow-sm">
         {/* All Categories Trigger Button */}
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-[#04241c]/60 hover:bg-[#ff5100] py-2.5 px-3 sm:px-4 text-white font-bold shrink-0 transition-all cursor-pointer border-r border-white/10 group active:scale-95"
+          className="flex items-center justify-center space-x-2 bg-brand-900/60 hover:bg-[#ff5100] py-2.5 px-3 sm:px-4 text-white font-bold shrink-0 transition-all cursor-pointer border-r border-white/10 group active:scale-95"
           title="Open All Categories Menu"
         >
           <span className="text-sm font-black group-hover:rotate-90 transition-transform duration-200">☰</span>
@@ -126,9 +126,9 @@ export default function Navbar() {
             <button
               key={index}
               onClick={(e) => handleNavClick(e, cat)}
-              className={`flex-1 whitespace-nowrap text-center px-2 py-2.5 cursor-pointer transition-colors hover:text-[#ff5100] ${
+              className={`flex-1 whitespace-nowrap text-center px-2 py-2.5 cursor-pointer transition-colors hover:text-accent ${
                 isActive
-                  ? 'text-[#ff5100] border-b-2 border-[#ff5100] font-bold bg-white/5'
+                  ? 'text-accent border-b-2 border-accent font-bold bg-white/5'
                   : 'text-white/90'
               }`}
             >
@@ -154,7 +154,7 @@ export default function Navbar() {
         }`}
       >
         {/* Drawer Header */}
-        <div className="bg-[#063328] text-white p-5 flex items-center justify-between shadow-md">
+        <div className="bg-brand-800 text-white p-5 flex items-center justify-between shadow-md">
           <div
             onClick={() => handleDrawerItemClick('login')}
             className="flex items-center space-x-3 cursor-pointer group"
@@ -189,10 +189,10 @@ export default function Navbar() {
             </div>
             <button
               onClick={() => handleDrawerItemClick('best-sellers')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-bold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-bold transition-all cursor-pointer group"
             >
               <div className="flex items-center space-x-2.5">
-                <Flame className="w-4 h-4 text-[#ff5100]" />
+                <Flame className="w-4 h-4 text-accent" />
                 <span>Best Sellers</span>
               </div>
               <span className="text-[10px] bg-amber-100 text-amber-900 font-extrabold px-2 py-0.5 rounded-full">
@@ -201,7 +201,7 @@ export default function Navbar() {
             </button>
             <button
               onClick={() => handleDrawerItemClick('deals')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <div className="flex items-center space-x-2.5">
                 <Percent className="w-4 h-4 text-emerald-600" />
@@ -211,7 +211,7 @@ export default function Navbar() {
             </button>
             <button
               onClick={() => handleDrawerItemClick('new-arrivals')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <div className="flex items-center space-x-2.5">
                 <Sparkles className="w-4 h-4 text-amber-500" />
@@ -228,35 +228,35 @@ export default function Navbar() {
             </div>
             <button
               onClick={() => handleDrawerItemClick('electronics')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <span>Mobiles, Computers & Electronics</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#063328]" />
             </button>
             <button
               onClick={() => handleDrawerItemClick('fashion')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <span>Men & Women Fashion</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#063328]" />
             </button>
             <button
               onClick={() => handleDrawerItemClick('home-kitchen')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <span>Home, Kitchen & Furniture</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#063328]" />
             </button>
             <button
               onClick={() => handleDrawerItemClick('beauty')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <span>Beauty, Health & Personal Care</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#063328]" />
             </button>
             <button
               onClick={() => handleDrawerItemClick('fashion')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-semibold transition-all cursor-pointer group"
             >
               <span>Footwear, Bags & Luggage</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#063328]" />
@@ -264,7 +264,7 @@ export default function Navbar() {
           </div>
 
           {/* Section 3: Programs & Features (Requested Items) */}
-          <div className="p-4 space-y-1 bg-amber-50/40">
+          <div className="p-4 space-y-1 bg-gold/10">
             <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-1">
               Programs &amp; Features
             </div>
@@ -278,10 +278,10 @@ export default function Navbar() {
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white hover:shadow-xs hover:text-[#063328] font-semibold transition-all cursor-pointer group text-gray-800"
             >
               <div className="flex items-center space-x-2.5">
-                <Gift className="w-4 h-4 text-[#ff5100]" />
+                <Gift className="w-4 h-4 text-accent" />
                 <span>Gift Cards & Vouchers</span>
               </div>
-              <span className="text-[10px] bg-orange-100 text-[#ff5100] font-bold px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-orange-100 text-accent font-bold px-2 py-0.5 rounded-full">
                 Instant
               </span>
             </button>
@@ -329,10 +329,10 @@ export default function Navbar() {
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white hover:shadow-xs font-bold transition-all cursor-pointer group text-gray-900 border border-emerald-500/20 bg-emerald-50/60"
             >
               <div className="flex items-center space-x-2.5">
-                <Tag className="w-4 h-4 text-[#ff5100]" />
-                <span className="text-[#063328]">Buy More, <span className="text-[#ff5100]">Save More</span></span>
+                <Tag className="w-4 h-4 text-accent" />
+                <span className="text-[#063328]">Buy More, <span className="text-accent">Save More</span></span>
               </div>
-              <span className="text-[10px] bg-[#063328] text-white font-extrabold px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-brand-800 text-white font-extrabold px-2 py-0.5 rounded-full">
                 Extra 15%
               </span>
             </button>
@@ -403,7 +403,7 @@ export default function Navbar() {
             {/* Gift Card Modal */}
             {activeModal === 'giftCard' && (
               <div className="space-y-5 text-gray-800">
-                <div className="w-12 h-12 rounded-2xl bg-orange-100 text-[#ff5100] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-orange-100 text-accent flex items-center justify-center">
                   <Gift className="w-6 h-6" />
                 </div>
                 <div>
@@ -416,7 +416,7 @@ export default function Navbar() {
                   {['₹500', '₹1,000', '₹2,500', '₹5,000', '₹10,000', 'Custom'].map((amt) => (
                     <button
                       key={amt}
-                      className="p-3 border border-gray-200 rounded-xl text-xs font-bold text-center hover:border-[#ff5100] hover:bg-orange-50/50 cursor-pointer transition-all"
+                      className="p-3 border border-gray-200 rounded-xl text-xs font-bold text-center hover:border-accent hover:bg-orange-50/50 cursor-pointer transition-all"
                     >
                       {amt}
                     </button>
@@ -427,7 +427,7 @@ export default function Navbar() {
                     setActiveModal(null);
                     navigateTo('shop');
                   }}
-                  className="w-full py-3 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-2"
+                  className="w-full py-3 bg-brand-800 hover:bg-[#ff5100] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-2"
                 >
                   <span>Buy Gift Voucher Now</span>
                   <ArrowRight className="w-4 h-4" />
@@ -506,7 +506,7 @@ export default function Navbar() {
                     setActiveModal(null);
                     navigateTo('fashion');
                   }}
-                  className="w-full py-3 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-2"
+                  className="w-full py-3 bg-brand-800 hover:bg-[#ff5100] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-2"
                 >
                   <span>Explore Artisan Collection</span>
                   <ArrowRight className="w-4 h-4" />
@@ -518,11 +518,11 @@ export default function Navbar() {
             {activeModal === 'buyMoreSaveMore' && (
               <div className="space-y-5 text-gray-800">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#063328] flex items-center justify-center">
-                  <Tag className="w-6 h-6 text-[#ff5100]" />
+                  <Tag className="w-6 h-6 text-accent" />
                 </div>
                 <div>
                   <h3 className="text-xl font-extrabold text-[#063328]">
-                    Buy More, <span className="text-[#ff5100]">Save More</span> Program
+                    Buy More, <span className="text-accent">Save More</span> Program
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
                     Unlock tiered volume discounts automatically at checkout across all categories!
@@ -534,14 +534,14 @@ export default function Navbar() {
                       <div className="font-bold text-[#063328]">Buy 2 Items</div>
                       <div className="text-[11px] text-gray-500">Applies across Fashion & Electronics</div>
                     </div>
-                    <span className="text-sm font-black text-[#ff5100]">Extra 10% OFF</span>
+                    <span className="text-sm font-black text-accent">Extra 10% OFF</span>
                   </div>
                   <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200 flex items-center justify-between">
                     <div>
                       <div className="font-bold text-[#063328]">Buy 3+ Items</div>
                       <div className="text-[11px] text-gray-500">Applies on whole cart order</div>
                     </div>
-                    <span className="text-sm font-black text-[#ff5100]">Extra 20% OFF</span>
+                    <span className="text-sm font-black text-accent">Extra 20% OFF</span>
                   </div>
                 </div>
                 <button
@@ -549,7 +549,7 @@ export default function Navbar() {
                     setActiveModal(null);
                     navigateTo('deals');
                   }}
-                  className="w-full py-3 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-2"
+                  className="w-full py-3 bg-brand-800 hover:bg-[#ff5100] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-2"
                 >
                   <span>Shop Super Saver Deals</span>
                   <ArrowRight className="w-4 h-4" />
@@ -562,3 +562,4 @@ export default function Navbar() {
     </>
   );
 }
+

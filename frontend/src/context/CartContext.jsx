@@ -133,6 +133,27 @@ export function CartProvider({ children }) {
     setWishlistItems((prev) => prev.filter((item) => item.id !== productId));
   };
 
+  const toggleWishlist = (product) => {
+    setWishlistItems((prev) => {
+      const exists = prev.some((item) => item.id === product.id);
+      if (exists) {
+        return prev.filter((item) => item.id !== product.id);
+      }
+      return [
+        ...prev,
+        {
+          ...product,
+          inStock: product.inStock ?? true,
+          deliveryDate: product.deliveryDate || 'Delivery by 2-3 Days'
+        }
+      ];
+    });
+  };
+
+  const isInWishlist = (productId) => {
+    return wishlistItems.some((item) => item.id === productId);
+  };
+
   const clearWishlist = () => {
     setWishlistItems([]);
   };
@@ -147,6 +168,8 @@ export function CartProvider({ children }) {
         removeFromCart,
         addToWishlist,
         removeFromWishlist,
+        toggleWishlist,
+        isInWishlist,
         clearWishlist
       }}
     >

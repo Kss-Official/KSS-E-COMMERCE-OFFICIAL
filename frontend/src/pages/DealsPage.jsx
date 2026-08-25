@@ -1,3 +1,4 @@
+import CTAPane from '../features/festive/components/CTAPane';
 import React, { useState, useEffect } from 'react';
 import {
   Tag,
@@ -223,7 +224,7 @@ export default function DealsPage() {
     <div className="bg-[#f8fafc] min-h-screen py-6 px-4 sm:px-6 lg:px-8 font-sans text-gray-800">
       {/* Toast Notification */}
       {addedToast && (
-        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-800 text-white px-5 py-3 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
           <div className="bg-emerald-500 text-white rounded-full p-1">
             <Check className="w-4 h-4" />
           </div>
@@ -240,8 +241,8 @@ export default function DealsPage() {
             {/* Top Navigation Menu Card */}
             <div className="bg-white rounded-2xl p-4 shadow-xs border border-gray-100/90">
               {/* Header */}
-              <div className="flex items-center space-x-2.5 px-3 py-2 text-[#063328]">
-                <Tag className="w-5 h-5 fill-[#063328] text-[#063328]" />
+              <div className="flex items-center space-x-2.5 px-3 py-2 text-brand-800">
+                <Tag className="w-5 h-5 fill-[#063328] text-brand-800" />
                 <span className="font-extrabold text-base tracking-tight text-gray-900">Deals</span>
               </div>
 
@@ -256,14 +257,14 @@ export default function DealsPage() {
                       onClick={() => setActiveNav(item.id)}
                       className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                         isActive
-                          ? 'bg-[#e4f1ed] text-[#063328] border-l-4 border-[#063328] rounded-l-none pl-3 shadow-xs'
+                          ? 'bg-[#e4f1ed] text-brand-800 border-l-4 border-brand-800 rounded-l-none pl-3 shadow-xs'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
                       <Icon
                         className={`w-4 h-4 shrink-0 ${
                           isActive
-                            ? 'text-[#ff5100] fill-[#ff5100]'
+                            ? 'text-accent fill-[#ff5100]'
                             : 'text-gray-400'
                         }`}
                       />
@@ -281,7 +282,7 @@ export default function DealsPage() {
                 <span className="font-extrabold text-sm text-gray-900">Filters</span>
                 <button
                   onClick={clearAllFilters}
-                  className="text-xs font-bold text-[#0d5c46] hover:underline cursor-pointer"
+                  className="text-xs font-bold text-brand-700 hover:underline cursor-pointer"
                 >
                   Clear All
                 </button>
@@ -319,7 +320,7 @@ export default function DealsPage() {
                                   : [...prev, opt.label]
                               );
                             }}
-                            className="w-3.5 h-3.5 rounded text-[#063328] focus:ring-[#063328] border-gray-300 cursor-pointer"
+                            className="w-3.5 h-3.5 rounded text-brand-800 focus:ring-[#063328] border-gray-300 cursor-pointer"
                           />
                           <span>{opt.label}</span>
                         </div>
@@ -331,10 +332,10 @@ export default function DealsPage() {
                     <div className="pt-2">
                       <div className="relative flex items-center my-1.5">
                         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#063328] rounded-full w-4/5" />
+                          <div className="h-full bg-brand-800 rounded-full w-4/5" />
                         </div>
-                        <div className="absolute left-0 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
-                        <div className="absolute right-1/5 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
+                        <div className="absolute left-0 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
+                        <div className="absolute right-1/5 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
                       </div>
                       <div className="flex justify-between text-[11px] text-gray-500 font-bold mt-1">
                         <span>10%</span>
@@ -364,10 +365,10 @@ export default function DealsPage() {
                     {/* Track */}
                     <div className="relative flex items-center my-1.5">
                       <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#063328] rounded-full w-full" />
+                        <div className="h-full bg-brand-800 rounded-full w-full" />
                       </div>
-                      <div className="absolute left-0 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
-                      <div className="absolute right-0 w-3.5 h-3.5 bg-[#063328] rounded-full shadow-xs cursor-pointer" />
+                      <div className="absolute left-0 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
+                      <div className="absolute right-0 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
                     </div>
 
                     {/* Inputs */}
@@ -416,7 +417,7 @@ export default function DealsPage() {
                                   : [...prev, cat.label]
                               );
                             }}
-                            className="w-3.5 h-3.5 rounded text-[#063328] focus:ring-[#063328] border-gray-300 cursor-pointer"
+                            className="w-3.5 h-3.5 rounded text-brand-800 focus:ring-[#063328] border-gray-300 cursor-pointer"
                           />
                           <span>{cat.label}</span>
                         </div>
@@ -446,17 +447,17 @@ export default function DealsPage() {
                   
                   {/* Ends In Countdown Badge */}
                   <div className="flex items-center space-x-2 bg-[#fff2ea] px-3 py-1.5 rounded-xl border border-orange-100">
-                    <span className="text-xs font-bold text-[#ff5100]">Ends in</span>
+                    <span className="text-xs font-bold text-accent">Ends in</span>
                     <div className="flex items-center space-x-1 font-black text-white text-xs">
-                      <span className="bg-[#ff5100] px-1.5 py-0.5 rounded-md leading-tight">
+                      <span className="bg-accent px-1.5 py-0.5 rounded-md leading-tight">
                         {String(timeLeft.hrs).padStart(2, '0')}
                       </span>
-                      <span className="text-[#ff5100] font-black">:</span>
-                      <span className="bg-[#ff5100] px-1.5 py-0.5 rounded-md leading-tight">
+                      <span className="text-accent font-black">:</span>
+                      <span className="bg-accent px-1.5 py-0.5 rounded-md leading-tight">
                         {String(timeLeft.mins).padStart(2, '0')}
                       </span>
-                      <span className="text-[#ff5100] font-black">:</span>
-                      <span className="bg-[#ff5100] px-1.5 py-0.5 rounded-md leading-tight">
+                      <span className="text-accent font-black">:</span>
+                      <span className="bg-accent px-1.5 py-0.5 rounded-md leading-tight">
                         {String(timeLeft.secs).padStart(2, '0')}
                       </span>
                     </div>
@@ -504,7 +505,7 @@ export default function DealsPage() {
                       <span className="text-xs text-gray-400 line-through">
                         ₹{featuredDeal.originalPrice.toLocaleString('en-IN')}
                       </span>
-                      <span className="text-xs font-extrabold text-[#ff5100]">
+                      <span className="text-xs font-extrabold text-accent">
                         {featuredDeal.discount}
                       </span>
                     </div>
@@ -517,7 +518,7 @@ export default function DealsPage() {
                     {/* View Deal Button */}
                     <button
                       onClick={() => navigateTo('product-detail', featuredDeal)}
-                      className="mt-2 w-full py-2.5 bg-[#ff5100] hover:bg-[#e04700] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-orange-500/25 transition-all cursor-pointer"
+                      className="mt-2 w-full py-2.5 bg-accent hover:bg-[#e04700] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-orange-500/25 transition-all cursor-pointer"
                     >
                       View Deal
                     </button>
@@ -546,7 +547,7 @@ export default function DealsPage() {
                 <h2 className="text-base sm:text-lg font-black text-gray-900">Top Deals</h2>
                 <button
                   onClick={() => setActiveCategory('All')}
-                  className="text-xs font-bold text-[#063328] hover:underline flex items-center space-x-1 cursor-pointer"
+                  className="text-xs font-bold text-brand-800 hover:underline flex items-center space-x-1 cursor-pointer"
                 >
                   <span>View All Deals</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -563,7 +564,7 @@ export default function DealsPage() {
                       onClick={() => setActiveCategory(tab)}
                       className={`px-4 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#063328] text-white shadow-xs'
+                          ? 'bg-brand-800 text-white shadow-xs'
                           : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
@@ -581,11 +582,11 @@ export default function DealsPage() {
                     <div
                       key={product.id}
                       onClick={() => navigateTo('product-detail', product)}
-                      className="bg-white rounded-2xl border border-gray-200 hover:border-[#063328] p-3 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between relative group cursor-pointer"
+                      className="bg-white rounded-2xl border border-gray-200 hover:border-brand-700 p-3 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between relative group cursor-pointer"
                     >
                       {/* Top Badges: Discount on Left, Wishlist on Right */}
                       <div className="flex items-center justify-between mb-1 relative z-10">
-                        <span className="bg-[#ff5100] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow-xs">
+                        <span className="bg-accent text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow-xs">
                           {product.discount}
                         </span>
 
@@ -628,7 +629,7 @@ export default function DealsPage() {
                         </div>
 
                         {/* Savings in Orange */}
-                        <div className="text-[11px] font-bold text-[#ff5100]">
+                        <div className="text-[11px] font-bold text-accent">
                           {product.saveText}
                         </div>
                       </div>
@@ -645,7 +646,7 @@ export default function DealsPage() {
               <div className="bg-[#e4f1ed] rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-emerald-900/10 shadow-xs">
                 {/* Left Icon + Text */}
                 <div className="flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#063328] shadow-xs">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-brand-800 shadow-xs">
                     <Zap className="w-5 h-5 fill-[#063328]" />
                   </div>
                   <div>
@@ -658,15 +659,15 @@ export default function DealsPage() {
                 <div className="flex items-center space-x-3">
                   {/* Timer Pills */}
                   <div className="flex items-center space-x-1 text-xs font-bold text-white">
-                    <span className="bg-[#063328] px-1.5 py-1 rounded">
+                    <span className="bg-brand-800 px-1.5 py-1 rounded">
                       {String(flashTimeLeft.hrs).padStart(2, '0')}
                     </span>
-                    <span className="text-[#063328] font-bold">:</span>
-                    <span className="bg-[#063328] px-1.5 py-1 rounded">
+                    <span className="text-brand-800 font-bold">:</span>
+                    <span className="bg-brand-800 px-1.5 py-1 rounded">
                       {String(flashTimeLeft.mins).padStart(2, '0')}
                     </span>
-                    <span className="text-[#063328] font-bold">:</span>
-                    <span className="bg-[#063328] px-1.5 py-1 rounded">
+                    <span className="text-brand-800 font-bold">:</span>
+                    <span className="bg-brand-800 px-1.5 py-1 rounded">
                       {String(flashTimeLeft.secs).padStart(2, '0')}
                     </span>
                   </div>
@@ -674,7 +675,7 @@ export default function DealsPage() {
                   {/* Arrow Button */}
                   <button
                     onClick={() => setActiveCategory('Electronics')}
-                    className="w-8 h-8 rounded-full bg-white text-[#063328] flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
+                    className="w-8 h-8 rounded-full bg-white text-brand-800 flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
@@ -685,7 +686,7 @@ export default function DealsPage() {
               <div className="bg-[#fff1e8] rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-orange-200/50 shadow-xs">
                 {/* Left Icon + Text */}
                 <div className="flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#ff5100] shadow-xs">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-accent shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
@@ -699,7 +700,7 @@ export default function DealsPage() {
                   <span className="text-xs font-bold text-gray-900">View Offers</span>
                   <button
                     onClick={() => setActiveCategory('Fashion')}
-                    className="w-8 h-8 rounded-full bg-[#ff5100]/15 text-[#ff5100] flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
+                    className="w-8 h-8 rounded-full bg-accent/15 text-accent flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
@@ -715,3 +716,6 @@ export default function DealsPage() {
     </div>
   );
 }
+
+
+

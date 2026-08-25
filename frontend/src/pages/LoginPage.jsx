@@ -48,67 +48,72 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-[#f3f7f6] min-h-[calc(100vh-140px)] py-8 px-4 sm:px-6 md:px-8 flex items-center justify-center font-sans">
+    <div className="bg-cream min-h-[calc(100vh-140px)] py-8 px-4 sm:px-6 md:px-8 flex items-center justify-center font-sans text-ink">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-[#0c7a68] text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold flex items-center space-x-2 z-50 animate-bounce">
-          <Check className="w-4 h-4 text-emerald-300" />
+        <div className="fixed top-6 right-6 sm:top-8 sm:right-8 bg-brand-800 text-white px-5 py-3 rounded-2xl shadow-lift text-sm font-semibold flex items-center space-x-2.5 z-50 border border-brand-500/30 transition-all duration-300">
+          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+          </div>
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Main Card Container */}
-      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 my-4">
+      <div className="bg-white rounded-3xl shadow-lift border border-gray-100 overflow-hidden max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 my-4">
 
-        {/* Left Side - Dark Teal Column */}
-        <div className="bg-[#0c7a68] p-8 md:p-10 text-white flex flex-col justify-between relative overflow-hidden">
+        {/* Left Side - Brand Panel */}
+        <div className="bg-brand-900 p-8 md:p-10 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute -top-12 -right-8 w-64 h-64 bg-gold/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 left-1/3 w-72 h-72 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+
           {/* Header & Subtitle */}
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
+          <div className="relative z-10">
+            <h1 className="text-3xl sm:text-4xl font-display font-extrabold text-white mb-2 tracking-tight">
               Welcome Back!
             </h1>
-            <p className="text-teal-100 text-sm font-normal mb-8">
-              Login to continue shopping
+            <p className="text-brand-100 text-sm font-medium mb-8">
+              Login to continue your premium shopping experience
             </p>
 
             {/* Feature Bullets */}
-            <div className="space-y-5 text-sm font-medium text-teal-50">
+            <div className="space-y-5 text-sm font-medium text-brand-50">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <RotateCcw className="w-4 h-4 text-teal-200" />
+                  <RotateCcw className="w-4 h-4 text-gold" />
                 </div>
-                <span>Track your orders</span>
+                <span>Track your orders seamlessly</span>
               </div>
 
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <ClipboardCheck className="w-4 h-4 text-teal-200" />
+                  <ClipboardCheck className="w-4 h-4 text-gold" />
                 </div>
-                <span>Faster checkout</span>
+                <span>1-Click lightning fast checkout</span>
               </div>
 
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <Heart className="w-4 h-4 text-teal-200" />
+                  <Heart className="w-4 h-4 text-gold" />
                 </div>
-                <span>Save your favorite items</span>
+                <span>Save &amp; manage your wishlist</span>
               </div>
 
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <Briefcase className="w-4 h-4 text-teal-200" />
+                  <Briefcase className="w-4 h-4 text-gold" />
                 </div>
-                <span>Exclusive offers for you</span>
+                <span>Exclusive festive offers &amp; coupons</span>
               </div>
             </div>
           </div>
 
           {/* Bottom Illustration Graphic */}
-          <div className="mt-8 pt-4 flex justify-center items-end">
+          <div className="mt-8 pt-4 flex justify-center items-end relative z-10">
             <img
               src={loginShoppingBagImg}
               alt="BuyZo Shopping Bag Illustration"
-              className="h-auto w-full max-w-[340px] object-contain"
+              className="h-auto w-full max-w-[320px] object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.4)]"
             />
           </div>
         </div>
@@ -122,7 +127,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setActiveTab('login')}
                 className={`flex-1 text-center py-2 text-base font-bold transition-all relative cursor-pointer ${activeTab === 'login'
-                  ? 'text-[#0c7a68] border-b-2 border-[#0c7a68]'
+                  ? 'text-brand-800 border-b-2 border-brand-800'
                   : 'text-gray-500 hover:text-gray-800'
                   }`}
               >
@@ -131,8 +136,8 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('signup')}
-                className={`flex-1 text-center py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${activeTab === 'signup'
-                  ? 'bg-[#0c7a68] text-white shadow-xs'
+                className={`flex-1 text-center py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${activeTab === 'signup'
+                  ? 'bg-brand-800 text-white shadow-soft'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
@@ -141,7 +146,7 @@ export default function LoginPage() {
             </div>
 
             {/* Form Container Card */}
-            <form onSubmit={handleSubmit} className="border border-gray-200/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs">
+            <form onSubmit={handleSubmit} className="border border-gray-100 rounded-2xl p-5 sm:p-6 space-y-4 shadow-soft">
               {activeTab === 'signup' && (
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1">
@@ -153,7 +158,7 @@ export default function LoginPage() {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     placeholder="Enter your full name"
-                    className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#0c7a68] focus:ring-1 focus:ring-[#0c7a68] transition-all"
+                    className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-gray-400 outline-none focus:border-brand-700 focus:ring-1 focus:ring-brand-700 transition-all"
                   />
                 </div>
               )}
@@ -169,7 +174,7 @@ export default function LoginPage() {
                   value={formData.emailOrPhone}
                   onChange={handleInputChange}
                   placeholder="Enter your email or mobile number"
-                  className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#0c7a68] focus:ring-1 focus:ring-[#0c7a68] transition-all"
+                  className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-gray-400 outline-none focus:border-brand-700 focus:ring-1 focus:ring-brand-700 transition-all"
                 />
               </div>
 
@@ -182,7 +187,7 @@ export default function LoginPage() {
                   {activeTab === 'login' && (
                     <span
                       onClick={() => setToastMessage('Password reset link sent!')}
-                      className="text-xs font-semibold text-[#0c7a68] hover:underline cursor-pointer"
+                      className="text-xs font-semibold text-accent hover:underline cursor-pointer"
                     >
                       Forgot Password?
                     </span>
@@ -195,7 +200,7 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter your password"
-                    className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#0c7a68] focus:ring-1 focus:ring-[#0c7a68] transition-all"
+                    className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-ink placeholder-gray-400 outline-none focus:border-brand-700 focus:ring-1 focus:ring-brand-700 transition-all"
                   />
                   <button
                     type="button"
@@ -214,7 +219,7 @@ export default function LoginPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-[#0c7a68] hover:bg-[#096355] text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-sm shadow-md active:scale-[0.99] mt-2"
+                className="w-full bg-accent hover:bg-accent-600 text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-sm shadow-soft active:scale-[0.99] mt-2"
               >
                 {activeTab === 'login' ? 'Login' : 'Create Account'}
               </button>
@@ -275,7 +280,7 @@ export default function LoginPage() {
                   onClick={() => setToastMessage('Logging in with Apple...')}
                   className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-xl py-2 px-2 hover:bg-gray-50 transition-colors text-xs font-semibold text-gray-700 cursor-pointer"
                 >
-                  <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-ink" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.62-.75 1.04-1.8 0.93-2.85-.9.04-2 .6-2.65 1.37-.58.68-.99 1.74-.85 2.77 1.01.08 2.05-.54 2.57-1.29z" />
                   </svg>
                   <span>Apple</span>
@@ -292,7 +297,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('signup')}
-                  className="text-[#0c7a68] font-bold hover:underline cursor-pointer"
+                  className="text-accent font-bold hover:underline cursor-pointer"
                 >
                   Sign Up
                 </button>
@@ -303,7 +308,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('login')}
-                  className="text-[#0c7a68] font-bold hover:underline cursor-pointer"
+                  className="text-accent font-bold hover:underline cursor-pointer"
                 >
                   Login
                 </button>
@@ -316,3 +321,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

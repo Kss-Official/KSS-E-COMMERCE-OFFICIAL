@@ -1,3 +1,4 @@
+import StripBanner from '../features/festive/components/StripBanner';
 import React, { useState, useMemo } from 'react';
 import { Heart, LayoutGrid, List, ChevronRight, Star, ChevronDown, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
@@ -247,9 +248,10 @@ export default function ElectronicsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-4 font-sans text-gray-800 relative">
+
       {/* Toast Notification */}
       {addedToast && (
-        <div className="fixed bottom-6 right-6 bg-[#0d5c46] text-white px-5 py-3 rounded-lg shadow-xl font-medium text-sm z-50 flex items-center space-x-2 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-700 text-white px-5 py-3 rounded-lg shadow-xl font-medium text-sm z-50 flex items-center space-x-2 animate-bounce">
           <Check className="w-5 h-5 text-emerald-300" />
           <span>{addedToast}</span>
         </div>
@@ -259,7 +261,7 @@ export default function ElectronicsPage() {
       <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500 mb-4">
         <button
           onClick={() => navigateTo('home')}
-          className="hover:text-[#0d5c46] transition-colors"
+          className="hover:text-brand-700 transition-colors"
         >
           Home
         </button>
@@ -285,7 +287,7 @@ export default function ElectronicsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-1.5 pr-8 text-sm font-medium text-gray-800 outline-none cursor-pointer focus:border-[#0d5c46] shadow-xs"
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-1.5 pr-8 text-sm font-medium text-gray-800 outline-none cursor-pointer focus:border-brand-700 shadow-xs"
               >
                 <option value="popularity">Popularity</option>
                 <option value="lowToHigh">Price: Low to High</option>
@@ -302,7 +304,7 @@ export default function ElectronicsPage() {
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded transition-colors ${
                 viewMode === 'grid'
-                  ? 'bg-emerald-50 text-[#0d5c46] border border-emerald-200'
+                  ? 'bg-emerald-50 text-brand-700 border border-emerald-200'
                   : 'text-gray-500 hover:text-gray-800'
               }`}
               title="Grid View"
@@ -313,7 +315,7 @@ export default function ElectronicsPage() {
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-emerald-50 text-[#0d5c46] border border-emerald-200'
+                  ? 'bg-emerald-50 text-brand-700 border border-emerald-200'
                   : 'text-gray-500 hover:text-gray-800'
               }`}
               title="List View"
@@ -329,7 +331,7 @@ export default function ElectronicsPage() {
         {/* Left Sidebar */}
         <aside className="lg:col-span-1 space-y-4">
           {/* Categories Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
+          <div className="bg-cream border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
             <h3 className="text-sm font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
               Categories
             </h3>
@@ -342,7 +344,7 @@ export default function ElectronicsPage() {
                     }
                     className={`w-full text-left py-1 px-2 rounded-md transition-colors flex items-center justify-between ${
                       selectedCategory === cat
-                        ? 'bg-[#0d5c46] text-white font-bold'
+                        ? 'bg-brand-700 text-white font-bold'
                         : 'hover:bg-gray-200/60 hover:text-gray-900'
                     }`}
                   >
@@ -355,7 +357,7 @@ export default function ElectronicsPage() {
           </div>
 
           {/* Filters Card */}
-          <div className="bg-[#f8faf9] border border-gray-200/90 rounded-2xl p-4 shadow-2xs space-y-5">
+          <div className="bg-cream border border-gray-200/90 rounded-2xl p-4 shadow-2xs space-y-5">
             <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2">
               Filters
             </h3>
@@ -393,7 +395,7 @@ export default function ElectronicsPage() {
                       type="checkbox"
                       checked={selectedBrands.includes(b.name)}
                       onChange={() => handleBrandChange(b.name)}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-[#0d5c46] focus:ring-[#0d5c46] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-brand-700 focus:ring-[#0d5c46] cursor-pointer"
                     />
                     <span>
                       {b.name} <span className="text-gray-400 font-normal">({b.count})</span>
@@ -401,7 +403,7 @@ export default function ElectronicsPage() {
                   </label>
                 ))}
               </div>
-              <button className="text-xs text-[#0d5c46] font-bold mt-2 hover:underline inline-flex items-center">
+              <button className="text-xs text-brand-700 font-bold mt-2 hover:underline inline-flex items-center">
                 More <ChevronDown className="w-3 h-3 ml-0.5" />
               </button>
             </div>
@@ -472,7 +474,7 @@ export default function ElectronicsPage() {
                 <div
                   key={product.id}
                   onClick={() => navigateTo('product-detail', product)}
-                  className={`bg-white border border-gray-200/90 hover:border-[#063328] rounded-2xl p-4 flex cursor-pointer ${
+                  className={`bg-white border border-gray-200/90 hover:border-brand-700 rounded-2xl p-4 flex cursor-pointer ${
                     viewMode === 'grid'
                       ? 'flex-col justify-between'
                       : 'flex-row items-center space-x-6'
@@ -491,7 +493,7 @@ export default function ElectronicsPage() {
                       className={`w-4 h-4 transition-colors ${
                         wishlistActive[product.id]
                           ? 'fill-red-500 text-red-500'
-                          : 'text-[#0d5c46] hover:text-red-500'
+                          : 'text-brand-700 hover:text-red-500'
                       }`}
                     />
                   </button>
@@ -514,7 +516,7 @@ export default function ElectronicsPage() {
                   {/* Product Details */}
                   <div className={viewMode === 'grid' ? 'mt-3 flex-1 flex flex-col justify-between' : 'flex-1'}>
                     <div>
-                      <h3 className="font-bold text-gray-900 text-sm leading-snug hover:text-[#0d5c46] transition-colors cursor-pointer line-clamp-1">
+                      <h3 className="font-bold text-gray-900 text-sm leading-snug hover:text-brand-700 transition-colors cursor-pointer line-clamp-1">
                         {product.name}
                       </h3>
 
@@ -529,7 +531,7 @@ export default function ElectronicsPage() {
                           </span>
                         )}
                         {product.discount && (
-                          <span className="text-xs font-bold text-[#ff5100]">
+                          <span className="text-xs font-bold text-accent">
                             {product.discount}
                           </span>
                         )}
@@ -561,7 +563,7 @@ export default function ElectronicsPage() {
                         e.stopPropagation();
                         handleAddToCart(product);
                       }}
-                      className="w-full mt-3 py-2.5 px-4 bg-[#0d5c46] hover:bg-[#094736] text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] flex items-center justify-center space-x-1.5"
+                      className="w-full mt-3 py-2.5 px-4 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] flex items-center justify-center space-x-1.5"
                     >
                       <span>Add to Cart</span>
                     </button>
@@ -575,3 +577,6 @@ export default function ElectronicsPage() {
     </div>
   );
 }
+
+
+

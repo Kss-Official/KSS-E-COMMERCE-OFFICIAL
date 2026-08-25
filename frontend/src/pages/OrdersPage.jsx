@@ -88,7 +88,7 @@ export default function OrdersPage() {
             onClick={() => setActiveTab(tab)}
             className={`text-sm font-bold transition-colors pb-3 -mb-3 whitespace-nowrap ${
               activeTab === tab
-                ? 'text-[#0d5c46] border-b-2 border-[#0d5c46]'
+                ? 'text-brand-700 border-b-2 border-brand-700'
                 : 'text-gray-500 hover:text-gray-900'
             }`}
           >
@@ -131,9 +131,9 @@ export default function OrdersPage() {
                     <span
                       className={`text-xs font-extrabold px-3 py-1 rounded-full border ${
                         order.status === 'Delivered'
-                          ? 'bg-emerald-50 text-[#0d5c46] border-emerald-200'
+                          ? 'bg-emerald-50 text-brand-700 border-emerald-200'
                           : order.status === 'Shipped'
-                          ? 'bg-emerald-50 text-[#0d5c46] border-emerald-200'
+                          ? 'bg-emerald-50 text-brand-700 border-emerald-200'
                           : order.status === 'Processing'
                           ? 'bg-amber-50 text-amber-700 border-amber-200'
                           : 'bg-red-50 text-red-600 border-red-200'
@@ -158,7 +158,7 @@ export default function OrdersPage() {
                     <div className="flex-1">
                       <h4
                         onClick={() => navigateTo('electronics')}
-                        className="font-bold text-gray-900 text-base hover:text-[#0d5c46] cursor-pointer transition-colors"
+                        className="font-bold text-gray-900 text-base hover:text-brand-700 cursor-pointer transition-colors"
                       >
                         {order.productName}
                       </h4>
@@ -179,7 +179,7 @@ export default function OrdersPage() {
                   {!isExpanded && (
                     <button
                       onClick={() => setSelectedOrderIndex(orderIdx)}
-                      className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-[#0d5c46] font-bold text-xs rounded-xl border border-gray-200 transition-colors flex items-center justify-center space-x-1"
+                      className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-brand-700 font-bold text-xs rounded-xl border border-gray-200 transition-colors flex items-center justify-center space-x-1"
                     >
                       <span>Track Order Status</span>
                       <ChevronRight className="w-4 h-4" />
@@ -202,7 +202,7 @@ export default function OrdersPage() {
                             {!isLast && (
                               <div
                                 className={`absolute left-[-17px] top-6 w-0.5 h-10 ${
-                                  step.completed ? 'bg-[#0d5c46]' : 'bg-gray-200'
+                                  step.completed ? 'bg-brand-700' : 'bg-gray-200'
                                 }`}
                               />
                             )}
@@ -210,7 +210,7 @@ export default function OrdersPage() {
                             {/* Bullet Circle Icon */}
                             <div className="absolute left-[-24px] top-0.5 bg-white rounded-full">
                               {step.completed ? (
-                                <div className="w-4 h-4 rounded-full bg-[#0d5c46] flex items-center justify-center ring-4 ring-emerald-50">
+                                <div className="w-4 h-4 rounded-full bg-brand-700 flex items-center justify-center ring-4 ring-emerald-50">
                                   <div className="w-1.5 h-1.5 rounded-full bg-white" />
                                 </div>
                               ) : (
@@ -240,13 +240,13 @@ export default function OrdersPage() {
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <button
                         onClick={() => alert(`Tracking details for ${order.id}`)}
-                        className="py-2.5 px-4 bg-white border border-[#0d5c46] text-[#0d5c46] hover:bg-emerald-50 font-bold text-xs rounded-xl transition-colors text-center"
+                        className="py-2.5 px-4 bg-white border border-brand-700 text-brand-700 hover:bg-emerald-50 font-bold text-xs rounded-xl transition-colors text-center"
                       >
                         Track Order
                       </button>
                       <button
                         onClick={() => navigateTo('product-detail')}
-                        className="py-2.5 px-4 bg-white border border-[#0d5c46] text-[#0d5c46] hover:bg-emerald-50 font-bold text-xs rounded-xl transition-colors text-center"
+                        className="py-2.5 px-4 bg-white border border-brand-700 text-brand-700 hover:bg-emerald-50 font-bold text-xs rounded-xl transition-colors text-center"
                       >
                         View Details
                       </button>
@@ -261,3 +261,5 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+

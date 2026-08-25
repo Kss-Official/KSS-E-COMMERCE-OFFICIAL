@@ -14,7 +14,8 @@ import {
   Download,
   X,
   PackageCheck,
-  Package
+  Package,
+  Sparkles
 } from 'lucide-react';
 import { useNavigationContext } from '../context/NavigationContext';
 
@@ -113,15 +114,12 @@ export default function OrderConfirmedPage() {
         <div className="lg:col-span-8 space-y-6">
           <div className="bg-white rounded-3xl border border-gray-200/90 p-6 sm:p-8 shadow-xs relative overflow-hidden">
             {/* Confetti Sparkles Decoration */}
-            <div className="absolute top-4 left-1/4 text-emerald-400 text-xs pointer-events-none">✦</div>
-            <div className="absolute top-8 left-1/3 text-amber-400 text-sm pointer-events-none">▲</div>
-            <div className="absolute top-6 right-1/4 text-orange-400 text-xs pointer-events-none">✦</div>
-            <div className="absolute top-10 right-1/3 text-emerald-500 text-xs pointer-events-none">●</div>
-            <div className="absolute top-4 right-1/2 text-amber-500 text-xs pointer-events-none">◆</div>
+            <div className="absolute top-4 left-1/4 text-brand-500 pointer-events-none animate-sparkle"><Sparkles className="w-4 h-4" /></div>
+            <div className="absolute top-6 right-1/4 text-gold pointer-events-none animate-sparkle"><Sparkles className="w-4 h-4" /></div>
 
             {/* Celebratory Header */}
             <div className="text-center max-w-lg mx-auto mb-8 pt-2">
-              <div className="w-14 h-14 rounded-full bg-[#063328] text-white flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-emerald-50">
+              <div className="w-14 h-14 rounded-full bg-brand-800 text-white flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-emerald-50">
                 <Check className="w-7 h-7 stroke-[2.5]" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -137,7 +135,7 @@ export default function OrderConfirmedPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-gray-50/80 border border-gray-200/80 mb-6">
               {/* Order ID */}
               <div className="flex items-center space-x-3 sm:border-r sm:border-gray-200 sm:pr-3 py-1">
-                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#063328] shrink-0 shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand-800 shrink-0 shadow-2xs">
                   <FileText className="w-5 h-5 text-emerald-700" />
                 </div>
                 <div>
@@ -148,7 +146,7 @@ export default function OrderConfirmedPage() {
 
               {/* Order Date */}
               <div className="flex items-center space-x-3 sm:border-r sm:border-gray-200 sm:pr-3 py-1">
-                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#063328] shrink-0 shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand-800 shrink-0 shadow-2xs">
                   <Calendar className="w-5 h-5 text-emerald-700" />
                 </div>
                 <div>
@@ -159,7 +157,7 @@ export default function OrderConfirmedPage() {
 
               {/* Estimated Delivery */}
               <div className="flex items-center space-x-3 py-1">
-                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#063328] shrink-0 shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand-800 shrink-0 shadow-2xs">
                   <Truck className="w-5 h-5 text-emerald-700" />
                 </div>
                 <div>
@@ -239,8 +237,8 @@ export default function OrderConfirmedPage() {
                   </h3>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-gray-500">Paid via {orderData.paymentMethod}</span>
-                    <span className="font-black italic text-[#063328] text-xs">
-                      UPI <span className="text-[#ff5100]">▶</span>
+                    <span className="font-black italic text-brand-800 text-xs">
+                      UPI <span className="text-accent">▶</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-1">
@@ -260,7 +258,7 @@ export default function OrderConfirmedPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 onClick={() => navigateTo('orders')}
-                className="py-3 px-4 rounded-xl bg-[#063328] hover:bg-[#04241c] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-2 cursor-pointer transition-all active:scale-98"
+                className="py-3 px-4 rounded-xl bg-brand-800 hover:bg-brand-900 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-2 cursor-pointer transition-all active:scale-98"
               >
                 <Compass className="w-4 h-4 text-emerald-300" />
                 <span>Track Your Order</span>
@@ -329,7 +327,7 @@ export default function OrderConfirmedPage() {
                     {/* Step Icon Node */}
                     <div className="relative z-10 shrink-0">
                       {step.completed ? (
-                        <div className="w-7 h-7 rounded-full bg-[#063328] text-white flex items-center justify-center shadow-xs">
+                        <div className="w-7 h-7 rounded-full bg-brand-800 text-white flex items-center justify-center shadow-xs">
                           <Check className="w-4 h-4 stroke-[3]" />
                         </div>
                       ) : step.current ? (
@@ -406,7 +404,7 @@ export default function OrderConfirmedPage() {
 
               <div className="flex justify-between text-sm font-black pt-1">
                 <span>Total Amount Paid:</span>
-                <span className="text-[#063328]">₹{orderData.totalPaid}</span>
+                <span className="text-brand-800">₹{orderData.totalPaid}</span>
               </div>
             </div>
 
@@ -420,7 +418,7 @@ export default function OrderConfirmedPage() {
               </button>
               <button
                 onClick={() => setShowInvoiceModal(false)}
-                className="px-6 py-2.5 rounded-xl bg-[#063328] hover:bg-[#04241c] text-white text-xs font-bold shadow-md cursor-pointer"
+                className="px-6 py-2.5 rounded-xl bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold shadow-md cursor-pointer"
               >
                 Done
               </button>
@@ -431,3 +429,5 @@ export default function OrderConfirmedPage() {
     </div>
   );
 }
+
+

@@ -1,3 +1,4 @@
+import StripBanner from '../features/festive/components/StripBanner';
 import React, { useState, useMemo } from 'react';
 import {
   Heart,
@@ -404,7 +405,7 @@ export default function FashionPage() {
     <div className="bg-gray-50 min-h-screen pb-16 font-sans text-gray-800 relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-800 text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
           <div className="bg-emerald-500 text-white rounded-full p-1">
             <Check className="w-4 h-4" />
           </div>
@@ -413,41 +414,39 @@ export default function FashionPage() {
       )}
 
       {/* Hero Banner */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 sm:pt-4">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#e4f1ed] text-gray-900 border border-emerald-900/10 shadow-xs">
-          {/* Subtle decorative elements */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-[#ff5100]/10 rounded-full blur-2xl pointer-events-none"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#e6f4f0] via-[#edf7f4] to-[#fceee8] text-gray-900 border border-emerald-900/10 shadow-soft">
+          {/* Subtle decorative glow elements */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none animate-glow"></div>
+          <div className="absolute -bottom-10 left-1/3 w-80 h-80 bg-accent/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute top-6 right-1/4 text-gold/60 animate-sparkle pointer-events-none text-sm">✦</div>
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-end p-5 sm:p-7 lg:p-8 pb-0 sm:pb-0 lg:pb-0 gap-6">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-end p-6 sm:p-9 lg:p-10 pb-0 sm:pb-0 lg:pb-0 gap-6">
             {/* Left Content */}
-            <div className="lg:col-span-7 space-y-3 sm:space-y-4 pb-4 sm:pb-6 lg:pb-8">
-              <div className="inline-flex items-center space-x-2 bg-emerald-900/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-[#063328] border border-emerald-900/15">
-                <Sparkles className="w-3.5 h-3.5 text-[#ff5100]" />
+            <div className="lg:col-span-6 space-y-4 sm:space-y-5 pb-6 sm:pb-8 lg:pb-10">
+              <div className="inline-flex items-center space-x-2 bg-brand-800/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider text-brand-800 border border-brand-800/15 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-accent animate-spin-slow" />
                 <span>Summer 2026 Collection — Live Now</span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight text-gray-900">
-                Redefine Your Everyday Style with <span className="text-[#063328]">BuyZo Fashion</span>
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-display font-black tracking-tight leading-[1.12] text-brand-900">
+                Redefine Your Everyday Style with <span className="text-accent">BuyZo Fashion</span>
               </h1>
 
-              <p className="text-xs sm:text-sm text-gray-600 max-w-lg font-normal leading-relaxed">
-                Discover trending apparel, designer handbags, handcrafted ethnic wear, and comfort footwear with up to <span className="text-gray-900 font-bold underline decoration-[#ff5100] decoration-2">70% OFF</span> top tier global brands.
+              <p className="text-xs sm:text-sm text-gray-600 max-w-lg font-medium leading-relaxed">
+                Discover trending apparel, designer handbags, handcrafted ethnic wear, and comfort footwear with up to <span className="text-brand-900 font-extrabold underline decoration-accent decoration-2">70% OFF</span> top tier global brands.
               </p>
 
               {/* Quick Feature Badges */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                <div className="flex items-center space-x-2 text-xs text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-emerald-900/10 shadow-2xs">
-                  <Tag className="w-3.5 h-3.5 text-[#ff5100] shrink-0" />
-                  <span className="font-medium">Up to 70% Off Deals</span>
+              <div className="flex flex-wrap items-center gap-4 sm:gap-5 pt-0.5 text-xs text-gray-700 font-semibold">
+                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-xl border border-gray-200/50">
+                  <Tag className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span>Up to 70% Off Deals</span>
                 </div>
-                <div className="flex items-center space-x-2 text-xs text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-emerald-900/10 shadow-2xs">
-                  <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="font-medium">Express Fast Shipping</span>
-                </div>
-                <div className="flex items-center space-x-2 text-xs text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-emerald-900/10 shadow-2xs col-span-2 sm:col-span-1">
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="font-medium">7-Day Easy Returns</span>
+
+                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-xl border border-gray-200/50">
+                  <RotateCcw className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                  <span>7-Day Easy Returns</span>
                 </div>
               </div>
 
@@ -456,9 +455,9 @@ export default function FashionPage() {
                 <button
                   onClick={() => {
                     setActiveCategory("Women's Wear");
-                    window.scrollTo({ top: 440, behavior: 'smooth' });
+                    window.scrollTo({ top: 480, behavior: 'smooth' });
                   }}
-                  className="px-5 py-2.5 bg-[#ff5100] hover:bg-[#e04700] text-white text-xs font-bold rounded-xl transition-all shadow-md hover:shadow-orange-500/30 flex items-center space-x-1.5 cursor-pointer transform hover:-translate-y-0.5"
+                  className="px-5 py-2.5 bg-accent hover:bg-accent-600 text-white text-xs sm:text-sm font-extrabold rounded-xl transition-all shadow-md hover:shadow-orange-500/30 flex items-center space-x-2 cursor-pointer transform hover:-translate-y-0.5"
                 >
                   <span>Shop Women</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -466,38 +465,40 @@ export default function FashionPage() {
                 <button
                   onClick={() => {
                     setActiveCategory("Men's Wear");
-                    window.scrollTo({ top: 440, behavior: 'smooth' });
+                    window.scrollTo({ top: 480, behavior: 'smooth' });
                   }}
-                  className="px-5 py-2.5 bg-white hover:bg-emerald-50 text-gray-800 text-xs font-bold rounded-xl border border-emerald-900/15 transition-all shadow-2xs backdrop-blur-md cursor-pointer transform hover:-translate-y-0.5"
+                  className="px-5 py-2.5 bg-white hover:bg-brand-50 text-brand-900 text-xs sm:text-sm font-extrabold rounded-xl border border-brand-800/20 transition-all shadow-soft backdrop-blur-md cursor-pointer transform hover:-translate-y-0.5"
                 >
                   <span>Shop Men</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveCategory('Ethnic Wear');
-                    window.scrollTo({ top: 440, behavior: 'smooth' });
-                  }}
-                  className="px-5 py-2.5 bg-white hover:bg-emerald-50 text-gray-800 text-xs font-bold rounded-xl border border-emerald-900/15 transition-all shadow-2xs backdrop-blur-md cursor-pointer transform hover:-translate-y-0.5"
-                >
-                  <span>Ethnic &amp; Festive</span>
                 </button>
               </div>
             </div>
 
-            {/* Right Banner Image (Anchored & Moved Down) */}
-            <div className="lg:col-span-5 flex justify-center items-end self-end">
-              <div className="relative w-full max-w-xs lg:max-w-sm group flex flex-col items-center justify-end">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#ff5100]/15 to-emerald-500/15 rounded-3xl filter blur-xl transform group-hover:scale-105 transition-all pointer-events-none"></div>
+            {/* Right Banner Image */}
+            <div className="lg:col-span-6 flex justify-center items-end self-end">
+              <div className="relative w-full max-w-sm lg:max-w-md group flex flex-col items-center justify-end">
+                {/* Ambient glow behind models */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-accent/20 via-emerald-400/20 to-gold/20 rounded-full filter blur-2xl transform group-hover:scale-110 transition-all duration-700 pointer-events-none"></div>
+
                 <img
                   src={fashionHeroImg}
                   alt="Fashion trends"
-                  className="relative z-10 w-full h-auto max-h-[300px] lg:max-h-[340px] object-contain object-bottom drop-shadow-xl transition-transform duration-500 group-hover:scale-105 translate-y-1 sm:translate-y-2 lg:translate-y-3"
+                  className="relative z-10 w-full h-auto max-h-[320px] sm:max-h-[360px] lg:max-h-[380px] object-contain object-bottom drop-shadow-[0_16px_28px_rgba(3,32,26,0.2)] transition-transform duration-500 group-hover:scale-[1.02] translate-y-1 sm:translate-y-2"
                 />
-                <div className="absolute bottom-3 left-0 sm:bottom-4 sm:left-2 bg-white/95 backdrop-blur-md text-gray-900 px-3 py-1.5 rounded-xl shadow-lg border border-emerald-900/10 z-20 flex items-center space-x-2">
-                  <Flame className="w-4 h-4 text-[#ff5100] animate-pulse" />
+
+                {/* Upgraded Premium Floating Badge */}
+                <div className="absolute bottom-3 left-2 sm:bottom-4 sm:left-3 bg-white/95 backdrop-blur-xl text-gray-900 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl shadow-lift border border-white/60 z-20 flex items-center space-x-2.5 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-50 to-amber-100 border border-orange-200/80 flex items-center justify-center shrink-0 shadow-2xs">
+                    <Flame className="w-4 h-4 text-accent animate-pulse" />
+                  </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase text-gray-500">Bestselling Brand</div>
-                    <div className="text-[11px] font-black text-[#063328]">Biba &amp; Zara 50% OFF</div>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-gray-400">Bestselling Brand</span>
+                      <span className="bg-accent/10 text-accent text-[8px] font-black px-1.5 py-0.2 rounded">TOP RATED</span>
+                    </div>
+                    <div className="text-xs sm:text-sm font-black text-brand-900 tracking-tight">
+                      Biba &amp; Zara <span className="text-accent">Flat 50% OFF</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -510,7 +511,7 @@ export default function FashionPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5 text-[#ff5100]" />
+            <TrendingUp className="w-5 h-5 text-accent" />
             <h2 className="text-lg font-bold text-gray-900">Explore Fashion Collections</h2>
           </div>
           <span className="text-xs text-gray-500 font-medium">Showing {filteredProducts.length} Items</span>
@@ -524,8 +525,8 @@ export default function FashionPage() {
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex items-center space-x-2.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${isActive
-                  ? 'bg-[#063328] text-white border-[#063328] shadow-md shadow-[#063328]/20 scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-[#063328] border-gray-200 shadow-sm'
+                  ? 'bg-brand-800 text-white border-brand-800 shadow-md shadow-[#063328]/20 scale-105'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-brand-800 border-gray-200 shadow-sm'
                   }`}
               >
                 <img src={cat.icon} alt={cat.name} className="w-4 h-4 object-contain" />
@@ -548,12 +549,12 @@ export default function FashionPage() {
         <div className="lg:hidden flex items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-200 mb-4">
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="flex items-center space-x-2 text-xs font-bold text-[#063328] cursor-pointer"
+            className="flex items-center space-x-2 text-xs font-bold text-brand-800 cursor-pointer"
           >
-            <SlidersHorizontal className="w-4 h-4 text-[#ff5100]" />
+            <SlidersHorizontal className="w-4 h-4 text-accent" />
             <span>Filters & Refinements</span>
             {(selectedBrands.length > 0 || selectedSizes.length > 0 || minRating > 0) && (
-              <span className="w-2 h-2 rounded-full bg-[#ff5100]"></span>
+              <span className="w-2 h-2 rounded-full bg-accent"></span>
             )}
           </button>
           <div className="flex items-center space-x-2 text-xs font-semibold text-gray-600">
@@ -580,13 +581,13 @@ export default function FashionPage() {
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center space-x-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#ff5100]" />
+                <SlidersHorizontal className="w-4 h-4 text-accent" />
                 <span className="font-bold text-sm text-gray-900">Filters</span>
               </div>
               {(selectedBrands.length > 0 || selectedSizes.length > 0 || minRating > 0 || activeCategory !== 'All' || maxPrice < 10000) && (
                 <button
                   onClick={clearAllFilters}
-                  className="text-xs font-semibold text-[#ff5100] hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-accent hover:underline cursor-pointer"
                 >
                   Clear All
                 </button>
@@ -608,7 +609,7 @@ export default function FashionPage() {
                       <div className="flex items-center space-x-2">
                         <div
                           className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${isChecked
-                            ? 'bg-[#063328] border-[#063328] text-white'
+                            ? 'bg-brand-800 border-brand-800 text-white'
                             : 'border-gray-300 bg-white'
                             }`}
                         >
@@ -636,7 +637,7 @@ export default function FashionPage() {
                       key={sz}
                       onClick={() => handleToggleSize(sz)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${isSelected
-                        ? 'bg-[#063328] text-white border-[#063328]'
+                        ? 'bg-brand-800 text-white border-brand-800'
                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200'
                         }`}
                     >
@@ -651,7 +652,7 @@ export default function FashionPage() {
             <div className="space-y-3 pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="uppercase tracking-wider text-gray-500">Max Price</span>
-                <span className="text-[#063328] font-black">₹{maxPrice.toLocaleString('en-IN')}</span>
+                <span className="text-brand-800 font-black">₹{maxPrice.toLocaleString('en-IN')}</span>
               </div>
               <input
                 type="range"
@@ -680,7 +681,7 @@ export default function FashionPage() {
                   >
                     <div
                       className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors ${minRating === rt
-                        ? 'bg-[#ff5100] border-[#ff5100] text-white'
+                        ? 'bg-accent border-[#ff5100] text-white'
                         : 'border-gray-300 bg-white'
                         }`}
                     >
@@ -716,7 +717,7 @@ export default function FashionPage() {
                 <span className="font-bold text-gray-900">{filteredProducts.length}</span>
                 <span>fashion items</span>
                 {activeCategory !== 'All' && (
-                  <span className="bg-emerald-50 text-[#063328] px-2 py-0.5 rounded-md font-semibold text-[11px] border border-emerald-200">
+                  <span className="bg-emerald-50 text-brand-800 px-2 py-0.5 rounded-md font-semibold text-[11px] border border-emerald-200">
                     Category: {activeCategory}
                   </span>
                 )}
@@ -744,7 +745,7 @@ export default function FashionPage() {
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-1.5 rounded-md cursor-pointer transition-colors ${viewMode === 'grid'
-                      ? 'bg-white text-[#063328] shadow-xs'
+                      ? 'bg-white text-brand-800 shadow-xs'
                       : 'text-gray-400 hover:text-gray-600'
                       }`}
                     title="Grid View"
@@ -754,7 +755,7 @@ export default function FashionPage() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-1.5 rounded-md cursor-pointer transition-colors ${viewMode === 'list'
-                      ? 'bg-white text-[#063328] shadow-xs'
+                      ? 'bg-white text-brand-800 shadow-xs'
                       : 'text-gray-400 hover:text-gray-600'
                       }`}
                     title="List View"
@@ -775,7 +776,7 @@ export default function FashionPage() {
                 </p>
                 <button
                   onClick={clearAllFilters}
-                  className="px-5 py-2.5 bg-[#063328] text-white text-xs font-bold rounded-xl hover:bg-[#0b4d3c] transition-colors cursor-pointer"
+                  className="px-5 py-2.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-[#0b4d3c] transition-colors cursor-pointer"
                 >
                   Reset All Filters
                 </button>
@@ -788,18 +789,18 @@ export default function FashionPage() {
                     <div
                       key={product.id}
                       onClick={() => handleProductClick(product)}
-                      className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+                      className="group bg-white rounded-2xl border border-gray-200 hover:border-brand-700 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
                     >
                       {/* Image Container */}
                       <div className="relative bg-gray-50 p-4 aspect-[4/3] flex items-center justify-center overflow-hidden">
                         {/* Discount Badge */}
-                        <div className="absolute top-3 left-3 z-10 bg-[#ff5100] text-white text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm">
+                        <div className="absolute top-3 left-3 z-10 bg-accent text-white text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm">
                           {product.discount}
                         </div>
 
                         {/* Top Tag Badge if present */}
                         {product.badge && (
-                          <div className="absolute top-3 right-12 z-10 bg-[#063328] text-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">
+                          <div className="absolute top-3 right-12 z-10 bg-brand-800 text-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">
                             {product.badge}
                           </div>
                         )}
@@ -833,7 +834,7 @@ export default function FashionPage() {
                           </div>
 
                           {/* Product Name */}
-                          <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-[#063328] transition-colors leading-snug">
+                          <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-brand-800 transition-colors leading-snug">
                             {product.name}
                           </h3>
 
@@ -879,7 +880,7 @@ export default function FashionPage() {
 
                           <button
                             onClick={(e) => handleAddToCart(product, e)}
-                            className="p-2.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
+                            className="p-2.5 bg-brand-800 hover:bg-accent text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
                             title="Add to Cart"
                           >
                             <ShoppingBag className="w-4 h-4" />
@@ -899,11 +900,11 @@ export default function FashionPage() {
                     <div
                       key={product.id}
                       onClick={() => handleProductClick(product)}
-                      className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
+                      className="group bg-white rounded-2xl border border-gray-200 hover:border-brand-700 hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
                     >
                       {/* Image */}
                       <div className="relative w-full sm:w-44 h-44 shrink-0 bg-gray-50 rounded-xl p-3 flex items-center justify-center overflow-hidden">
-                        <div className="absolute top-2 left-2 z-10 bg-[#ff5100] text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
+                        <div className="absolute top-2 left-2 z-10 bg-accent text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
                           {product.discount}
                         </div>
                         <img
@@ -926,7 +927,7 @@ export default function FashionPage() {
                           </button>
                         </div>
 
-                        <h3 className="text-base font-bold text-gray-900 group-hover:text-[#063328] transition-colors">
+                        <h3 className="text-base font-bold text-gray-900 group-hover:text-brand-800 transition-colors">
                           {product.name}
                         </h3>
 
@@ -955,7 +956,7 @@ export default function FashionPage() {
 
                           <button
                             onClick={(e) => handleAddToCart(product, e)}
-                            className="px-5 py-2.5 bg-[#063328] hover:bg-[#ff5100] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
+                            className="px-5 py-2.5 bg-brand-800 hover:bg-accent text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
                           >
                             <ShoppingBag className="w-3.5 h-3.5" />
                             <span>Add to Cart</span>
@@ -975,7 +976,7 @@ export default function FashionPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14">
         <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-start space-x-4">
-            <div className="p-3 bg-emerald-50 text-[#063328] rounded-2xl shrink-0">
+            <div className="p-3 bg-emerald-50 text-brand-800 rounded-2xl shrink-0">
               <ShieldCheck className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
@@ -987,8 +988,8 @@ export default function FashionPage() {
           </div>
 
           <div className="flex items-start space-x-4">
-            <div className="p-3 bg-orange-50 text-[#ff5100] rounded-2xl shrink-0">
-              <RotateCcw className="w-6 h-6 text-[#ff5100]" />
+            <div className="p-3 bg-orange-50 text-accent rounded-2xl shrink-0">
+              <RotateCcw className="w-6 h-6 text-accent" />
             </div>
             <div>
               <h4 className="text-sm font-bold text-gray-900">Hassle-Free 7 Day Returns</h4>
@@ -1014,3 +1015,6 @@ export default function FashionPage() {
     </div>
   );
 }
+
+
+

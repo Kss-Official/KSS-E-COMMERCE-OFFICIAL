@@ -1,3 +1,4 @@
+import CTAPane from '../features/festive/components/CTAPane';
 import React, { useState, useMemo } from 'react';
 import {
   Heart,
@@ -145,7 +146,7 @@ const bestSellerProducts = [
     reviews: 3200,
     soldCount: '8k+ bought this month',
     badge: 'MOST POPULAR',
-    badgeColor: 'bg-[#ff5100]',
+    badgeColor: 'bg-accent',
     popularity: 93,
     description: '16GB DDR4, 512GB NVMe SSD, 15.6 inch FHD anti-glare micro-edge display.'
   },
@@ -253,7 +254,7 @@ const bestSellerProducts = [
     reviews: 3100,
     soldCount: '7.5k+ bought this month',
     badge: 'HOT TREND',
-    badgeColor: 'bg-[#ff5100]',
+    badgeColor: 'bg-accent',
     popularity: 88,
     description: 'Retro chunky street sneaker built with soft cushioned sole and durable leather panels.'
   },
@@ -345,7 +346,7 @@ export default function BestSellersPage() {
     <div className="bg-gray-50 min-h-screen pb-16 font-sans text-gray-800 relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-800 text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
           <div className="bg-emerald-500 text-white rounded-full p-1">
             <Check className="w-4 h-4" />
           </div>
@@ -353,23 +354,23 @@ export default function BestSellersPage() {
         </div>
       )}
 
-      {/* Hero Banner with #e3f4f0 Theme */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#e3f4f0] border border-[#cbe8e2] text-gray-900 shadow-sm">
-          {/* Subtle Ambient Glows */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-orange-200/20 rounded-full blur-2xl pointer-events-none"></div>
+      {/* Hero Banner with Warm Ivory/Cream Theme */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#fcf7ee] via-[#f7f0e3] to-[#efe4d2] border border-[#e5d8c3] text-[#1c231c] shadow-soft">
+          {/* Subtle Warm Ambient Glows */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-10 left-1/3 w-80 h-80 bg-orange-400/10 rounded-full blur-2xl pointer-events-none"></div>
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center p-6 sm:p-10 lg:p-12 gap-8">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center py-8 sm:py-12 lg:py-14 px-6 sm:px-10 lg:px-12 gap-8">
             <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-              <div className="inline-flex items-center space-x-2 bg-[#08493d] text-white px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-2xs">
-                <Trophy className="w-3.5 h-3.5 text-amber-300" />
+              <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-md text-brand-900 border border-[#ddcfba] px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-2xs">
+                <Trophy className="w-3.5 h-3.5 text-gold" />
                 <span>BuyZo Official Best Sellers 2026</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-                <span className="text-gray-900 block">Most Loved Products,</span>
-                <span className="text-[#ff5100] block">Ranked by Customer Orders</span>
+              <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold tracking-tight leading-[1.12] text-[#1a241b]">
+                <span className="text-[#1a241b] block">Most Loved Products,</span>
+                <span className="text-accent block font-sans font-black">Ranked by Customer Orders</span>
               </h1>
 
               <p className="text-xs sm:text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
@@ -377,17 +378,17 @@ export default function BestSellersPage() {
               </p>
 
               {/* Highlights pills */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                <div className="flex items-center space-x-2 text-xs text-gray-800 bg-white/80 backdrop-blur-xs rounded-xl p-2.5 border border-[#cbe8e2] shadow-2xs font-semibold">
-                  <Flame className="w-4 h-4 text-[#ff5100] shrink-0" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                <div className="flex items-center space-x-2 text-xs text-[#20291f] bg-white/85 backdrop-blur-sm rounded-xl p-2.5 border border-[#dfd2be] shadow-2xs font-semibold">
+                  <Flame className="w-4 h-4 text-accent shrink-0" />
                   <span>100k+ Units Sold</span>
                 </div>
-                <div className="flex items-center space-x-2 text-xs text-gray-800 bg-white/80 backdrop-blur-xs rounded-xl p-2.5 border border-[#cbe8e2] shadow-2xs font-semibold">
+                <div className="flex items-center space-x-2 text-xs text-[#20291f] bg-white/85 backdrop-blur-sm rounded-xl p-2.5 border border-[#dfd2be] shadow-2xs font-semibold">
                   <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
                   <span>4.5+ Average Rating</span>
                 </div>
-                <div className="flex items-center space-x-2 text-xs text-gray-800 bg-white/80 backdrop-blur-xs rounded-xl p-2.5 border border-[#cbe8e2] shadow-2xs font-semibold col-span-2 sm:col-span-1">
-                  <ShieldCheck className="w-4 h-4 text-[#08493d] shrink-0" />
+                <div className="flex items-center space-x-2 text-xs text-[#20291f] bg-white/85 backdrop-blur-sm rounded-xl p-2.5 border border-[#dfd2be] shadow-2xs font-semibold col-span-2 sm:col-span-1">
+                  <ShieldCheck className="w-4 h-4 text-brand-800 shrink-0" />
                   <span>100% Verified Quality</span>
                 </div>
               </div>
@@ -396,11 +397,11 @@ export default function BestSellersPage() {
             {/* Right Hero Image */}
             <div className="lg:col-span-5 flex justify-center items-center">
               <div className="relative w-full max-w-md group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#ff5100]/15 to-emerald-400/15 rounded-3xl filter blur-xl transform group-hover:scale-105 transition-all"></div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-accent/15 via-gold/15 to-emerald-500/10 rounded-full filter blur-2xl transform group-hover:scale-105 transition-all duration-700 pointer-events-none"></div>
                 <img
                   src={bestSellersHeroImg}
                   alt="Best Sellers Showcase"
-                  className="relative z-10 w-full h-auto max-h-[300px] object-cover rounded-2xl drop-shadow-xl border border-white/60 group-hover:scale-102 transition-transform duration-500"
+                  className="relative z-10 w-full h-auto max-h-[300px] object-contain drop-shadow-xl"
                 />
               </div>
             </div>
@@ -425,18 +426,16 @@ export default function BestSellersPage() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center space-x-2.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${
-                  isActive
-                    ? 'bg-[#063328] text-white border-[#063328] shadow-md shadow-[#063328]/20 scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-[#063328] border-gray-200 shadow-sm'
-                }`}
+                className={`flex items-center space-x-2.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${isActive
+                    ? 'bg-brand-800 text-white border-brand-800 shadow-md shadow-[#063328]/20 scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-brand-800 border-gray-200 shadow-sm'
+                  }`}
               >
                 <img src={cat.icon} alt={cat.name} className="w-4 h-4 object-contain" />
                 <span>{cat.name}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-white/20 text-emerald-200' : 'bg-gray-100 text-gray-500'
-                  }`}
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-emerald-200' : 'bg-gray-100 text-gray-500'
+                    }`}
                 >
                   {cat.count}
                 </span>
@@ -452,7 +451,7 @@ export default function BestSellersPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-sm gap-3 mb-6">
           <div className="flex items-center space-x-2 text-xs text-gray-600 font-medium">
             <span>Ranking for:</span>
-            <span className="font-bold text-[#063328] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
+            <span className="font-bold text-brand-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
               {activeCategory === 'All' ? 'All Departments' : activeCategory}
             </span>
           </div>
@@ -475,18 +474,16 @@ export default function BestSellersPage() {
             <div className="flex items-center space-x-1 border border-gray-200 rounded-lg p-1 bg-gray-50">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                  viewMode === 'grid' ? 'bg-white text-[#063328] shadow-xs' : 'text-gray-400 hover:text-gray-600'
-                }`}
+                className={`p-1.5 rounded-md cursor-pointer transition-colors ${viewMode === 'grid' ? 'bg-white text-brand-800 shadow-xs' : 'text-gray-400 hover:text-gray-600'
+                  }`}
                 title="Grid View"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                  viewMode === 'list' ? 'bg-white text-[#063328] shadow-xs' : 'text-gray-400 hover:text-gray-600'
-                }`}
+                className={`p-1.5 rounded-md cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-white text-brand-800 shadow-xs' : 'text-gray-400 hover:text-gray-600'
+                  }`}
                 title="List View"
               >
                 <List className="w-4 h-4" />
@@ -504,29 +501,28 @@ export default function BestSellersPage() {
                 <div
                   key={product.id}
                   onClick={() => navigateTo('product-detail', product)}
-                  className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+                  className="group bg-white rounded-2xl border border-gray-200 hover:border-brand-700 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
                 >
                   {/* Image & Badges */}
                   <div className="relative bg-gray-50 p-4 aspect-[4/3] flex items-center justify-center overflow-hidden">
                     {/* Rank Badge (#1, #2, #3...) */}
-                    <div className="absolute top-3 left-3 z-10 flex items-center space-x-1 bg-[#063328] text-amber-300 text-[11px] font-black px-2.5 py-1 rounded-lg shadow-md border border-amber-400/30">
+                    <div className="absolute top-3 left-3 z-10 flex items-center space-x-1 bg-brand-800 text-amber-300 text-[11px] font-black px-2.5 py-1 rounded-lg shadow-md border border-amber-400/30">
                       <Trophy className="w-3.5 h-3.5 text-amber-400" />
                       <span>#{product.rank}</span>
                     </div>
 
                     {/* Top Custom Badge */}
-                    <div className={`absolute top-3 right-12 z-10 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-xs ${product.badgeColor || 'bg-[#ff5100]'}`}>
+                    <div className={`absolute top-3 right-12 z-10 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-xs ${product.badgeColor || 'bg-accent'}`}>
                       {product.badge}
                     </div>
 
                     {/* Wishlist Button */}
                     <button
                       onClick={(e) => handleToggleWishlist(product, e)}
-                      className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-sm ${
-                        inWish
+                      className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-sm ${inWish
                           ? 'bg-rose-50 text-rose-500 border border-rose-200'
                           : 'bg-white/80 text-gray-500 hover:text-rose-500 hover:bg-white border border-gray-200/50'
-                      }`}
+                        }`}
                       title="Save to Wishlist"
                     >
                       <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
@@ -547,7 +543,7 @@ export default function BestSellersPage() {
                         <span>{product.category}</span>
                       </div>
 
-                      <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-[#063328] transition-colors leading-snug">
+                      <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-brand-800 transition-colors leading-snug">
                         {product.name}
                       </h3>
 
@@ -577,7 +573,7 @@ export default function BestSellersPage() {
 
                       <button
                         onClick={(e) => handleAddToCart(product, e)}
-                        className="p-2.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
+                        className="p-2.5 bg-brand-800 hover:bg-accent text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
                         title="Add to Cart"
                       >
                         <ShoppingBag className="w-4 h-4" />
@@ -597,10 +593,10 @@ export default function BestSellersPage() {
                 <div
                   key={product.id}
                   onClick={() => navigateTo('product-detail', product)}
-                  className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
+                  className="group bg-white rounded-2xl border border-gray-200 hover:border-brand-700 hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
                 >
                   <div className="relative w-full sm:w-44 h-44 shrink-0 bg-gray-50 rounded-xl p-3 flex items-center justify-center overflow-hidden">
-                    <div className="absolute top-2 left-2 z-10 flex items-center space-x-1 bg-[#063328] text-amber-300 text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
+                    <div className="absolute top-2 left-2 z-10 flex items-center space-x-1 bg-brand-800 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
                       <Trophy className="w-3 h-3 text-amber-400" />
                       <span>#{product.rank}</span>
                     </div>
@@ -616,15 +612,14 @@ export default function BestSellersPage() {
                       <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">{product.brand}</span>
                       <button
                         onClick={(e) => handleToggleWishlist(product, e)}
-                        className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-                          inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
-                        }`}
+                        className={`p-1.5 rounded-full transition-colors cursor-pointer ${inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
+                          }`}
                       >
                         <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
                       </button>
                     </div>
 
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-[#063328] transition-colors">
+                    <h3 className="text-base font-bold text-gray-900 group-hover:text-brand-800 transition-colors">
                       {product.name}
                     </h3>
 
@@ -649,7 +644,7 @@ export default function BestSellersPage() {
 
                       <button
                         onClick={(e) => handleAddToCart(product, e)}
-                        className="px-5 py-2.5 bg-[#063328] hover:bg-[#ff5100] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
+                        className="px-5 py-2.5 bg-brand-800 hover:bg-accent text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
                         <span>Add to Cart</span>
@@ -665,3 +660,6 @@ export default function BestSellersPage() {
     </div>
   );
 }
+
+
+

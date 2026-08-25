@@ -1,5 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Heart, ShoppingCart, ChevronDown, Search, ArrowRight, X } from 'lucide-react';
+import {
+  User,
+  Heart,
+  ShoppingCart,
+  ChevronDown,
+  Search,
+  ArrowRight,
+  X,
+  LayoutGrid,
+  Smartphone,
+  Headphones,
+  Sparkles,
+  Laptop,
+  Home,
+  ShoppingBag,
+  Check,
+  Zap
+} from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
 import logo from '../../assets/logo.png';
@@ -17,6 +34,80 @@ import accentChairImg from '../../assets/images/accent_chair.jpg';
 import redmiNote13Img from '../../assets/images/redmi_note13.jpg';
 import womenDressImg from '../../assets/images/women_dress.jpg';
 import loungeChairImg from '../../assets/images/lounge_chair.jpg';
+
+// Category options for custom search dropdown
+const searchCategoryOptions = [
+  {
+    id: 'all',
+    label: 'All Categories',
+    value: 'All Categories',
+    shortLabel: 'All Categories',
+    subtitle: 'Search across all products',
+    icon: LayoutGrid,
+    iconBg: 'bg-brand-100 text-brand-700',
+    count: '1.2k+'
+  },
+  {
+    id: 'mobiles',
+    label: 'Mobiles',
+    value: 'Mobiles',
+    shortLabel: 'Mobiles',
+    subtitle: '5G Phones & accessories',
+    icon: Smartphone,
+    iconBg: 'bg-blue-100 text-blue-700',
+    count: '320+'
+  },
+  {
+    id: 'electronics',
+    label: 'Electronics',
+    value: 'Electronics',
+    shortLabel: 'Electronics',
+    subtitle: 'Audio, wearables & gadgets',
+    icon: Headphones,
+    iconBg: 'bg-purple-100 text-purple-700',
+    count: '450+'
+  },
+  {
+    id: 'fashion',
+    label: 'Fashion',
+    value: 'Fashion',
+    shortLabel: 'Fashion',
+    subtitle: 'Men, women & trend fashion',
+    icon: Sparkles,
+    iconBg: 'bg-pink-100 text-pink-700',
+    count: '890+'
+  },
+  {
+    id: 'laptops',
+    label: 'Laptops',
+    value: 'Laptops',
+    shortLabel: 'Laptops',
+    subtitle: 'Ultrabooks, gaming & work',
+    icon: Laptop,
+    iconBg: 'bg-indigo-100 text-indigo-700',
+    count: '140+'
+  },
+  {
+    id: 'home',
+    label: 'Home & Kitchen',
+    value: 'Home & Kitchen',
+    shortLabel: 'Home & Kitchen',
+    subtitle: 'Furniture, decor & living',
+    icon: Home,
+    iconBg: 'bg-amber-100 text-amber-700',
+    count: '280+'
+  },
+  {
+    id: 'beauty',
+    label: 'Beauty',
+    value: 'Beauty',
+    shortLabel: 'Beauty',
+    subtitle: 'Personal care & wellness',
+    icon: ShoppingBag,
+    iconBg: 'bg-rose-100 text-rose-700',
+    count: '210+'
+  }
+];
 
 // Catalog dataset for live search autocomplete
 const searchProductsCatalog = [
@@ -137,17 +228,22 @@ export default function Header() {
   const cartCount = context?.cartItems?.length || 2;
   const wishlistCount = context?.wishlistItems?.length || 1;
 
-  // Search state
+  // Search & Category state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
   const searchRef = useRef(null);
+  const categoryDropdownRef = useRef(null);
 
-  // Close dropdown on click outside
+  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+        setIsCatDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -172,16 +268,24 @@ export default function Header() {
     });
   }, [searchQuery, selectedCategory]);
 
-  const handleCategorySelect = (e) => {
-    const val = e.target.value;
+  const handleCategorySelect = (val) => {
     setSelectedCategory(val);
+    setIsCatDropdownOpen(false);
+  };
+
+  const handleCategoryNavigate = (val) => {
+    setIsCatDropdownOpen(false);
     if (val === 'Electronics') {
       navigateTo('electronics');
     } else if (val === 'Fashion') {
       navigateTo('fashion');
     } else if (val === 'Home & Kitchen') {
       navigateTo('home-kitchen');
+    } else if (val === 'Beauty') {
+      navigateTo('beauty');
     } else if (val === 'Mobiles') {
+      navigateTo('shop');
+    } else {
       navigateTo('shop');
     }
   };
@@ -200,34 +304,129 @@ export default function Header() {
     }
   };
 
+  const activeCategoryObj =
+    searchCategoryOptions.find((c) => c.value === selectedCategory) || searchCategoryOptions[0];
+  const ActiveIcon = activeCategoryObj.icon;
+
   return (
     <header className="bg-white border-b border-gray-200 py-3 px-3 sm:px-6 flex flex-wrap items-center justify-between gap-y-2 shadow-xs relative z-40">
       {/* Brand Logo */}
       <div onClick={() => navigateTo('home')} className="flex flex-col items-start cursor-pointer group select-none">
         <img src={logo} alt="BuyZo Logo" className="h-8 sm:h-9 w-auto object-contain" />
         <span className="text-[10px] sm:text-[11px] font-bold tracking-tight mt-0.5 leading-none">
-          <span className="text-[#063328]">Shop More,</span> <span className="text-[#ff5100]">Save More</span>
+          <span className="text-brand-700">Shop More,</span> <span className="text-accent">Save More</span>
         </span>
       </div>
 
       {/* Interactive Search Bar Container */}
-      <div ref={searchRef} className="order-3 w-full sm:order-none sm:flex-1 sm:max-w-2xl sm:mx-8 relative">
-        <form onSubmit={handleSearchSubmit} className="flex border border-gray-300 rounded-lg overflow-hidden bg-white shadow-xs focus-within:border-[#ff5100] focus-within:ring-1 focus-within:ring-[#ff5100] transition-all">
-          {/* Category Dropdown */}
-          <div className="relative flex items-center px-2 sm:px-4 py-2 bg-white border-r border-gray-200 cursor-pointer shrink-0">
-            <select
-              value={selectedCategory}
-              onChange={handleCategorySelect}
-              className="appearance-none bg-transparent pr-5 text-xs sm:text-sm font-bold text-gray-800 outline-none cursor-pointer z-10"
+      <div ref={searchRef} className="order-3 w-full sm:order-none sm:flex-1 sm:max-w-2xl sm:mx-8 relative z-30">
+        <form onSubmit={handleSearchSubmit} className="flex border border-gray-300 rounded-xl bg-white shadow-xs focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all relative">
+          {/* Custom Category Dropdown Trigger */}
+          <div className="relative shrink-0" ref={categoryDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCatDropdownOpen(!isCatDropdownOpen);
+                if (isDropdownOpen) setIsDropdownOpen(false);
+              }}
+              className="h-full flex items-center space-x-1.5 px-2.5 sm:px-4 py-2.5 bg-gray-50 hover:bg-brand-50/50 text-gray-800 font-bold text-xs sm:text-sm border-r border-gray-200 transition-colors cursor-pointer select-none rounded-l-xl group"
+              title="Filter by Department / Category"
             >
-              <option value="All Categories">All Categories</option>
-              <option value="Mobiles">Mobiles</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Fashion">Fashion</option>
-              <option value="Laptops">Laptops</option>
-              <option value="Home & Kitchen">Home & Kitchen</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#1b4d3e] stroke-[2.5] absolute right-3 pointer-events-none" />
+              <ActiveIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-700 shrink-0" />
+              <span className="max-w-[75px] sm:max-w-[110px] truncate text-left font-bold text-gray-800 group-hover:text-brand-700">
+                {activeCategoryObj.shortLabel}
+              </span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 shrink-0 ${
+                  isCatDropdownOpen ? 'rotate-180 text-accent' : 'group-hover:text-gray-800'
+                }`}
+              />
+            </button>
+
+            {/* Custom Modern Dropdown Menu */}
+            {isCatDropdownOpen && (
+              <div className="absolute top-[calc(100%+8px)] left-0 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 ring-1 ring-black/10">
+                {/* Dropdown Header */}
+                <div className="p-3 bg-gradient-to-r from-[#063328] to-[#0a4d3c] text-white flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <LayoutGrid className="w-4 h-4 text-emerald-300" />
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Search Departments</span>
+                  </div>
+                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">
+                    {searchCategoryOptions.length} Options
+                  </span>
+                </div>
+
+                {/* Categories List */}
+                <div className="p-2 max-h-80 overflow-y-auto space-y-1 divide-y divide-gray-50/80">
+                  {searchCategoryOptions.map((cat) => {
+                    const isSelected = selectedCategory === cat.value;
+                    const Icon = cat.icon;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleCategorySelect(cat.value)}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer group ${
+                          isSelected
+                            ? 'bg-emerald-50 text-brand-700 font-bold border border-brand-100/60 shadow-xs'
+                            : 'hover:bg-gray-50/80 text-gray-700 hover:text-gray-900 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-2xs ${cat.iconBg}`}
+                          >
+                            <Icon className="w-4 h-4 stroke-[2.2]" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center space-x-1.5">
+                              <span
+                                className={`text-xs truncate ${
+                                  isSelected ? 'font-extrabold text-brand-700' : 'font-bold text-gray-800'
+                                }`}
+                              >
+                                {cat.label}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-medium shrink-0">
+                                ({cat.count})
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
+                              {cat.subtitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        {isSelected ? (
+                          <div className="w-5 h-5 rounded-full bg-brand-700 text-white flex items-center justify-center shrink-0 shadow-xs ml-2">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-accent group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100 shrink-0 ml-2" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Dropdown Footer */}
+                <div className="p-2.5 bg-gray-50/90 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                  <div className="flex items-center space-x-1 font-medium">
+                    <Zap className="w-3.5 h-3.5 text-accent" />
+                    <span>Instant filter</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryNavigate(selectedCategory)}
+                    className="text-brand-700 hover:text-accent font-bold inline-flex items-center space-x-1 cursor-pointer transition-colors"
+                  >
+                    <span>Browse {selectedCategory === 'All Categories' ? 'Shop' : selectedCategory}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Input Field */}
@@ -260,7 +459,7 @@ export default function Header() {
           {/* Search Button */}
           <button 
             type="submit"
-            className="bg-[#ff5100] hover:bg-[#e64900] text-white px-4 sm:px-7 text-sm font-bold tracking-wide transition-colors shrink-0 flex items-center justify-center cursor-pointer"
+            className="bg-accent hover:bg-accent-600 text-white px-4 sm:px-7 text-sm font-bold tracking-wide transition-colors shrink-0 flex items-center justify-center cursor-pointer rounded-r-xl"
           >
             Search
           </button>
@@ -286,7 +485,7 @@ export default function Header() {
                   <div
                     key={product.id}
                     onClick={() => handleSelectProduct(product)}
-                    className="p-3 hover:bg-emerald-50/60 flex items-center justify-between cursor-pointer transition-colors group"
+                    className="p-3 hover:bg-brand-50/60 flex items-center justify-between cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center space-x-3.5">
                       <div className="w-12 h-12 rounded-lg border border-gray-100 p-1 flex items-center justify-center shrink-0 bg-white">
@@ -297,11 +496,11 @@ export default function Header() {
                         />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-gray-900 group-hover:text-[#1b4d3e] transition-colors">
+                        <h4 className="text-sm font-bold text-gray-900 group-hover:text-brand-700 transition-colors">
                           {product.name}
                         </h4>
                         <div className="flex items-center space-x-2 mt-0.5">
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-semibold bg-brand-100 text-emerald-800 px-2 py-0.5 rounded-full">
                             {product.category}
                           </span>
                           <span className="text-xs text-gray-400 font-normal">
@@ -322,7 +521,7 @@ export default function Header() {
                           </span>
                         )}
                       </div>
-                      <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#ff5100] group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-accent group-hover:translate-x-1 transition-all" />
                     </div>
                   </div>
                 ))}
@@ -340,12 +539,12 @@ export default function Header() {
           className="flex items-center space-x-2.5 cursor-pointer group"
           title="Click to Login"
         >
-          <div className="p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
+          <div className="p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
             <User className="w-7 h-7 stroke-[1.8]" />
           </div>
           <div className="hidden sm:flex flex-col text-left">
             <span className="text-[12px] text-gray-500 font-normal leading-tight">Welcome Guest</span>
-            <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-[#1b4d3e] transition-colors">
+            <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
               <span>Login / Account</span>
               <ChevronDown className="w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5" />
             </div>
@@ -357,9 +556,9 @@ export default function Header() {
           onClick={() => navigateTo('wishlist')}
           className="flex flex-col items-center cursor-pointer group relative px-1"
         >
-          <div className="relative flex items-center justify-center p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
+          <div className="relative flex items-center justify-center p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
             <Heart className="w-6.5 h-6.5 stroke-[1.8]" />
-            <span className="absolute -top-1 -right-2 bg-[#f95700] text-white text-[10px] font-extrabold rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center border-2 border-white shadow-xs">
+            <span className="absolute -top-1 -right-2 bg-accent-500 text-white text-[10px] font-extrabold rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center border-2 border-white shadow-xs">
               {wishlistCount}
             </span>
           </div>
@@ -373,9 +572,9 @@ export default function Header() {
           onClick={() => navigateTo('cart')}
           className="flex flex-col items-center cursor-pointer group relative px-1"
         >
-          <div className="relative flex items-center justify-center p-1 rounded-full text-[#1b4d3e] group-hover:bg-emerald-50 transition-colors">
+          <div className="relative flex items-center justify-center p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
             <ShoppingCart className="w-6.5 h-6.5 stroke-[1.8]" />
-            <span className="absolute -top-1 -right-2 bg-[#f95700] text-white text-[10px] font-extrabold rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center border-2 border-white shadow-xs">
+            <span className="absolute -top-1 -right-2 bg-accent-500 text-white text-[10px] font-extrabold rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center border-2 border-white shadow-xs">
               {cartCount}
             </span>
           </div>
@@ -387,3 +586,4 @@ export default function Header() {
     </header>
   );
 }
+

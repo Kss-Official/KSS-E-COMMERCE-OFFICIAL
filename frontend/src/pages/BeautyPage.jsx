@@ -1,3 +1,4 @@
+import StripBanner from '../features/festive/components/StripBanner';
 import React, { useState, useMemo } from 'react';
 import {
   Heart,
@@ -29,6 +30,7 @@ import beautyCategorySvg from '../assets/category/categoryBeauty.svg';
 import fashionCategorySvg from '../assets/category/categoryFashion.svg';
 
 // Import realistic high-res product photos
+import beautyHeroBannerImg from '../assets/images/beauty_hero_banner.png';
 import beautyNiacinamideSerumImg from '../assets/images/beauty_niacinamide_serum.jpg';
 import beautyMatteLipstickImg from '../assets/images/beauty_matte_lipstick.jpg';
 import beautySunscreenGelImg from '../assets/images/beauty_sunscreen_gel.png';
@@ -355,7 +357,7 @@ export default function BeautyPage() {
     <div className="bg-gray-50 min-h-screen pb-16 font-sans text-gray-800 relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-[#063328] text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-800 text-white px-5 py-3.5 rounded-xl shadow-2xl font-medium text-sm z-50 flex items-center space-x-3 border border-emerald-500/30 animate-bounce">
           <div className="bg-emerald-500 text-white rounded-full p-1">
             <Check className="w-4 h-4" />
           </div>
@@ -363,58 +365,87 @@ export default function BeautyPage() {
         </div>
       )}
 
-      {/* Hero Banner */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#04241c] via-[#063328] to-[#0c5946] text-white shadow-xl">
+      {/* Hero Banner - Luxury Blush Rose & Cosmetics Gala */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-1 sm:pt-2">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#fdf3f4] via-[#fae8eb] to-[#f6dadf] text-[#221a1c] border border-[#f0ced4] shadow-soft">
+          {/* Ambient Rose/Gold Lighting */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-rose-400/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-10 left-1/3 w-72 h-72 bg-[#ff5100]/15 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="absolute -bottom-10 left-1/3 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute top-6 left-12 text-[#db3f73]/40 text-xs pointer-events-none">✦</div>
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center p-6 sm:p-10 lg:p-12 gap-8">
-            <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-              <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-rose-300 border border-white/10">
-                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center p-5 sm:p-8 lg:p-10 gap-8">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-3.5 sm:space-y-4">
+              {/* Top Tag Pill */}
+              <div className="inline-flex items-center space-x-2 bg-white/70 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-[#b83358] border border-[#f2cbd4] shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#db3f73]" />
                 <span>Luxury Skincare &amp; Cosmetics Gala</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-                Glow Naturally with <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-200 via-emerald-200 to-amber-200">
-                  BuyZo Beauty Essentials
-                </span>
+              {/* Main Headline */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold tracking-tight leading-[1.12] text-[#201a1c]">
+                Glow Naturally with<br />
+                <span className="text-[#db3f73] font-serif font-black">BuyZo</span>{' '}
+                <span className="text-[#201a1c] font-serif font-bold">Beauty Essentials</span>
               </h1>
 
-              <p className="text-sm sm:text-base text-emerald-100/80 max-w-xl font-normal leading-relaxed">
-                Discover dermatologist-tested serums, smudge-proof makeup, nourishing haircare, and luxury fragrances with up to <span className="text-white font-bold underline decoration-[#ff5100]">50% OFF</span> certified genuine brands.
+              {/* Subtitle */}
+              <p className="text-xs sm:text-sm text-gray-600 max-w-lg font-medium leading-relaxed">
+                Discover dermatologist-tested serums, smudge-proof makeup, nourishing haircare, and luxury fragrances with up to{' '}
+                <span className="text-[#201a1c] font-bold underline decoration-[#db3f73] decoration-2">50% OFF</span> certified genuine brands.
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                <div className="flex items-center space-x-2 text-xs text-emerald-100/90 bg-white/5 backdrop-blur-sm rounded-lg p-2.5 border border-white/5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>100% Authentic Products</span>
+              {/* 3 Luxury Frosted Glass Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                <div className="flex items-center space-x-2.5 text-xs text-[#2c1d22] font-semibold bg-white/80 backdrop-blur-sm rounded-xl p-2.5 border border-[#f2cbd4] shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-[#db3f73]/10 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-[#db3f73]" />
+                  </div>
+                  <span className="text-[11px] leading-tight">100% Authentic Products</span>
                 </div>
-                <div className="flex items-center space-x-2 text-xs text-emerald-100/90 bg-white/5 backdrop-blur-sm rounded-lg p-2.5 border border-white/5">
-                  <Droplets className="w-4 h-4 text-rose-300 shrink-0" />
-                  <span>Cruelty-Free &amp; Clean</span>
+                <div className="flex items-center space-x-2.5 text-xs text-[#2c1d22] font-semibold bg-white/80 backdrop-blur-sm rounded-xl p-2.5 border border-[#f2cbd4] shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-[#db3f73]/10 flex items-center justify-center shrink-0">
+                    <Droplets className="w-4 h-4 text-[#db3f73]" />
+                  </div>
+                  <span className="text-[11px] leading-tight">Cruelty-Free &amp; Clean</span>
                 </div>
-                <div className="flex items-center space-x-2 text-xs text-emerald-100/90 bg-white/5 backdrop-blur-sm rounded-lg p-2.5 border border-white/5 col-span-2 sm:col-span-1">
-                  <Truck className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Fast Temperature-Safe Delivery</span>
+                <div className="flex items-center space-x-2.5 text-xs text-[#2c1d22] font-semibold bg-white/80 backdrop-blur-sm rounded-xl p-2.5 border border-[#f2cbd4] shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-[#db3f73]/10 flex items-center justify-center shrink-0">
+                    <Truck className="w-4 h-4 text-[#db3f73]" />
+                  </div>
+                  <span className="text-[11px] leading-tight">Fast Temperature-Safe Delivery</span>
                 </div>
+              </div>
+
+              {/* Rose Gradient CTA Button */}
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('beauty-departments');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-7 py-3 bg-gradient-to-r from-[#ba2d5b] to-[#e45a86] hover:from-[#a3224c] hover:to-[#d04672] text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-rose-500/25 flex items-center space-x-2 cursor-pointer transform hover:-translate-y-0.5"
+                >
+                  <span>Shop Now</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* Right Graphic */}
-            <div className="lg:col-span-5 flex justify-center items-center">
-              <div className="relative w-full max-w-sm p-6 bg-white/10 backdrop-blur-md rounded-3xl border border-white/10 text-center space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 text-rose-300 flex items-center justify-center mx-auto shadow-inner">
-                  <Flower2 className="w-8 h-8" />
-                </div>
-                <h3 className="text-lg font-bold text-white">Curated Clean Beauty Store</h3>
-                <p className="text-xs text-emerald-100/80">
-                  Formulations with zero parabens, zero mineral oils and clinically proven skin actives.
-                </p>
-                <div className="inline-block bg-[#ff5100] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md">
-                  Flat 30% to 50% OFF
+            {/* Right Graphic - Luxury Beauty Products Set */}
+            <div className="lg:col-span-5 flex justify-center items-center relative">
+              <div className="relative group/beauty w-full flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-t from-rose-500/20 via-pink-400/10 to-transparent rounded-full blur-2xl pointer-events-none transform group-hover/beauty:scale-105 transition-transform duration-500"></div>
+
+                <img
+                  src={beautyHeroBannerImg}
+                  alt="Luxury Skincare & Beauty Collection Set"
+                  className="w-full max-w-sm sm:max-w-md lg:max-w-lg h-auto max-h-[320px] sm:max-h-[360px] object-contain drop-shadow-[0_18px_30px_rgba(186,45,91,0.18)] relative z-10 group-hover/beauty:scale-[1.02] transition-transform duration-500 select-none"
+                />
+
+                <div className="hidden sm:flex absolute -bottom-1 right-2 sm:right-4 bg-white/95 backdrop-blur-xl text-gray-900 px-3.5 py-2 rounded-2xl shadow-lift border border-[#f0ced4] z-20 items-center space-x-2 select-none hover:scale-105 transition-transform">
+                  <Sparkles className="w-4 h-4 text-[#db3f73] animate-pulse" />
+                  <span className="text-xs font-black tracking-tight text-[#221a1c]">Special <span className="text-[#db3f73]">Up to 50% OFF</span></span>
                 </div>
               </div>
             </div>
@@ -441,8 +472,8 @@ export default function BeautyPage() {
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex items-center space-x-2.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${
                   isActive
-                    ? 'bg-[#063328] text-white border-[#063328] shadow-md shadow-[#063328]/20 scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-[#063328] border-gray-200 shadow-sm'
+                    ? 'bg-brand-800 text-white border-brand-800 shadow-md shadow-[#063328]/20 scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-brand-800 border-gray-200 shadow-sm'
                 }`}
               >
                 <img src={cat.icon} alt={cat.name} className="w-4 h-4 object-contain" />
@@ -467,11 +498,11 @@ export default function BeautyPage() {
           <div className="lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center space-x-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#ff5100]" />
+                <SlidersHorizontal className="w-4 h-4 text-accent" />
                 <span className="font-bold text-sm text-gray-900">Refine Search</span>
               </div>
               {(selectedBrands.length > 0 || minRating > 0 || activeCategory !== 'All' || maxPrice < 5000) && (
-                <button onClick={clearAllFilters} className="text-xs font-semibold text-[#ff5100] hover:underline cursor-pointer">
+                <button onClick={clearAllFilters} className="text-xs font-semibold text-accent hover:underline cursor-pointer">
                   Clear All
                 </button>
               )}
@@ -492,7 +523,7 @@ export default function BeautyPage() {
                       <div className="flex items-center space-x-2">
                         <div
                           className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
-                            isChecked ? 'bg-[#063328] border-[#063328] text-white' : 'border-gray-300 bg-white'
+                            isChecked ? 'bg-brand-800 border-brand-800 text-white' : 'border-gray-300 bg-white'
                           }`}
                         >
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
@@ -510,7 +541,7 @@ export default function BeautyPage() {
             <div className="space-y-3 pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="uppercase tracking-wider text-gray-500">Max Price</span>
-                <span className="text-[#063328] font-black">₹{maxPrice.toLocaleString('en-IN')}</span>
+                <span className="text-brand-800 font-black">₹{maxPrice.toLocaleString('en-IN')}</span>
               </div>
               <input
                 type="range"
@@ -539,7 +570,7 @@ export default function BeautyPage() {
                   >
                     <div
                       className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors ${
-                        minRating === rt ? 'bg-[#ff5100] border-[#ff5100] text-white' : 'border-gray-300 bg-white'
+                        minRating === rt ? 'bg-accent border-[#ff5100] text-white' : 'border-gray-300 bg-white'
                       }`}
                     >
                       {minRating === rt && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
@@ -580,7 +611,7 @@ export default function BeautyPage() {
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                      viewMode === 'grid' ? 'bg-white text-[#063328] shadow-xs' : 'text-gray-400 hover:text-gray-600'
+                      viewMode === 'grid' ? 'bg-white text-brand-800 shadow-xs' : 'text-gray-400 hover:text-gray-600'
                     }`}
                   >
                     <LayoutGrid className="w-4 h-4" />
@@ -588,7 +619,7 @@ export default function BeautyPage() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                      viewMode === 'list' ? 'bg-white text-[#063328] shadow-xs' : 'text-gray-400 hover:text-gray-600'
+                      viewMode === 'list' ? 'bg-white text-brand-800 shadow-xs' : 'text-gray-400 hover:text-gray-600'
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -606,16 +637,16 @@ export default function BeautyPage() {
                     <div
                       key={product.id}
                       onClick={() => navigateTo('product-detail', product)}
-                      className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+                      className="group bg-white rounded-2xl border border-gray-200 hover:border-brand-700 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
                     >
                       {/* Product Photo */}
                       <div className="relative bg-gray-50 p-4 aspect-[4/3] flex items-center justify-center overflow-hidden">
-                        <div className="absolute top-3 left-3 z-10 bg-[#ff5100] text-white text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm">
+                        <div className="absolute top-3 left-3 z-10 bg-accent text-white text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm">
                           {product.discount}
                         </div>
 
                         {product.badge && (
-                          <div className="absolute top-3 right-12 z-10 bg-[#063328] text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">
+                          <div className="absolute top-3 right-12 z-10 bg-brand-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">
                             {product.badge}
                           </div>
                         )}
@@ -645,7 +676,7 @@ export default function BeautyPage() {
                             <span>{product.category}</span>
                           </div>
 
-                          <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-[#063328] transition-colors leading-snug">
+                          <h3 className="text-sm font-bold text-gray-900 mt-1 line-clamp-2 group-hover:text-brand-800 transition-colors leading-snug">
                             {product.name}
                           </h3>
 
@@ -678,7 +709,7 @@ export default function BeautyPage() {
 
                           <button
                             onClick={(e) => handleAddToCart(product, e)}
-                            className="p-2.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
+                            className="p-2.5 bg-brand-800 hover:bg-accent text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
                           >
                             <ShoppingBag className="w-4 h-4" />
                           </button>
@@ -696,7 +727,7 @@ export default function BeautyPage() {
                     <div
                       key={product.id}
                       onClick={() => navigateTo('product-detail', product)}
-                      className="group bg-white rounded-2xl border border-gray-200 hover:border-[#063328] hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
+                      className="group bg-white rounded-2xl border border-gray-200 hover:border-brand-700 hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-5 cursor-pointer relative"
                     >
                       <div className="relative w-full sm:w-40 h-40 shrink-0 bg-rose-50/40 rounded-xl p-3 flex items-center justify-center overflow-hidden">
                         <img src={product.image} alt={product.name} className="w-20 h-20 object-contain" />
@@ -715,7 +746,7 @@ export default function BeautyPage() {
                           </button>
                         </div>
 
-                        <h3 className="text-base font-bold text-gray-900 group-hover:text-[#063328] transition-colors">
+                        <h3 className="text-base font-bold text-gray-900 group-hover:text-brand-800 transition-colors">
                           {product.name}
                         </h3>
 
@@ -738,7 +769,7 @@ export default function BeautyPage() {
 
                           <button
                             onClick={(e) => handleAddToCart(product, e)}
-                            className="px-5 py-2.5 bg-[#063328] hover:bg-[#ff5100] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
+                            className="px-5 py-2.5 bg-brand-800 hover:bg-accent text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
                           >
                             <ShoppingBag className="w-3.5 h-3.5" />
                             <span>Add to Cart</span>
@@ -756,3 +787,6 @@ export default function BeautyPage() {
     </div>
   );
 }
+
+
+
