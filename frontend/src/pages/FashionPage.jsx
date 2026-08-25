@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { fetchProducts } from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 // Import images
 import fashionHeroImg from '../assets/images/fashion_hero.png';
@@ -277,23 +279,15 @@ const initialFashionProducts = [
   }
 ];
 
-const brandFilters = [
-  { name: 'Zara', count: 28 },
-  { name: 'Roadster', count: 34 },
-  { name: 'U.S. Polo Assn.', count: 22 },
-  { name: 'Biba', count: 19 },
-  { name: 'Lavie', count: 15 },
-  { name: 'Puma', count: 24 },
-  { name: "Levi's", count: 18 },
-  { name: 'H&M', count: 26 }
-];
-
 const sizeFilters = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
 export default function FashionPage() {
-  const { addToCart, addToWishlist, wishlistItems } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
+  const isProductInWishlist = (id) => isWishlisted(id);
+
+  const [productsList, setProductsList] = useState(initialFashionProducts);
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
@@ -303,6 +297,43 @@ export default function FashionPage() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [toastMessage, setToastMessage] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const brandFilters = useMemo(() => {
+    const counts = {};
+    productsList.forEach((p) => {
+      const b = p.brand || p.brand_name;
+      if (b) {
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [productsList]);
+
+  useEffect(() => {
+    fetchProducts({ no_page: 'true' }).then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const fashionData = data.filter(p => ['Fashion', 'Footwear', 'Bags & Luggage', "Women's Wear", "Men's Wear", 'Ethnic Wear'].includes(p.category));
+        if (fashionData.length > 0) {
+          const uniqueItems = [];
+          const seenImages = new Set();
+          for (const item of fashionData) {
+            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
+            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
+            if (imgName && !seenImages.has(imgName)) {
+              seenImages.add(imgName);
+              uniqueItems.push({
+                ...item,
+                name: item.name || item.title,
+                image: resolvedImg,
+                sizes: item.sizes || ['S', 'M', 'L', 'XL']
+              });
+            }
+          }
+          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialFashionProducts);
+        }
+      }
+    });
+  }, []);
 
   // Toggle brand
   const handleToggleBrand = (brandName) => {
@@ -322,11 +353,11 @@ export default function FashionPage() {
 
   // Filter & sort products
   const filteredProducts = useMemo(() => {
-    return initialFashionProducts
+    return productsList
       .filter((p) => {
         if (activeCategory !== 'All' && p.category !== activeCategory) return false;
         if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
-        if (selectedSizes.length > 0 && !p.sizes.some((sz) => selectedSizes.includes(sz))) return false;
+        if (selectedSizes.length > 0 && (!p.sizes || !p.sizes.some((sz) => selectedSizes.includes(sz)))) return false;
         if (p.price > maxPrice) return false;
         if (minRating > 0 && p.rating < minRating) return false;
         return true;
@@ -335,10 +366,10 @@ export default function FashionPage() {
         if (sortBy === 'lowToHigh') return a.price - b.price;
         if (sortBy === 'highToLow') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        if (sortBy === 'discount') return parseInt(b.discount) - parseInt(a.discount);
-        return b.popularity - a.popularity;
+        if (sortBy === 'discount') return parseInt(b.discount || 0) - parseInt(a.discount || 0);
+        return (b.popularity || 90) - (a.popularity || 90);
       });
-  }, [activeCategory, selectedBrands, selectedSizes, maxPrice, minRating, sortBy]);
+  }, [productsList, activeCategory, selectedBrands, selectedSizes, maxPrice, minRating, sortBy]);
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
@@ -359,19 +390,9 @@ export default function FashionPage() {
 
   const handleToggleWishlist = (product, e) => {
     if (e) e.stopPropagation();
-    addToWishlist({
-      id: product.id,
-      name: product.name,
-      specs: `${product.brand} | ${product.category}`,
-      category: 'Fashion',
-      image: product.image,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      discount: product.discount,
-      inStock: true,
-      deliveryDate: 'Delivery by 2-3 Days'
-    });
-    setToastMessage(`Saved "${product.name}" to your wishlist!`);
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to your wishlist!`);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -395,10 +416,6 @@ export default function FashionPage() {
     setMaxPrice(10000);
     setMinRating(0);
     setSortBy('popularity');
-  };
-
-  const isProductInWishlist = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
   };
 
   return (
@@ -784,7 +801,7 @@ export default function FashionPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5">
                 {filteredProducts.map((product) => {
-                  const inWish = isProductInWishlist(product.id);
+                  const inWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -814,12 +831,16 @@ export default function FashionPage() {
                             }`}
                           title="Save to Wishlist"
                         >
-                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                         </button>
 
                         <img
-                          src={product.image}
-                          alt={product.name}
+                          src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                          alt={product.name || product.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getProductImage(product.name || product.title, '');
+                          }}
                           className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500"
                         />
                       </div>
@@ -908,8 +929,12 @@ export default function FashionPage() {
                           {product.discount}
                         </div>
                         <img
-                          src={product.image}
-                          alt={product.name}
+                          src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                          alt={product.name || product.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getProductImage(product.name || product.title, '');
+                          }}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -923,7 +948,7 @@ export default function FashionPage() {
                             className={`p-1.5 rounded-full transition-colors cursor-pointer ${inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
                               }`}
                           >
-                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                           </button>
                         </div>
 

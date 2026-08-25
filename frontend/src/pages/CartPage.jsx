@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Minus, Plus, Trash2, Check, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
 
 // Import images for recommendations
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -116,7 +117,7 @@ export default function CartPage() {
                     <div className="flex items-center space-x-4">
                       <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white border border-gray-200/80 rounded-xl p-2 flex items-center justify-center shrink-0">
                         <img
-                          src={item.image || boatRockerzImg}
+                          src={getProductImage(item.name, item.image)}
                           alt={item.name}
                           className="max-h-full max-w-full object-contain"
                         />

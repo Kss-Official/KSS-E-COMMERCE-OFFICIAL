@@ -9,11 +9,12 @@ import {
   Check
 } from 'lucide-react';
 import { useNavigationContext } from '../context/NavigationContext';
+import { loginUser, registerUser } from '../services/api';
 import loginShoppingBagImg from '../assets/loginPage/loginPageBag.png';
 
 export default function LoginPage() {
-  const { navigateTo } = useNavigationContext();
-  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'signup'
+  const { navigateTo, selectedSubCategory } = useNavigationContext();
+  const [activeTab, setActiveTab] = useState(selectedSubCategory === 'signup' ? 'signup' : 'login'); // 'login' | 'signup'
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     emailOrPhone: '',
@@ -21,13 +22,22 @@ export default function LoginPage() {
     fullName: ''
   });
   const [toastMessage, setToastMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const getTargetPortal = (user) => {
+    const role = (user?.role || '').toUpperCase();
+    if (role === 'ADMIN') return 'admin';
+    if (role === 'WAREHOUSE_STAFF') return 'warehouse';
+    if (role === 'DELIVERY_AGENT') return 'delivery-agent';
+    return 'home';
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.emailOrPhone || !formData.password) {
       setToastMessage('Please fill in all required fields.');
@@ -35,16 +45,53 @@ export default function LoginPage() {
       return;
     }
 
-    if (activeTab === 'login') {
-      setToastMessage('Logged in successfully!');
-    } else {
-      setToastMessage('Account created successfully!');
-    }
+    setIsLoading(true);
 
-    setTimeout(() => {
-      setToastMessage(null);
-      navigateTo('home');
-    }, 1500);
+    if (activeTab === 'login') {
+      const res = await loginUser(formData.emailOrPhone, formData.password);
+      setIsLoading(false);
+      if (res?.status === 'success') {
+        const userObj = res.data?.user;
+        const targetPage = getTargetPortal(userObj);
+        const userName = userObj?.profile?.first_name || userObj?.email?.split('@')[0] || 'User';
+        setToastMessage(`Welcome back, ${userName}! Redirecting...`);
+        setTimeout(() => {
+          setToastMessage(null);
+          navigateTo(targetPage);
+        }, 1000);
+      } else {
+        const errMsg = res?.message || res?.detail || 'Invalid email or password. If you don\'t have an account, click Sign Up above.';
+        setToastMessage(errMsg);
+        setTimeout(() => setToastMessage(null), 4000);
+      }
+    } else {
+      const names = (formData.fullName || '').trim().split(' ');
+      const firstName = names[0] || 'User';
+      const lastName = names.slice(1).join(' ') || '';
+
+      const res = await registerUser({
+        email: formData.emailOrPhone,
+        password: formData.password,
+        first_name: firstName,
+        last_name: lastName
+      });
+      setIsLoading(false);
+      if (res?.status === 'success') {
+        const userObj = res.data?.user;
+        const targetPage = getTargetPortal(userObj);
+        setToastMessage('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          setToastMessage(null);
+          navigateTo(targetPage);
+        }, 1000);
+      } else {
+        const errorMsg = res?.errors
+          ? (typeof res.errors === 'object' ? Object.values(res.errors).flat().join(', ') : String(res.errors))
+          : (res?.detail || res?.message || 'Could not create account. Please try again.');
+        setToastMessage(errorMsg);
+        setTimeout(() => setToastMessage(null), 3500);
+      }
+    }
   };
 
   return (
@@ -149,7 +196,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="border border-gray-100 rounded-2xl p-5 sm:p-6 space-y-4 shadow-soft">
               {activeTab === 'signup' && (
                 <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Full Name
                   </label>
                   <input
@@ -163,9 +210,8 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Email / Mobile Field */}
               <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Email or Mobile Number
                 </label>
                 <input
@@ -178,10 +224,9 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Password Field */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-gray-700">
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Password
                   </label>
                   {activeTab === 'login' && (
@@ -193,7 +238,7 @@ export default function LoginPage() {
                     </span>
                   )}
                 </div>
-                <div className="relative flex items-center">
+                <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -205,13 +250,9 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -221,7 +262,7 @@ export default function LoginPage() {
                 type="submit"
                 className="w-full bg-accent hover:bg-accent-600 text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-sm shadow-soft active:scale-[0.99] mt-2"
               >
-                {activeTab === 'login' ? 'Login' : 'Create Account'}
+                {isLoading ? 'Processing...' : activeTab === 'login' ? 'Login' : 'Create Account'}
               </button>
 
               {/* Divider */}
@@ -316,7 +357,6 @@ export default function LoginPage() {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

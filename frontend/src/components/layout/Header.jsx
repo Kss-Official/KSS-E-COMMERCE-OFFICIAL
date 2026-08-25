@@ -19,6 +19,9 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
+import { getCurrentUser, logoutUser, fetchCategories, fetchSearchSuggestions, fetchProducts, fetchUserWalletApi } from '../../services/api';
+import WalletModal from '../WalletModal';
+import { getProductImage } from '../../utils/productAssets';
 import logo from '../../assets/logo.png';
 
 // Import product images for search suggestions
@@ -225,8 +228,8 @@ export default function Header() {
   const context = useCartContext();
   const navContext = useNavigationContext();
   const navigateTo = navContext?.navigateTo || (() => {});
-  const cartCount = context?.cartItems?.length || 2;
-  const wishlistCount = context?.wishlistItems?.length || 1;
+  const cartCount = context?.cartCount ?? (context?.cartItems ? context.cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0) : 0);
+  const wishlistCount = context?.wishlistCount ?? (context?.wishlistItems ? context.wishlistItems.length : 0);
 
   // Search & Category state
   const [searchQuery, setSearchQuery] = useState('');
@@ -250,12 +253,31 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const [liveCatalog, setLiveCatalog] = useState(searchProductsCatalog);
+
+  useEffect(() => {
+    fetchProducts({ no_page: 'true' }).then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map(p => ({
+          id: p.id,
+          name: p.title,
+          category: p.category_name || p.category || 'Catalog',
+          price: parseFloat(p.price || p.regular_price || 0),
+          originalPrice: parseFloat(p.regular_price || p.price || 0),
+          image: getProductImage(p.title, p.primary_image || p.image),
+          keywords: [p.title, p.category_name || '', p.brand_name || ''].join(' ').toLowerCase().split(' ')
+        }));
+        setLiveCatalog(mapped);
+      }
+    });
+  }, []);
+
   // Filter products based on search query and category
   const searchSuggestions = React.useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return [];
 
-    return searchProductsCatalog.filter((product) => {
+    return liveCatalog.filter((product) => {
       const matchesCategory =
         selectedCategory === 'All Categories' ||
         product.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -266,7 +288,7 @@ export default function Header() {
 
       return matchesCategory && (nameMatch || categoryMatch || keywordMatch);
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, liveCatalog]);
 
   const handleCategorySelect = (val) => {
     setSelectedCategory(val);
@@ -279,6 +301,8 @@ export default function Header() {
       navigateTo('electronics');
     } else if (val === 'Fashion') {
       navigateTo('fashion');
+    } else if (val === 'Beauty') {
+      navigateTo('beauty');
     } else if (val === 'Home & Kitchen') {
       navigateTo('home-kitchen');
     } else if (val === 'Beauty') {
@@ -449,7 +473,7 @@ export default function Header() {
                   setSearchQuery('');
                   setIsDropdownOpen(false);
                 }}
-                className="absolute right-3 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -548,7 +572,119 @@ export default function Header() {
               <span>Login / Account</span>
               <ChevronDown className="w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5" />
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => navigateTo('login')}
+                className="px-3.5 py-1.5 border border-[#0d5c46] text-[#0d5c46] hover:bg-emerald-50 rounded-xl font-extrabold text-xs transition-all cursor-pointer shadow-2xs"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => navigateTo('login', 'signup')}
+                className="px-4 py-1.5 bg-[#0d5c46] hover:bg-[#063328] text-white rounded-xl font-extrabold text-xs transition-all cursor-pointer shadow-xs"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
+
+          {/* User Account Dropdown Menu */}
+          {currentUser && isUserMenuOpen && (
+            <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 rounded-t-xl">
+                <p className="text-xs font-bold text-gray-900 leading-tight">{userName}</p>
+                <p className="text-[11px] text-gray-500 truncate mt-0.5">{currentUser.email || currentUser.phone}</p>
+                <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                  {currentUser.role || 'Customer'}
+                </span>
+              </div>
+
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    setIsWalletOpen(true);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-emerald-800 hover:bg-emerald-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <Wallet className="w-4 h-4 text-emerald-600" />
+                  <span>BuyZo Wallet (₹{Number(walletBalance).toFixed(2)})</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    navigateTo('orders');
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50/70 hover:text-[#0d5c46] flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <Package className="w-4 h-4 text-gray-400" />
+                  <span>My Orders</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    navigateTo('wishlist');
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50/70 hover:text-[#0d5c46] flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <Heart className="w-4 h-4 text-gray-400" />
+                  <span>My Wishlist</span>
+                </button>
+
+                {currentUser.role === 'ADMIN' && (
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('admin');
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-semibold text-purple-700 hover:bg-purple-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                    <span>Admin Dashboard</span>
+                  </button>
+                )}
+
+                {(currentUser.role === 'ADMIN' || currentUser.role === 'WAREHOUSE_STAFF') && (
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('warehouse');
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4 text-amber-500" />
+                    <span>Warehouse Portal</span>
+                  </button>
+                )}
+
+                {(currentUser.role === 'ADMIN' || currentUser.role === 'DELIVERY_AGENT') && (
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('delivery-agent');
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-semibold text-cyan-700 hover:bg-cyan-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                  >
+                    <Package className="w-4 h-4 text-cyan-500" />
+                    <span>Delivery Portal</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 pt-1">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center space-x-2.5 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-red-400" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Wishlist */}
@@ -583,6 +719,7 @@ export default function Header() {
           </span>
         </div>
       </div>
+      <WalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} />
     </header>
   );
 }

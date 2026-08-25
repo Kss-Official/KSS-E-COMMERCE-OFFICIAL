@@ -1,18 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ArrowUpFromLine, Truck, CheckCircle2 } from 'lucide-react';
+import { fetchWarehouseOutboundApi, updateOrderStatusApi } from '../../src/services/api';
 
 const initialOutbound = [
-  { id: 'SHP-250522-037', destination: 'Delhi Hub', item: 'Smart Watch (SW-2001)', qty: 80, courier: 'BlueDart Express', status: 'Dispatched', time: '22 May, 10:30 AM' },
-  { id: 'SHP-250522-038', destination: 'Mumbai Hub', item: 'Wireless Headphones (WH-1001)', qty: 150, courier: 'Delhivery', status: 'Packing In Progress', time: '22 May, 01:45 PM' },
-  { id: 'SHP-250522-039', destination: 'Bengaluru Hub', item: 'Bluetooth Speaker (BS-3001)', qty: 60, courier: 'Ecom Express', status: 'Ready for Pickup', time: '22 May, 03:20 PM' },
+  { id: 'SHP-250522-037', order_db_id: 1, destination: 'Delhi Hub', item: 'Smart Watch (SW-2001)', qty: 80, courier: 'BlueDart Express', status: 'Dispatched', time: '22 May, 10:30 AM' },
+  { id: 'SHP-250522-038', order_db_id: 2, destination: 'Mumbai Hub', item: 'Wireless Headphones (WH-1001)', qty: 150, courier: 'Delhivery', status: 'Packing In Progress', time: '22 May, 01:45 PM' },
+  { id: 'SHP-250522-039', order_db_id: 3, destination: 'Bengaluru Hub', item: 'Bluetooth Speaker (BS-3001)', qty: 60, courier: 'Ecom Express', status: 'Ready for Pickup', time: '22 May, 03:20 PM' },
 ];
 
 export default function OutboundTab() {
   const [items, setItems] = useState(initialOutbound);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filtered = items.filter(i => 
-    i.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const loadOutbound = async () => {
+    try {
+      const { apiOutbound, localOrders } = await fetchWarehouseOutboundApi();
+
+      const mappedApi = (apiOutbound || []).map(s => ({
+        id: s.shipment_id || `SHP-${s.id}`,
+        order_db_id: s.id,
+        destination: s.destination_hub || 'Central Hub',
+        item: s.item_title || 'Order Package',
+        qty: s.quantity || 1,
+        courier: s.courier_partner || 'BuyZo Express Logistics',
+        status: s.status || 'Ready for Pickup',
+        time: s.created_at ? new Date(s.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Just now'
+      }));
+
+      const mappedLocal = (localOrders || []).map(o => {
+        const firstItem = o.items && o.items[0] ? o.items[0].name : 'Order Item';
+        const totalQty = (o.items || []).reduce((acc, i) => acc + (parseInt(i.quantity) || 1), 0);
+        return {
+          id: `SHP-${(o.orderId || '').replace('#', '')}`,
+          order_db_id: o.id || o.orderId,
+          destination: `${o.address?.details ? o.address.details.split(',')[1] || 'Central' : 'Central'} Hub`,
+          item: `${firstItem} (${totalQty} item${totalQty > 1 ? 's' : ''})`,
+          qty: totalQty,
+          courier: 'BuyZo Express Logistics',
+          status: o.status === 'SHIPPED' ? 'Dispatched' : 'Ready for Pickup',
+          time: o.orderDate ? o.orderDate.split(',')[1] || 'Just now' : 'Just now'
+        };
+      });
+
+      const combined = [...mappedLocal, ...mappedApi, ...initialOutbound];
+      const unique = [];
+      const seen = new Set();
+      for (const item of combined) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          unique.push(item);
+        }
+      }
+      setItems(unique);
+    } catch (err) {
+      console.error('Error loading warehouse outbound:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadOutbound();
+  }, []);
+
+  const handleDispatch = async (item) => {
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'Dispatched' } : i));
+    if (item.order_db_id) {
+      await updateOrderStatusApi(item.order_db_id, 'SHIPPED');
+    }
+  };
+
+  const filtered = items.filter(i =>
+    i.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.item.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -47,6 +104,7 @@ export default function OutboundTab() {
               <th className="py-3.5 px-6">Quantity</th>
               <th className="py-3.5 px-6">Courier Partner</th>
               <th className="py-3.5 px-6">Status</th>
+              <th className="py-3.5 px-6">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm">
@@ -63,6 +121,18 @@ export default function OutboundTab() {
                   }`}>
                     {item.status}
                   </span>
+                </td>
+                <td className="py-4 px-6">
+                  {item.status !== 'Dispatched' ? (
+                    <button
+                      onClick={() => handleDispatch(item)}
+                      className="px-3 py-1.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-lg text-xs font-bold transition-colors"
+                    >
+                      Dispatch
+                    </button>
+                  ) : (
+                    <span className="text-xs font-bold text-emerald-700">Handed Over</span>
+                  )}
                 </td>
               </tr>
             ))}

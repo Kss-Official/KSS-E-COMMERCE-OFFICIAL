@@ -67,7 +67,7 @@ const categoryPageMap = {
 };
 
 export default function ProductDetailPage() {
-  const { addToCart, addToWishlist } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { selectedProduct, navigateTo } = useNavigationContext();
 
   const product = selectedProduct || defaultProduct;
@@ -76,7 +76,6 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [addedToast, setAddedToast] = useState(null);
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
   // Sync state whenever a new product is clicked & loaded
   useEffect(() => {
@@ -111,8 +110,9 @@ export default function ProductDetailPage() {
   };
 
   const handleToggleWishlist = () => {
-    addToWishlist(product);
-    setIsWishlisted((prev) => !prev);
+    toggleWishlist(product);
+    setAddedToast(activeWish ? `Removed "${product.name}" from wishlist` : `Added "${product.name}" to wishlist`);
+    setTimeout(() => setAddedToast(null), 3000);
   };
 
   const productFeatures = Array.isArray(product.features) && product.features.length > 0
@@ -189,7 +189,7 @@ export default function ProductDetailPage() {
             >
               <Heart
                 className={`w-5 h-5 ${
-                  isWishlisted
+                  activeWish
                     ? 'fill-red-500 text-red-500'
                     : 'text-gray-600 hover:text-red-500'
                 }`}

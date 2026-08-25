@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Share2, Trash2, Heart, ShoppingBag, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
 
 export default function WishlistPage() {
   const { wishlistItems, addToCart, removeFromWishlist, clearWishlist } = useCartContext();
@@ -25,7 +26,12 @@ export default function WishlistPage() {
   };
 
   const handleAddToCart = (product) => {
-    addToCart(product);
+    const targetProduct = {
+      ...product,
+      id: product.productId || product.id,
+      productId: product.productId || product.id
+    };
+    addToCart(targetProduct);
     setAddedToast(`Added "${product.name}" to your cart!`);
     setTimeout(() => setAddedToast(null), 3000);
   };
@@ -159,7 +165,7 @@ export default function WishlistPage() {
                       <div className="flex items-center space-x-4">
                         <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
                           <img
-                            src={item.image}
+                            src={getProductImage(item.name, item.image)}
                             alt={item.name}
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                           />
@@ -224,7 +230,7 @@ export default function WishlistPage() {
                       <div className="flex items-center justify-end space-x-2.5">
                         {/* Remove Heart Button */}
                         <button
-                          onClick={() => removeFromWishlist(item.id)}
+                          onClick={() => removeFromWishlist(item.productId || item.id)}
                           title="Remove from wishlist"
                           className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors cursor-pointer"
                         >

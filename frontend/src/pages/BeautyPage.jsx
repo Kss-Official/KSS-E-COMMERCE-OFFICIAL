@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { fetchProducts } from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 // Import assets
 import beautyCategorySvg from '../assets/category/categoryBeauty.svg';
@@ -260,21 +262,13 @@ const initialBeautyProducts = [
   }
 ];
 
-const beautyBrands = [
-  { name: 'Minimalist', count: 28 },
-  { name: 'Plum', count: 32 },
-  { name: 'Maybelline', count: 24 },
-  { name: "L'Oréal Paris", count: 26 },
-  { name: 'Lakmé', count: 30 },
-  { name: 'Mamaearth', count: 22 },
-  { name: 'Forest Essentials', count: 16 },
-  { name: 'Nykaa', count: 18 }
-];
-
 export default function BeautyPage() {
-  const { addToCart, addToWishlist, wishlistItems } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
+  const isProductInWishlist = (id) => isWishlisted(id);
+
+  const [productsList, setProductsList] = useState(initialBeautyProducts);
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [maxPrice, setMaxPrice] = useState(5000);
@@ -284,6 +278,42 @@ export default function BeautyPage() {
   const [toastMessage, setToastMessage] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  const beautyBrands = useMemo(() => {
+    const counts = {};
+    productsList.forEach((p) => {
+      const b = p.brand || p.brand_name;
+      if (b) {
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [productsList]);
+
+  useEffect(() => {
+    fetchProducts({ no_page: 'true' }).then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const beautyData = data.filter(p => ['Beauty', 'Skincare', 'Makeup', 'Haircare', 'Fragrance', 'Bath & Body'].includes(p.category));
+        if (beautyData.length > 0) {
+          const uniqueItems = [];
+          const seenImages = new Set();
+          for (const item of beautyData) {
+            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
+            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
+            if (imgName && !seenImages.has(imgName)) {
+              seenImages.add(imgName);
+              uniqueItems.push({
+                ...item,
+                name: item.name || item.title,
+                image: resolvedImg
+              });
+            }
+          }
+          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialBeautyProducts);
+        }
+      }
+    });
+  }, []);
+
   const handleToggleBrand = (brandName) => {
     setSelectedBrands((prev) =>
       prev.includes(brandName) ? prev.filter((b) => b !== brandName) : [...prev, brandName]
@@ -291,7 +321,7 @@ export default function BeautyPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    return initialBeautyProducts
+    return productsList
       .filter((p) => {
         if (activeCategory !== 'All' && p.category !== activeCategory) return false;
         if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
@@ -303,10 +333,10 @@ export default function BeautyPage() {
         if (sortBy === 'lowToHigh') return a.price - b.price;
         if (sortBy === 'highToLow') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        if (sortBy === 'discount') return parseInt(b.discount) - parseInt(a.discount);
-        return b.popularity - a.popularity;
+        if (sortBy === 'discount') return parseInt(b.discount || 0) - parseInt(a.discount || 0);
+        return (b.popularity || 90) - (a.popularity || 90);
       });
-  }, [activeCategory, selectedBrands, maxPrice, minRating, sortBy]);
+  }, [productsList, activeCategory, selectedBrands, maxPrice, minRating, sortBy]);
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
@@ -325,19 +355,9 @@ export default function BeautyPage() {
 
   const handleToggleWishlist = (product, e) => {
     if (e) e.stopPropagation();
-    addToWishlist({
-      id: product.id,
-      name: product.name,
-      specs: `${product.brand} | ${product.category}`,
-      category: 'Beauty',
-      image: product.image,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      discount: product.discount,
-      inStock: true,
-      deliveryDate: 'Delivery by 2-3 Days'
-    });
-    setToastMessage(`Saved "${product.name}" to wishlist!`);
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist!`);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -347,10 +367,6 @@ export default function BeautyPage() {
     setMaxPrice(5000);
     setMinRating(0);
     setSortBy('popularity');
-  };
-
-  const isProductInWishlist = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
   };
 
   return (
@@ -632,7 +648,7 @@ export default function BeautyPage() {
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5">
                 {filteredProducts.map((product) => {
-                  const inWish = isProductInWishlist(product.id);
+                  const inWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -659,12 +675,16 @@ export default function BeautyPage() {
                               : 'bg-white/80 text-gray-500 hover:text-rose-500 hover:bg-white border border-gray-200/50'
                           }`}
                         >
-                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                         </button>
 
                         <img
-                          src={product.image}
-                          alt={product.name}
+                          src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                          alt={product.name || product.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getProductImage(product.name || product.title, '');
+                          }}
                           className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500"
                         />
                       </div>
@@ -742,7 +762,7 @@ export default function BeautyPage() {
                               inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
                             }`}
                           >
-                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                           </button>
                         </div>
 

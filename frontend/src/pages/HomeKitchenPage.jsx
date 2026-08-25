@@ -22,10 +22,13 @@ import {
   Lamp,
   Bed,
   Home,
-  CookingPot
+  CookingPot,
+  Blender
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { fetchProducts } from '../services/api';
+import { getProductImage } from '../utils/productAssets';
 
 // Import assets
 import homeKitchenBannerHeroImg from '../assets/images/home_kitchen_banner_hero.png';
@@ -262,17 +265,6 @@ const initialHomeProducts = [
   }
 ];
 
-const homeBrands = [
-  { name: 'UrbanHome', count: 32 },
-  { name: 'Prestige', count: 28 },
-  { name: 'Philips', count: 22 },
-  { name: 'Solimo', count: 26 },
-  { name: 'Wakefit', count: 18 },
-  { name: 'Hawkins', count: 15 },
-  { name: 'Milton', count: 20 },
-  { name: 'Bombay Dyeing', count: 16 }
-];
-
 export default function HomeKitchenPage() {
   const { addToCart, addToWishlist, wishlistItems } = useCartContext();
   const { navigateTo, selectedSubCategory } = useNavigationContext();
@@ -282,6 +274,17 @@ export default function HomeKitchenPage() {
   const [maxPrice, setMaxPrice] = useState(15000);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('popularity');
+
+  const homeBrands = useMemo(() => {
+    const counts = {};
+    productsList.forEach((p) => {
+      const b = p.brand || p.brand_name;
+      if (b) {
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [productsList]);
   const [viewMode, setViewMode] = useState('grid');
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -298,7 +301,7 @@ export default function HomeKitchenPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    return initialHomeProducts
+    return productsList
       .filter((p) => {
         if (activeCategory !== 'All' && p.category !== activeCategory) return false;
         if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
@@ -310,10 +313,10 @@ export default function HomeKitchenPage() {
         if (sortBy === 'lowToHigh') return a.price - b.price;
         if (sortBy === 'highToLow') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        if (sortBy === 'discount') return parseInt(b.discount) - parseInt(a.discount);
-        return b.popularity - a.popularity;
+        if (sortBy === 'discount') return parseInt(b.discount || 0) - parseInt(a.discount || 0);
+        return (b.popularity || 90) - (a.popularity || 90);
       });
-  }, [activeCategory, selectedBrands, maxPrice, minRating, sortBy]);
+  }, [productsList, activeCategory, selectedBrands, maxPrice, minRating, sortBy]);
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
@@ -332,19 +335,9 @@ export default function HomeKitchenPage() {
 
   const handleToggleWishlist = (product, e) => {
     if (e) e.stopPropagation();
-    addToWishlist({
-      id: product.id,
-      name: product.name,
-      specs: `${product.brand} | ${product.category}`,
-      category: 'Home & Kitchen',
-      image: product.image,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      discount: product.discount,
-      inStock: true,
-      deliveryDate: 'Delivery by 2-3 Days'
-    });
-    setToastMessage(`Saved "${product.name}" to wishlist!`);
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist!`);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -354,10 +347,6 @@ export default function HomeKitchenPage() {
     setMaxPrice(15000);
     setMinRating(0);
     setSortBy('popularity');
-  };
-
-  const isProductInWishlist = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
   };
 
   return (
@@ -637,7 +626,7 @@ export default function HomeKitchenPage() {
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5">
                 {filteredProducts.map((product) => {
-                  const inWish = isProductInWishlist(product.id);
+                  const inWish = isWishlisted(product);
                   return (
                     <div
                       key={product.id}
@@ -662,7 +651,7 @@ export default function HomeKitchenPage() {
                             : 'bg-white/80 text-gray-500 hover:text-rose-500 hover:bg-white border border-gray-200/50'
                             }`}
                         >
-                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                          <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                         </button>
 
                         <img
@@ -743,7 +732,7 @@ export default function HomeKitchenPage() {
                             className={`p-1.5 rounded-full transition-colors cursor-pointer ${inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
                               }`}
                           >
-                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                            <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                           </button>
                         </div>
 

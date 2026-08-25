@@ -1,7 +1,38 @@
-import React from 'react';
-import { Search, Bell, Calendar, UserCheck, Store } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Bell, Calendar, Store } from 'lucide-react';
+import { getCurrentUser } from '../../src/services/api';
 
 export default function Topbar({ title, onExitAdmin }) {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
+
+  const adminName = currentUser
+    ? (currentUser.first_name
+        ? `${currentUser.first_name} ${currentUser.last_name || ''}`.trim()
+        : (currentUser.name || currentUser.username || (currentUser.email && !currentUser.email.startsWith('admin') ? currentUser.email.split('@')[0] : 'Amit Sharma')))
+    : 'Amit Sharma';
+
+  let adminDesignation = 'System Administrator';
+  if (currentUser?.designation) {
+    adminDesignation = currentUser.designation;
+  } else if (currentUser?.role) {
+    const r = String(currentUser.role).toUpperCase();
+    if (r === 'ADMIN' || r === 'SUPERADMIN') adminDesignation = 'System Administrator';
+    else if (r === 'WAREHOUSE') adminDesignation = 'Warehouse Operations Lead';
+    else if (r === 'DELIVERY_AGENT') adminDesignation = 'Logistics & Delivery Manager';
+    else adminDesignation = 'Store Administrator';
+  } else {
+    adminDesignation = 'System Administrator';
+  }
+
+  const avatarLetter = (adminName.charAt(0) || 'A').toUpperCase();
+
   return (
     <header className="bg-white border-b border-gray-200 py-3.5 px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
       {/* Title / Search */}
@@ -44,14 +75,14 @@ export default function Topbar({ title, onExitAdmin }) {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff5100] rounded-full border-2 border-white"></span>
         </button>
 
-        {/* Admin Profile */}
+        {/* Admin Profile Badge */}
         <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#063328] to-[#1b4d3e] flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-emerald-100">
-            A
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#063328] to-[#1b4d3e] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-emerald-100">
+            {avatarLetter}
           </div>
-          <div className="hidden md:flex flex-col text-left">
-            <span className="text-xs font-bold text-gray-900 leading-tight">Rahul Sharma</span>
-            <span className="text-[10px] text-gray-500 font-medium leading-tight">Super Admin</span>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-extrabold text-gray-900 leading-tight">{adminName}</span>
+            <span className="text-[11px] text-emerald-700 font-bold leading-tight mt-0.5">{adminDesignation}</span>
           </div>
         </div>
       </div>

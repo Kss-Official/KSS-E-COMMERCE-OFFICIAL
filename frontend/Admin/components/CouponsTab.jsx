@@ -1,26 +1,75 @@
-import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Ticket, X } from 'lucide-react';
-
-const initialCoupons = [
-  { id: 1, code: 'SAVE10', discount: '10%', type: 'Percentage', status: 'Active' },
-  { id: 2, code: 'WELCOME', discount: '₹100', type: 'Fixed', status: 'Active' },
-  { id: 3, code: 'FESTIVE20', discount: '20%', type: 'Percentage', status: 'Inactive' },
-  { id: 4, code: 'NEWUSER', discount: '15%', type: 'Percentage', status: 'Active' },
-  { id: 5, code: 'DEAL50', discount: '₹50', type: 'Fixed', status: 'Expired' },
-];
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Plus, Trash2, X, RefreshCw } from 'lucide-react';
+import { fetchCouponsApi, createCouponApi, deleteCouponApi } from '../../src/services/api';
 
 export default function CouponsTab() {
-  const [coupons, setCoupons] = useState(initialCoupons);
+  const [coupons, setCoupons] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ code: '', discount: '', type: 'Percentage', status: 'Active' });
+  const [formData, setFormData] = useState({ code: '', discount: '10%', type: 'Percentage', status: 'Active' });
 
-  const handleAdd = (e) => {
+  const formatCoupon = (c) => {
+    const val = c.discount_value || c.discount || '10';
+    const isPerc = (c.discount_type || c.type || '').toUpperCase() === 'PERCENTAGE';
+    const displayDiscount = isPerc ? `${val}%` : `₹${val}`;
+
+    return {
+      id: c.id,
+      code: c.code,
+      discount: displayDiscount,
+      type: isPerc ? 'Percentage' : 'Fixed',
+      status: c.is_active !== false ? 'Active' : 'Inactive'
+    };
+  };
+
+  const loadCoupons = useCallback(async (quiet = false) => {
+    if (!quiet) setIsLoading(true);
+    else setIsRefreshing(true);
+
+    try {
+      const data = await fetchCouponsApi();
+      if (Array.isArray(data)) {
+        setCoupons(data.map(formatCoupon));
+      }
+    } catch (err) {
+      console.warn('[CouponsTab] Error fetching coupons:', err);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCoupons();
+    const interval = setInterval(() => {
+      loadCoupons(true);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [loadCoupons]);
+
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!formData.code || !formData.discount) return;
-    setCoupons([{ id: Date.now(), ...formData }, ...coupons]);
-    setIsModalOpen(false);
-    setFormData({ code: '', discount: '', type: 'Percentage', status: 'Active' });
+    try {
+      await createCouponApi(formData);
+      setIsModalOpen(false);
+      setFormData({ code: '', discount: '10%', type: 'Percentage', status: 'Active' });
+      loadCoupons();
+    } catch (err) {
+      alert('Failed to create coupon: ' + err.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this coupon code from database?')) return;
+    try {
+      await deleteCouponApi(id);
+      loadCoupons();
+    } catch (err) {
+      alert('Failed to delete coupon: ' + err.message);
+    }
   };
 
   const filtered = coupons.filter(c => c.code.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -29,16 +78,33 @@ export default function CouponsTab() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Coupons</h2>
-          <p className="text-sm text-gray-500 font-medium">Create promotional discount codes and manage active deals.</p>
+          <div className="flex items-center space-x-3">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Coupons</h2>
+            {isRefreshing && (
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center space-x-1.5 border border-emerald-200 animate-pulse">
+                <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
+                <span>Live Syncing</span>
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 font-medium">Create promotional discount codes in database and manage active deals.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-[#ff5100] hover:bg-[#e64900] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Add Coupon</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => loadCoupons()}
+            className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all cursor-pointer"
+            title="Refresh Coupons"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center space-x-2 bg-[#ff5100] hover:bg-[#e64900] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Add Coupon</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
@@ -55,61 +121,74 @@ export default function CouponsTab() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-              <th className="py-3.5 px-6">Code</th>
-              <th className="py-3.5 px-6">Discount</th>
-              <th className="py-3.5 px-6">Type</th>
-              <th className="py-3.5 px-6">Status</th>
-              <th className="py-3.5 px-6 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-sm">
-            {filtered.map((c) => (
-              <tr key={c.id} className="hover:bg-emerald-50/30 transition-colors">
-                <td className="py-4 px-6">
-                  <span className="font-extrabold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg font-mono border border-gray-200">
-                    {c.code}
-                  </span>
-                </td>
-                <td className="py-4 px-6 font-bold text-gray-900">{c.discount}</td>
-                <td className="py-4 px-6 text-gray-600 font-semibold">{c.type}</td>
-                <td className="py-4 px-6">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
-                      c.status === 'Active'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : c.status === 'Inactive'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-rose-100 text-rose-800'
-                    }`}
-                  >
-                    {c.status}
-                  </span>
-                </td>
-                <td className="py-4 px-6 text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button className="p-1.5 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setCoupons(coupons.filter(x => x.id !== c.id))} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+        {isLoading ? (
+          <div className="p-12 text-center text-gray-400 font-medium flex items-center justify-center space-x-2">
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
+            <span>Loading coupons from database...</span>
+          </div>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="py-3.5 px-6">Code</th>
+                <th className="py-3.5 px-6">Discount</th>
+                <th className="py-3.5 px-6">Type</th>
+                <th className="py-3.5 px-6">Status</th>
+                <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {filtered.map((c) => (
+                <tr key={c.id} className="hover:bg-emerald-50/30 transition-colors">
+                  <td className="py-4 px-6">
+                    <span className="font-extrabold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg font-mono border border-gray-200">
+                      {c.code}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 font-bold text-gray-900">{c.discount}</td>
+                  <td className="py-4 px-6 text-gray-600 font-semibold">{c.type}</td>
+                  <td className="py-4 px-6">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
+                        c.status === 'Active'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete Coupon"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-gray-400 font-medium">
+                    No coupons found in database.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100 animate-fade-in">
             <div className="px-6 py-4 bg-[#093529] text-white flex items-center justify-between">
               <h3 className="font-bold text-base">Add New Coupon</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-emerald-300 hover:text-white">
+              <button onClick={() => setIsModalOpen(false)} className="text-emerald-300 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -161,8 +240,8 @@ export default function CouponsTab() {
                 </select>
               </div>
               <div className="pt-2 flex justify-end space-x-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-                <button type="submit" className="px-5 py-2 text-sm font-bold bg-[#ff5100] text-white hover:bg-[#e64900] rounded-xl">Create</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" className="px-5 py-2 text-sm font-bold bg-[#ff5100] text-white hover:bg-[#e64900] rounded-xl cursor-pointer">Create Coupon</button>
               </div>
             </form>
           </div>

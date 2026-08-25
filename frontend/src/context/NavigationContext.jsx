@@ -6,11 +6,14 @@ export function NavigationProvider({ children }) {
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'electronics' | 'product-detail'
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedOrderData, setSelectedOrderData] = useState(null);
 
   const navigateTo = (page, data = null) => {
     setCurrentPage(page);
     if (page === 'product-detail' && data) {
       setSelectedProduct(data);
+    } else if (page === 'order-confirmed' && data) {
+      setSelectedOrderData(data);
     } else if (typeof data === 'string') {
       setSelectedSubCategory(data);
     }
@@ -26,6 +29,8 @@ export function NavigationProvider({ children }) {
         setSelectedSubCategory,
         selectedProduct,
         setSelectedProduct,
+        selectedOrderData,
+        setSelectedOrderData,
         navigateTo
       }}
     >

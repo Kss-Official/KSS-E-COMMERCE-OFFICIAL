@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, ArrowDownToLine, CheckCircle2, X } from 'lucide-react';
+import { fetchWarehouseInboundApi } from '../../src/services/api';
 
 const initialInbound = [
   { id: 'RCPT-250522-001', supplier: 'Samsung India Logistics', item: 'Wireless Headphones (WH-1001)', qty: 120, status: 'Verified', date: '22 May, 09:15 AM' },
@@ -12,6 +13,33 @@ export default function InboundTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ supplier: '', item: '', qty: 50 });
+
+  useEffect(() => {
+    async function loadInbound() {
+      const data = await fetchWarehouseInboundApi();
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted = data.map(i => ({
+          id: i.receipt_number || `RCPT-${i.id}`,
+          supplier: i.supplier_name || 'Vendor Partner',
+          item: i.product_name || 'Stock Items',
+          qty: i.quantity_received || 100,
+          status: i.status || 'Verified',
+          date: i.received_at ? new Date(i.received_at).toLocaleDateString('en-IN') : 'Recent'
+        }));
+        const combined = [...formatted, ...initialInbound];
+        const unique = [];
+        const seen = new Set();
+        for (const item of combined) {
+          if (!seen.has(item.id)) {
+            seen.add(item.id);
+            unique.push(item);
+          }
+        }
+        setItems(unique);
+      }
+    }
+    loadInbound();
+  }, []);
 
   const handleAddInbound = (e) => {
     e.preventDefault();
@@ -29,8 +57,8 @@ export default function InboundTab() {
     setFormData({ supplier: '', item: '', qty: 50 });
   };
 
-  const filtered = items.filter(i => 
-    i.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filtered = items.filter(i =>
+    i.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.item.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -39,15 +67,15 @@ export default function InboundTab() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Inbound Receipts & POs</h2>
-          <p className="text-sm text-gray-500 font-medium">Verify incoming supplier stock shipments and generate receipts.</p>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Inbound Goods Receipts</h2>
+          <p className="text-sm text-gray-500 font-medium">Log supplier deliveries, verify stock quality, and update warehouse bin allocations.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md cursor-pointer shrink-0"
+          className="bg-[#ff5100] hover:bg-[#e64900] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center space-x-2 shrink-0 cursor-pointer"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>New Inbound Receipt</span>
+          <Plus className="w-4 h-4" />
+          <span>New Goods Receipt</span>
         </button>
       </div>
 
@@ -69,11 +97,11 @@ export default function InboundTab() {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
               <th className="py-3.5 px-6">Receipt ID</th>
-              <th className="py-3.5 px-6">Supplier</th>
-              <th className="py-3.5 px-6">Item / SKU</th>
-              <th className="py-3.5 px-6">Quantity</th>
+              <th className="py-3.5 px-6">Supplier Partner</th>
+              <th className="py-3.5 px-6">Item / Category</th>
+              <th className="py-3.5 px-6">Qty Received</th>
+              <th className="py-3.5 px-6">Log Date</th>
               <th className="py-3.5 px-6">Status</th>
-              <th className="py-3.5 px-6">Time Received</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm">
@@ -83,6 +111,7 @@ export default function InboundTab() {
                 <td className="py-4 px-6 font-bold text-gray-900">{item.supplier}</td>
                 <td className="py-4 px-6 text-gray-700 font-semibold text-xs">{item.item}</td>
                 <td className="py-4 px-6 font-extrabold text-gray-900">{item.qty}</td>
+                <td className="py-4 px-6 text-gray-500 text-xs font-medium">{item.date}</td>
                 <td className="py-4 px-6">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
                     item.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
@@ -90,7 +119,6 @@ export default function InboundTab() {
                     {item.status}
                   </span>
                 </td>
-                <td className="py-4 px-6 text-xs text-gray-500 font-medium">{item.date}</td>
               </tr>
             ))}
           </tbody>
@@ -98,51 +126,55 @@ export default function InboundTab() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100">
-            <div className="px-6 py-4 bg-[#092540] text-white flex items-center justify-between">
-              <h3 className="font-bold text-base">Create Inbound Stock Receipt</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-blue-300 hover:text-white">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-extrabold text-lg text-gray-900">Create Inbound Goods Receipt</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddInbound} className="p-6 space-y-4">
+            <form onSubmit={handleAddInbound} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Supplier Name</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Supplier / Logistics Vendor</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Sony India Logistics"
+                  placeholder="e.g. Sony India Pvt Ltd"
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-600"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Item Title / SKU</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Item Title / SKU</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Smart Watch (SW-2001)"
+                  placeholder="e.g. Wireless Headphones (WH-1001)"
                   value={formData.item}
                   onChange={(e) => setFormData({ ...formData, item: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-600"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Received Quantity</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Quantity Received</label>
                 <input
                   type="number"
+                  min="1"
                   required
-                  placeholder="100"
                   value={formData.qty}
                   onChange={(e) => setFormData({ ...formData, qty: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-600"
                 />
               </div>
-              <div className="pt-2 flex justify-end space-x-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-                <button type="submit" className="px-5 py-2 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-xl">Generate Receipt</button>
+              <div className="flex items-center justify-end space-x-3 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900">
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 bg-[#ff5100] text-white font-extrabold text-xs rounded-xl shadow-xs">
+                  Save Receipt
+                </button>
               </div>
             </form>
           </div>

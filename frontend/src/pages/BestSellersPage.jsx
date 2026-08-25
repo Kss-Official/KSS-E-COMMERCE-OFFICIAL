@@ -19,10 +19,13 @@ import {
   Check,
   SlidersHorizontal,
   Award,
+  Filter,
   Crown
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
+import { fetchProducts } from '../services/api';
 
 // Import assets
 import bestSellersHeroImg from '../assets/images/bestsellers_hero.png';
@@ -279,20 +282,115 @@ const bestSellerProducts = [
 ];
 
 export default function BestSellersPage() {
-  const { addToCart, addToWishlist, wishlistItems } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
   const { navigateTo } = useNavigationContext();
 
+  const isProductInWishlist = (id) => isWishlisted(id);
+
+  const [dbProducts, setDbProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [minRating, setMinRating] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(70000);
+  const [maxPrice, setMaxPrice] = useState(150000);
   const [sortBy, setSortBy] = useState('rank'); // 'rank' | 'priceLow' | 'priceHigh' | 'rating'
   const [viewMode, setViewMode] = useState('grid');
   const [toastMessage, setToastMessage] = useState(null);
 
+  useEffect(() => {
+    setIsLoading(true);
+    fetchProducts({ no_page: 'true' })
+      .then((data) => {
+        const rawList = Array.isArray(data) && data.length > 0 ? data : [];
+        
+        // Deduplicate database items by normalized title key
+        const uniqueItems = [];
+        const seen = new Set();
+        for (const item of rawList) {
+          const rawTitle = String(item.title || item.name || '').trim().toLowerCase();
+          const titleKey = rawTitle.replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').slice(0, 16);
+          if (titleKey && !seen.has(titleKey)) {
+            seen.add(titleKey);
+            uniqueItems.push(item);
+          }
+        }
+
+        const mapped = uniqueItems.map((p, idx) => {
+          const rawPrice = Number(p.current_price || p.price || p.base_price || 0);
+          const origPrice = Number(p.original_price || p.originalPrice || p.base_price || (rawPrice > 0 ? Math.round(rawPrice * 1.25) : 0));
+          const titleName = p.title || p.name || 'Product';
+          
+          let catName = 'General';
+          if (typeof p.category === 'object' && p.category?.name) {
+            catName = p.category.name;
+          } else if (p.category_name) {
+            catName = p.category_name;
+          } else if (typeof p.category === 'string') {
+            catName = p.category;
+          }
+
+          const disc = origPrice > rawPrice
+            ? `${Math.round(((origPrice - rawPrice) / origPrice) * 100)}% OFF`
+            : (p.discount_percentage ? `${Math.round(p.discount_percentage)}% OFF` : '15% OFF');
+
+          const reviewsCount = Number(p.review_count || p.reviews || 0);
+          const ratingVal = Number(p.average_rating || p.rating || 4.5).toFixed(1);
+
+          return {
+            id: p.id,
+            rank: idx + 1,
+            name: titleName,
+            brand: (typeof p.brand === 'object' && p.brand?.name) ? p.brand.name : (p.brand || 'BuyZo Verified'),
+            category: catName,
+            image: getProductImage(titleName, p.primary_image || p.image),
+            price: rawPrice,
+            originalPrice: Math.round(origPrice),
+            discount: disc,
+            rating: parseFloat(ratingVal),
+            reviews: reviewsCount,
+            soldCount: reviewsCount > 0 ? `${reviewsCount}+ bought this month` : 'Top Seller',
+            badge: idx < 3 ? `#${idx + 1} BEST SELLER` : idx < 7 ? 'TOP RATED' : 'MOST POPULAR',
+            badgeColor: idx < 3 ? 'bg-amber-500' : idx < 7 ? 'bg-emerald-600' : 'bg-[#ff5100]',
+            popularity: 100 - idx,
+            description: p.description || `${titleName} with premium build quality and official brand warranty.`
+          };
+        });
+
+        setDbProducts(mapped);
+      })
+      .catch((err) => {
+        console.warn('Best sellers fetch failed:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  // Compute dynamic category counts
+  const categoryCounts = useMemo(() => {
+    const counts = { All: dbProducts.length };
+    dbProducts.forEach((p) => {
+      const c = (p.category || 'General').toLowerCase();
+      bestSellerCategories.forEach(cat => {
+        if (cat.id === 'All') return;
+        const target = cat.id.toLowerCase();
+        if (c.includes(target) || target.includes(c)) {
+          counts[cat.id] = (counts[cat.id] || 0) + 1;
+        }
+      });
+    });
+    return counts;
+  }, [dbProducts]);
+
   const filteredProducts = useMemo(() => {
-    return bestSellerProducts
+    return dbProducts
       .filter((p) => {
-        if (activeCategory !== 'All' && p.category !== activeCategory) return false;
+        if (activeCategory !== 'All') {
+          const prodCat = (p.category || '').toLowerCase();
+          const activeCat = activeCategory.toLowerCase();
+          if (!prodCat.includes(activeCat) && !activeCat.includes(prodCat)) {
+            return false;
+          }
+        }
         if (p.price > maxPrice) return false;
         if (minRating > 0 && p.rating < minRating) return false;
         return true;
@@ -303,7 +401,7 @@ export default function BestSellersPage() {
         if (sortBy === 'rating') return b.rating - a.rating;
         return a.rank - b.rank;
       });
-  }, [activeCategory, minRating, maxPrice, sortBy]);
+  }, [dbProducts, activeCategory, minRating, maxPrice, sortBy]);
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
@@ -322,24 +420,10 @@ export default function BestSellersPage() {
 
   const handleToggleWishlist = (product, e) => {
     if (e) e.stopPropagation();
-    addToWishlist({
-      id: product.id,
-      name: product.name,
-      specs: `${product.brand} | ${product.category}`,
-      category: product.category,
-      image: product.image,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      discount: product.discount,
-      inStock: true,
-      deliveryDate: 'Delivery by 2-3 Days'
-    });
-    setToastMessage(`Saved "${product.name}" to wishlist!`);
+    const wasWish = isWishlisted(product.id);
+    toggleWishlist(product);
+    setToastMessage(wasWish ? `Removed "${product.name}" from wishlist` : `Saved "${product.name}" to wishlist!`);
     setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const isProductInWishlist = (id) => {
-    return wishlistItems?.some((item) => item.id === id);
   };
 
   return (
@@ -437,7 +521,7 @@ export default function BestSellersPage() {
                   className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-emerald-200' : 'bg-gray-100 text-gray-500'
                     }`}
                 >
-                  {cat.count}
+                  {categoryCounts[cat.id] || (cat.id === 'All' ? dbProducts.length : 0)}
                 </span>
               </button>
             );
@@ -496,7 +580,7 @@ export default function BestSellersPage() {
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {filteredProducts.map((product) => {
-              const inWish = isProductInWishlist(product.id);
+              const inWish = isWishlisted(product);
               return (
                 <div
                   key={product.id}
@@ -525,12 +609,16 @@ export default function BestSellersPage() {
                         }`}
                       title="Save to Wishlist"
                     >
-                      <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                      <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                     </button>
 
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                      alt={product.name || product.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = getProductImage(product.name || product.title, '');
+                      }}
                       className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500"
                     />
                   </div>
@@ -601,8 +689,12 @@ export default function BestSellersPage() {
                       <span>#{product.rank}</span>
                     </div>
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={getProductImage(product.name || product.title, product.image || product.primary_image)}
+                      alt={product.name || product.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = getProductImage(product.name || product.title, '');
+                      }}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
@@ -615,7 +707,7 @@ export default function BestSellersPage() {
                         className={`p-1.5 rounded-full transition-colors cursor-pointer ${inWish ? 'text-rose-500 bg-rose-50' : 'text-gray-400 hover:text-rose-500'
                           }`}
                       >
-                        <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500' : ''}`} />
+                        <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500 stroke-rose-500' : ''}`} />
                       </button>
                     </div>
 
