@@ -915,14 +915,6 @@ export default function ShopPage() {
       });
   }, []);
 
-  const handleToggleWishlist = (product, e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    toggleWishlist(product);
-    const isWish = isWishlisted(product.id);
-    setToastMessage(isWish ? 'Removed from wishlist' : 'Added to wishlist!');
-    setTimeout(() => setToastMessage(null), 2500);
-  };
-
   const handleAddToCart = (product, e) => {
     e.stopPropagation();
     addToCart(product);
