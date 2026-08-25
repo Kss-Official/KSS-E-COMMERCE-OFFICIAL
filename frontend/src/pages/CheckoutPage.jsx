@@ -307,14 +307,14 @@ export default function CheckoutPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-7 h-7 rounded-full bg-[#063328] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="w-7 h-7 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs font-bold shrink-0">
                   1
                 </div>
                 <h2 className="text-base sm:text-lg font-bold text-gray-900">Delivery Address</h2>
               </div>
               <button
                 onClick={() => setIsAddAddressOpen(true)}
-                className="text-xs sm:text-sm font-bold text-[#ff5100] hover:underline cursor-pointer"
+                className="text-xs sm:text-sm font-bold text-accent hover:underline cursor-pointer"
               >
                 Change / Select Address
               </button>
@@ -330,7 +330,7 @@ export default function CheckoutPage() {
                     onClick={() => setSelectedAddressId(addr.id)}
                     className={`rounded-2xl p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between relative border ${
                       isSelected
-                        ? 'border-2 border-[#063328] bg-emerald-50/15 shadow-xs'
+                        ? 'border-2 border-brand-800 bg-emerald-50/15 shadow-xs'
                         : 'border-gray-200/90 hover:border-gray-300 bg-white'
                     }`}
                   >
@@ -339,10 +339,10 @@ export default function CheckoutPage() {
                         {/* Custom Radio Icon */}
                         <div
                           className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? 'border-[#063328]' : 'border-gray-400'
+                            isSelected ? 'border-brand-800' : 'border-gray-400'
                           }`}
                         >
-                          {isSelected && <div className="w-2 h-2 rounded-full bg-[#063328]" />}
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-brand-800" />}
                         </div>
                         <span className="font-bold text-sm text-gray-900">{addr.name}</span>
                         <span
@@ -370,7 +370,7 @@ export default function CheckoutPage() {
                 <div className="w-8 h-8 rounded-full border-2 border-emerald-700 text-emerald-700 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
                   +
                 </div>
-                <span className="text-xs font-bold text-[#063328] mt-2.5 group-hover:text-emerald-800">
+                <span className="text-xs font-bold text-brand-800 mt-2.5 group-hover:text-emerald-800">
                   Add New Address
                 </span>
               </div>
@@ -381,7 +381,7 @@ export default function CheckoutPage() {
           <div className="bg-white rounded-3xl border border-gray-200/90 p-5 sm:p-6 shadow-xs">
             {/* Header */}
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-7 h-7 rounded-full bg-[#063328] text-white flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-7 h-7 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs font-bold shrink-0">
                 2
               </div>
               <h2 className="text-base sm:text-lg font-bold text-gray-900">Delivery Options</h2>
@@ -394,17 +394,17 @@ export default function CheckoutPage() {
                 onClick={() => setDeliveryOption('standard')}
                 className={`rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all border ${
                   deliveryOption === 'standard'
-                    ? 'border-2 border-[#063328] bg-emerald-50/15 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/15 shadow-xs'
                     : 'border-gray-200/90 hover:border-gray-300 bg-white'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <div
                     className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      deliveryOption === 'standard' ? 'border-[#063328]' : 'border-gray-400'
+                      deliveryOption === 'standard' ? 'border-brand-800' : 'border-gray-400'
                     }`}
                   >
-                    {deliveryOption === 'standard' && <div className="w-2 h-2 rounded-full bg-[#063328]" />}
+                    {deliveryOption === 'standard' && <div className="w-2 h-2 rounded-full bg-brand-800" />}
                   </div>
                   <div>
                     <div className="font-bold text-sm text-gray-900">Standard Delivery</div>
@@ -422,17 +422,17 @@ export default function CheckoutPage() {
                 onClick={() => setDeliveryOption('express')}
                 className={`rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all border ${
                   deliveryOption === 'express'
-                    ? 'border-2 border-[#063328] bg-emerald-50/15 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/15 shadow-xs'
                     : 'border-gray-200/90 hover:border-gray-300 bg-white'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <div
                     className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      deliveryOption === 'express' ? 'border-[#063328]' : 'border-gray-400'
+                      deliveryOption === 'express' ? 'border-brand-800' : 'border-gray-400'
                     }`}
                   >
-                    {deliveryOption === 'express' && <div className="w-2 h-2 rounded-full bg-[#063328]" />}
+                    {deliveryOption === 'express' && <div className="w-2 h-2 rounded-full bg-brand-800" />}
                   </div>
                   <div>
                     <div className="font-bold text-sm text-gray-900">Express Delivery</div>
@@ -462,20 +462,20 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('upi')}
                 className={`rounded-2xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-all border min-h-[90px] ${
                   paymentMethod === 'upi'
-                    ? 'border-2 border-[#063328] bg-emerald-50/20 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/20 shadow-xs'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-1 mb-1.5">
                   <div
                     className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center mr-1 ${
-                      paymentMethod === 'upi' ? 'border-[#063328]' : 'border-gray-400'
+                      paymentMethod === 'upi' ? 'border-brand-800' : 'border-gray-400'
                     }`}
                   >
-                    {paymentMethod === 'upi' && <div className="w-1.5 h-1.5 rounded-full bg-[#063328]" />}
+                    {paymentMethod === 'upi' && <div className="w-1.5 h-1.5 rounded-full bg-brand-800" />}
                   </div>
-                  <span className="font-black text-xs text-[#063328] tracking-wider italic">UPI</span>
-                  <span className="text-[#ff5100] text-[10px] font-bold">▶</span>
+                  <span className="font-black text-xs text-brand-800 tracking-wider italic">UPI</span>
+                  <span className="text-accent text-[10px] font-bold">▶</span>
                 </div>
                 <span className="text-[10px] text-gray-500 leading-tight">Unified Payments</span>
               </div>
@@ -485,7 +485,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('card')}
                 className={`rounded-2xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-all border min-h-[90px] ${
                   paymentMethod === 'card'
-                    ? 'border-2 border-[#063328] bg-emerald-50/20 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/20 shadow-xs'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
@@ -498,7 +498,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('netbanking')}
                 className={`rounded-2xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-all border min-h-[90px] ${
                   paymentMethod === 'netbanking'
-                    ? 'border-2 border-[#063328] bg-emerald-50/20 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/20 shadow-xs'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
@@ -511,7 +511,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('wallets')}
                 className={`rounded-2xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-all border min-h-[90px] ${
                   paymentMethod === 'wallets'
-                    ? 'border-2 border-[#063328] bg-emerald-50/20 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/20 shadow-xs'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
@@ -524,7 +524,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('cod')}
                 className={`rounded-2xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-all border min-h-[90px] col-span-2 sm:col-span-1 ${
                   paymentMethod === 'cod'
-                    ? 'border-2 border-[#063328] bg-emerald-50/20 shadow-xs'
+                    ? 'border-2 border-brand-800 bg-emerald-50/20 shadow-xs'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
@@ -545,9 +545,9 @@ export default function CheckoutPage() {
                     placeholder="e.g. yourname@okhdfcbank / paytm"
                     value={upiId}
                     onChange={(e) => setUpiId(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328] focus:ring-1 focus:ring-[#063328]"
+                    className="flex-1 px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800 focus:ring-1 focus:ring-[#063328]"
                   />
-                  <button className="px-4 py-2.5 bg-[#063328] hover:bg-[#04241c] text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
+                  <button className="px-4 py-2.5 bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
                     Verify
                   </button>
                 </div>
@@ -564,7 +564,7 @@ export default function CheckoutPage() {
                     placeholder="xxxx xxxx xxxx xxxx"
                     value={cardDetails.number}
                     onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                    className="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -575,7 +575,7 @@ export default function CheckoutPage() {
                       placeholder="MM/YY"
                       value={cardDetails.expiry}
                       onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                      className="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                     />
                   </div>
                   <div>
@@ -586,7 +586,7 @@ export default function CheckoutPage() {
                       maxLength={4}
                       value={cardDetails.cvv}
                       onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                      className="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                     />
                   </div>
                 </div>
@@ -663,7 +663,7 @@ export default function CheckoutPage() {
 
             {/* Coupon / Offers Box */}
             <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200/80 flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full bg-brand-800 text-white flex items-center justify-center shrink-0">
                 <Tag className="w-4 h-4" />
               </div>
               <div>
@@ -675,7 +675,7 @@ export default function CheckoutPage() {
             {/* Place Order CTA Button */}
             <button
               onClick={handlePlaceOrder}
-              className="w-full py-3.5 bg-[#ff5100] hover:bg-[#e64900] text-white font-black text-base rounded-2xl shadow-lg hover:shadow-orange-500/30 transition-all flex items-center justify-center space-x-2 cursor-pointer transform hover:-translate-y-0.5 active:scale-98"
+              className="w-full py-3.5 bg-accent hover:bg-accent-600 text-white font-black text-base rounded-2xl shadow-lg hover:shadow-orange-500/30 transition-all flex items-center justify-center space-x-2 cursor-pointer transform hover:-translate-y-0.5 active:scale-98"
             >
               <Lock className="w-4 h-4" />
               <span>Place Order</span>
@@ -715,7 +715,7 @@ export default function CheckoutPage() {
                   placeholder="e.g. Rahul Sharma"
                   value={newAddressForm.name}
                   onChange={(e) => setNewAddressForm({ ...newAddressForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                 />
               </div>
 
@@ -727,7 +727,7 @@ export default function CheckoutPage() {
                   placeholder="+91 98765 43210"
                   value={newAddressForm.phone}
                   onChange={(e) => setNewAddressForm({ ...newAddressForm, phone: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                 />
               </div>
 
@@ -739,7 +739,7 @@ export default function CheckoutPage() {
                   placeholder="House No., Building, Street Area"
                   value={newAddressForm.address}
                   onChange={(e) => setNewAddressForm({ ...newAddressForm, address: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                 />
               </div>
 
@@ -752,7 +752,7 @@ export default function CheckoutPage() {
                     placeholder="Bengaluru"
                     value={newAddressForm.city}
                     onChange={(e) => setNewAddressForm({ ...newAddressForm, city: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                   />
                 </div>
                 <div>
@@ -763,7 +763,7 @@ export default function CheckoutPage() {
                     placeholder="Karnataka"
                     value={newAddressForm.state}
                     onChange={(e) => setNewAddressForm({ ...newAddressForm, state: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                   />
                 </div>
                 <div>
@@ -774,7 +774,7 @@ export default function CheckoutPage() {
                     placeholder="560033"
                     value={newAddressForm.pincode}
                     onChange={(e) => setNewAddressForm({ ...newAddressForm, pincode: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-[#063328]"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
                   />
                 </div>
               </div>
@@ -807,7 +807,7 @@ export default function CheckoutPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#063328] hover:bg-[#04241c] text-white text-xs font-bold shadow-md cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Save &amp; Deliver Here
                 </button>
@@ -821,12 +821,12 @@ export default function CheckoutPage() {
       {orderPlacedModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl space-y-4 relative">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-[#063328] flex items-center justify-center mx-auto shadow-inner">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-brand-800 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle className="w-10 h-10 text-emerald-600" />
             </div>
 
             <div className="space-y-1">
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-[#ff5100] uppercase tracking-wider bg-orange-50 px-2.5 py-1 rounded-full">
+              <div className="inline-flex items-center space-x-1 text-xs font-bold text-accent uppercase tracking-wider bg-orange-50 px-2.5 py-1 rounded-full">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Order Placed Successfully</span>
               </div>
@@ -843,7 +843,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between font-semibold">
                 <span className="text-gray-500">Total Paid:</span>
-                <span className="text-[#063328] font-black text-sm">₹{finalTotal.toLocaleString('en-IN')}</span>
+                <span className="text-brand-800 font-black text-sm">₹{finalTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between font-semibold">
                 <span className="text-gray-500">Delivery To:</span>
@@ -859,7 +859,7 @@ export default function CheckoutPage() {
                   setOrderPlacedModal(false);
                   navigateTo('orders');
                 }}
-                className="w-full py-3 bg-[#063328] hover:bg-[#04241c] text-white font-bold rounded-xl text-xs sm:text-sm cursor-pointer shadow-md"
+                className="w-full py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs sm:text-sm cursor-pointer shadow-md"
               >
                 Track Your Order
               </button>
@@ -879,3 +879,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+

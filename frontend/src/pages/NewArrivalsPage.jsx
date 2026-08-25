@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { 
-  Heart, 
-  LayoutGrid, 
-  List, 
-  Star, 
-  ShoppingCart, 
-  ArrowRight, 
+import {
+  Heart,
+  LayoutGrid,
+  List,
+  Star,
+  ShoppingCart,
+  ArrowRight,
   Check,
   Search,
   ChevronLeft,
@@ -32,7 +32,7 @@ import loungeChairImg from '../assets/images/lounge_chair.jpg';
 
 // Banner Hero Image
 import bannerHeroImg from '../assets/images/new_arrivals_banner_hero.png';
-import rakhiBannerImg from '../assets/images/rakhi_banner.jpg';
+import rakhiBannerImg from '../assets/images/rakhi_banner.png';
 import rakhiLogoImg from '../assets/images/rakhi_logo.jpg';
 
 const categoriesList = [
@@ -347,10 +347,10 @@ export default function NewArrivalsPage() {
   );
 
   return (
-    <div className="bg-[#f8faf9] min-h-screen py-5 px-4 sm:px-6 lg:px-8 font-sans text-gray-800">
+    <div className="bg-cream min-h-screen py-5 px-4 sm:px-6 lg:px-8 font-sans text-gray-800">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-[#08493d] text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold flex items-center space-x-2 z-50 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-700 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold flex items-center space-x-2 z-50 animate-bounce">
           <Check className="w-4 h-4 text-emerald-300" />
           <span>{toastMessage}</span>
         </div>
@@ -360,7 +360,7 @@ export default function NewArrivalsPage() {
       <nav className="max-w-7xl mx-auto flex items-center space-x-2 text-xs font-semibold text-gray-500 mb-5">
         <button
           onClick={() => navigateTo('home')}
-          className="hover:text-[#08493d] transition-colors cursor-pointer"
+          className="hover:text-brand-700 transition-colors cursor-pointer"
         >
           Home
         </button>
@@ -370,10 +370,10 @@ export default function NewArrivalsPage() {
 
       {/* Main 2-Column Layout */}
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 items-start">
-        
+
         {/* LEFT SIDEBAR: Categories & Filters */}
         <aside className="w-full lg:w-64 xl:w-72 shrink-0 space-y-6">
-          
+
           {/* 1. Categories Card */}
           <div className="bg-white rounded-2xl p-5 border border-gray-100/90 shadow-2xs">
             <h3 className="font-extrabold text-sm text-gray-900 mb-3.5">
@@ -386,14 +386,13 @@ export default function NewArrivalsPage() {
                   <button
                     key={cat.name}
                     onClick={() => setActiveCategory(cat.name)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-[#e2f3ee] text-[#08493d] font-bold shadow-2xs'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${isActive
+                      ? 'bg-brand-50 text-brand-700 font-bold shadow-2xs'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                   >
                     <span>{cat.name}</span>
-                    <span className={`text-[11px] ${isActive ? 'text-[#08493d] font-extrabold' : 'text-gray-400 font-normal'}`}>
+                    <span className={`text-[11px] ${isActive ? 'text-brand-700 font-extrabold' : 'text-gray-400 font-normal'}`}>
                       {cat.count}
                     </span>
                   </button>
@@ -424,7 +423,7 @@ export default function NewArrivalsPage() {
               />
               <div className="flex items-center justify-between text-xs text-gray-500 font-semibold pt-1">
                 <span>₹0</span>
-                <span className="text-[#08493d] font-extrabold">
+                <span className="text-brand-700 font-extrabold">
                   {priceMax >= 10000 ? '₹10,000+' : `₹${priceMax.toLocaleString('en-IN')}`}
                 </span>
               </div>
@@ -442,13 +441,13 @@ export default function NewArrivalsPage() {
                       type="checkbox"
                       checked={selectedSubCategories.includes(sc.name)}
                       onChange={() => handleSubCategoryToggle(sc.name)}
-                      className="w-4 h-4 rounded text-[#08493d] focus:ring-[#08493d] border-gray-300 accent-[#08493d] cursor-pointer"
+                      className="w-4 h-4 rounded text-brand-700 focus:ring-[#08493d] border-gray-300 accent-[#08493d] cursor-pointer"
                     />
                     <span className="font-medium">{sc.name} <span className="text-gray-400">({sc.count})</span></span>
                   </label>
                 ))}
               </div>
-              <button className="text-[11px] font-bold text-[#08493d] hover:underline pt-1 inline-flex items-center cursor-pointer">
+              <button className="text-[11px] font-bold text-brand-700 hover:underline pt-1 inline-flex items-center cursor-pointer">
                 + View More
               </button>
             </div>
@@ -479,13 +478,13 @@ export default function NewArrivalsPage() {
                       type="checkbox"
                       checked={selectedBrands.includes(b)}
                       onChange={() => handleBrandToggle(b)}
-                      className="w-4 h-4 rounded text-[#08493d] focus:ring-[#08493d] border-gray-300 accent-[#08493d] cursor-pointer"
+                      className="w-4 h-4 rounded text-brand-700 focus:ring-[#08493d] border-gray-300 accent-[#08493d] cursor-pointer"
                     />
                     <span className="font-medium">{b}</span>
                   </label>
                 ))}
               </div>
-              <button className="text-[11px] font-bold text-[#08493d] hover:underline pt-1 inline-flex items-center cursor-pointer">
+              <button className="text-[11px] font-bold text-brand-700 hover:underline pt-1 inline-flex items-center cursor-pointer">
                 + View More
               </button>
             </div>
@@ -496,10 +495,10 @@ export default function NewArrivalsPage() {
 
         {/* RIGHT MAIN CONTENT AREA */}
         <main className="flex-1 min-w-0 space-y-6">
-          
+
           {/* Hero Banner Carousel (Slide 1: New Arrivals, Slide 2: Raksha Bandhan) */}
           <div className="relative overflow-hidden rounded-3xl shadow-sm group">
-            
+
             {/* Slide Container with Smooth Horizontal Translation */}
             <div
               className="flex transition-transform duration-700 ease-in-out w-full"
@@ -510,13 +509,13 @@ export default function NewArrivalsPage() {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                   {/* Left Banner Text */}
                   <div className="max-w-md text-left space-y-3">
-                    <span className="inline-block bg-[#08493d] text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-2xs">
+                    <span className="inline-block bg-brand-700 text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-2xs">
                       NEW ARRIVALS
                     </span>
 
                     <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
-                      <span className="text-gray-900 block">Fresh Arrivals,</span>
-                      <span className="text-[#ff5100] block">Endless Choices</span>
+                      <span className="text-gray-900 block m-3">Fresh Arrivals,</span>
+                      <span className="text-accent block m-3">Endless Choices</span>
                     </h1>
 
                     <p className="text-gray-600 text-xs sm:text-sm font-medium leading-relaxed max-w-sm">
@@ -528,7 +527,7 @@ export default function NewArrivalsPage() {
                         const el = document.getElementById('products-grid');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="bg-[#08493d] hover:bg-[#063328] text-white font-bold text-xs px-5 py-2.5 rounded-full inline-flex items-center space-x-2 shadow-md hover:scale-105 transition-all cursor-pointer mt-1"
+                      className="bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs px-5 py-2.5 rounded-full inline-flex items-center space-x-2 shadow-md hover:scale-105 transition-all cursor-pointer mt-1"
                     >
                       <span>Explore Now</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -537,15 +536,15 @@ export default function NewArrivalsPage() {
 
                   {/* Right Hero Graphic & Floating Badge */}
                   <div className="w-full md:w-1/2 flex items-center justify-center md:justify-end relative">
-                    {/* Floating Badge */}
-                    <div className="hidden sm:flex absolute -top-1 right-2 bg-white/95 backdrop-blur-xs rounded-full p-3 shadow-lg border border-emerald-100 flex-col items-center justify-center z-20 w-24 h-24 text-center">
-                      <span className="text-[9px] font-black text-gray-800 tracking-wider uppercase leading-tight">
+                    {/* Floating Badge - Smaller size, positioned higher up and further left */}
+                    <div className="hidden sm:flex absolute bottom-5 -left-2 sm:bottom-7 sm:-left-7 lg:bottom-9 lg:-left-10 bg-white/95 backdrop-blur-md rounded-full p-2 shadow-xl border-2 border-emerald-100/90 flex-col items-center justify-center z-20 w-20 h-20 text-center hover:scale-105 transition-transform duration-300 ring-4 ring-emerald-500/10 select-none">
+                      <span className="text-[8px] font-black text-gray-800 tracking-wider uppercase leading-tight">
                         NEW
                       </span>
-                      <span className="text-[10px] font-black text-[#ff5100] leading-tight">
+                      <span className="text-[9px] font-black text-accent leading-tight">
                         EVERYDAY!
                       </span>
-                      <span className="text-[8px] font-medium text-gray-500 mt-0.5">
+                      <span className="text-[7px] font-semibold text-gray-500 mt-0.5 leading-tight">
                         Grab Yours Now!
                       </span>
                     </div>
@@ -567,18 +566,18 @@ export default function NewArrivalsPage() {
                   {/* Left Text & Rakhi Logo */}
                   <div className="max-w-md space-y-3">
                     <div className="inline-flex items-center space-x-2 bg-amber-400/20 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold text-amber-300 border border-amber-300/30">
-                      <img src={rakhiLogoImg} alt="Rakhi Logo" className="w-4 h-4 rounded-full object-contain" />
+                      <img src={rakhiLogoImg} alt="Rakhi Logo" className="w-4 h-4 rounded-full object-contain m-3 " />
                       <span>Raksha Bandhan Exclusive Collection</span>
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
-                      Celebrate Love &amp; Protection with <br />
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-100">
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug m-4">
+                      Celebrate Love &amp; Protection <br />
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-100 m-2">
                         Handcrafted Rakhi Hampers
                       </span>
                     </h2>
 
-                    <p className="text-amber-100/90 text-xs sm:text-sm font-normal leading-relaxed">
+                    <p className="text-amber-100/90 text-xs sm:text-sm font-normal leading-relaxed m-3 ">
                       Designer silk thread Rakhis, gourmet sweets, dry fruit boxes &amp; personalized gift sets with up to <span className="font-bold text-yellow-300 underline">60% OFF</span> + Same-Day Express Delivery.
                     </p>
 
@@ -603,12 +602,9 @@ export default function NewArrivalsPage() {
                       <img
                         src={rakhiBannerImg}
                         alt="Raksha Bandhan Festive Celebration"
-                        className="w-full max-w-sm sm:max-w-md h-auto max-h-[220px] object-cover rounded-2xl drop-shadow-2xl border border-amber-300/30 group-hover/rakhi:scale-103 transition-transform duration-500"
+                        className="w-full max-w-sm sm:max-w-md h-auto max-h-[220px] object-cover "
                       />
-                      <div className="absolute -bottom-2 -left-2 bg-white/95 text-gray-900 px-3 py-1.5 rounded-xl shadow-lg border border-amber-300 text-xs font-bold flex items-center space-x-1.5">
-                        <img src={rakhiLogoImg} alt="Rakhi Icon" className="w-4 h-4 object-contain" />
-                        <span className="text-[#851829]">Special 60% OFF</span>
-                      </div>
+
                     </div>
                   </div>
                 </div>
@@ -641,11 +637,10 @@ export default function NewArrivalsPage() {
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
                   aria-label={`Go to slide ${idx + 1}`}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                    currentSlide === idx
-                      ? 'bg-[#ff5100] scale-110 shadow-xs'
-                      : 'bg-white/70 hover:bg-white border border-gray-300/40 shadow-2xs'
-                  }`}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentSlide === idx
+                    ? 'bg-accent scale-110 shadow-xs'
+                    : 'bg-white/70 hover:bg-white border border-gray-300/40 shadow-2xs'
+                    }`}
                 />
               ))}
             </div>
@@ -663,22 +658,20 @@ export default function NewArrivalsPage() {
               <div className="flex items-center border border-gray-200 rounded-xl bg-white p-1 shadow-2xs">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === 'grid'
-                      ? 'bg-gray-100 text-[#08493d] font-bold'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'grid'
+                    ? 'bg-gray-100 text-brand-700 font-bold'
+                    : 'text-gray-400 hover:text-gray-600'
+                    }`}
                   title="Grid View"
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === 'list'
-                      ? 'bg-gray-100 text-[#08493d] font-bold'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'list'
+                    ? 'bg-gray-100 text-brand-700 font-bold'
+                    : 'text-gray-400 hover:text-gray-600'
+                    }`}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -713,7 +706,7 @@ export default function NewArrivalsPage() {
                   setSelectedBrands([]);
                   setPriceMax(10000);
                 }}
-                className="mt-3 bg-[#08493d] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#063328] transition-colors cursor-pointer"
+                className="mt-3 bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-brand-800 transition-colors cursor-pointer"
               >
                 Reset Filters
               </button>
@@ -724,12 +717,12 @@ export default function NewArrivalsPage() {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white rounded-2xl p-3 border border-gray-200 hover:border-[#063328] shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group relative"
+                  className="bg-white rounded-2xl p-3 border border-gray-200 hover:border-brand-700 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group relative"
                 >
                   <div>
                     {/* Top NEW Badge & Wishlist Heart */}
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="bg-[#08493d] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      <span className="bg-brand-700 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
                         NEW
                       </span>
                       <button
@@ -738,17 +731,16 @@ export default function NewArrivalsPage() {
                         title="Add to Wishlist"
                       >
                         <Heart
-                          className={`w-3.5 h-3.5 ${
-                            isWishlisted(product)
-                              ? 'fill-red-500 text-red-500 stroke-red-500'
-                              : 'stroke-[1.8]'
-                          }`}
+                          className={`w-3.5 h-3.5 ${isWishlisted(product.id)
+                            ? 'fill-red-500 text-red-500'
+                            : 'stroke-[1.8]'
+                            }`}
                         />
                       </button>
                     </div>
 
                     {/* Product Image */}
-                    <div 
+                    <div
                       onClick={() => navigateTo('product-detail', product)}
                       className="w-full h-36 sm:h-40 flex items-center justify-center p-2 cursor-pointer overflow-hidden rounded-xl bg-gray-50/50 mb-2"
                     >
@@ -766,7 +758,7 @@ export default function NewArrivalsPage() {
                     {/* Title */}
                     <h4
                       onClick={() => navigateTo('product-detail', product)}
-                      className="text-xs font-bold text-gray-900 group-hover:text-[#08493d] line-clamp-1 cursor-pointer transition-colors"
+                      className="text-xs font-bold text-gray-900 group-hover:text-brand-700 line-clamp-1 cursor-pointer transition-colors"
                     >
                       {product.name}
                     </h4>
@@ -782,7 +774,7 @@ export default function NewArrivalsPage() {
                         </span>
                       )}
                       {product.discount && (
-                        <span className="text-[10px] font-bold text-[#ff5100]">
+                        <span className="text-[10px] font-bold text-accent">
                           {product.discount}
                         </span>
                       )}
@@ -799,7 +791,7 @@ export default function NewArrivalsPage() {
                   {/* Add to Cart Button */}
                   <button
                     onClick={() => handleAddToCart(product)}
-                    className="w-full bg-[#08493d] hover:bg-[#063328] text-white text-[11px] font-bold py-1.5 rounded-xl flex items-center justify-center space-x-1.5 transition-colors mt-2.5 shadow-2xs cursor-pointer"
+                    className="w-full bg-brand-700 hover:bg-brand-800 text-white text-[11px] font-bold py-1.5 rounded-xl flex items-center justify-center space-x-1.5 transition-colors mt-2.5 shadow-2xs cursor-pointer"
                   >
                     <ShoppingCart className="w-3 h-3" />
                     <span>Add to Cart</span>
@@ -813,10 +805,10 @@ export default function NewArrivalsPage() {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white rounded-2xl border border-gray-200 hover:border-[#063328] p-3 shadow-2xs hover:shadow-md transition-all flex flex-col sm:flex-row items-center justify-between gap-4 group"
+                  className="bg-white rounded-2xl border border-gray-200 hover:border-brand-700 p-3 shadow-2xs hover:shadow-md transition-all flex flex-col sm:flex-row items-center justify-between gap-4 group"
                 >
                   <div className="flex items-center space-x-3.5 w-full sm:w-auto">
-                    <div 
+                    <div
                       onClick={() => navigateTo('product-detail', product)}
                       className="w-20 h-20 rounded-xl bg-gray-50 border border-gray-100 p-2 flex items-center justify-center shrink-0 cursor-pointer overflow-hidden"
                     >
@@ -831,12 +823,12 @@ export default function NewArrivalsPage() {
                       />
                     </div>
                     <div>
-                      <span className="inline-block bg-[#08493d] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase mb-1">
+                      <span className="inline-block bg-brand-700 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase mb-1">
                         NEW
                       </span>
                       <h4
                         onClick={() => navigateTo('product-detail', product)}
-                        className="text-sm font-bold text-gray-900 group-hover:text-[#08493d] cursor-pointer transition-colors"
+                        className="text-sm font-bold text-gray-900 group-hover:text-brand-700 cursor-pointer transition-colors"
                       >
                         {product.name}
                       </h4>
@@ -860,7 +852,7 @@ export default function NewArrivalsPage() {
                           </span>
                         )}
                         {product.discount && (
-                          <span className="font-bold text-[#ff5100]">
+                          <span className="font-bold text-accent">
                             {product.discount}
                           </span>
                         )}
@@ -873,16 +865,15 @@ export default function NewArrivalsPage() {
                         className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                       >
                         <Heart
-                          className={`w-4 h-4 ${
-                            isWishlisted(product)
-                              ? 'fill-red-500 text-red-500 stroke-red-500'
-                              : 'stroke-[1.8]'
-                          }`}
+                          className={`w-4 h-4 ${isWishlisted(product.id)
+                            ? 'fill-red-500 text-red-500'
+                            : 'stroke-[1.8]'
+                            }`}
                         />
                       </button>
                       <button
                         onClick={() => handleAddToCart(product)}
-                        className="bg-[#08493d] hover:bg-[#063328] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                        className="bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />
                         <span>Add to Cart</span>
@@ -899,3 +890,5 @@ export default function NewArrivalsPage() {
     </div>
   );
 }
+
+

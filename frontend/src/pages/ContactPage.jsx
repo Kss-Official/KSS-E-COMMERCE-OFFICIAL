@@ -29,7 +29,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 font-sans text-gray-800 relative">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-6 font-sans text-gray-800 relative">
       {/* Toast Notification */}
       {submittedToast && (
         <div className="fixed bottom-6 right-6 bg-[#08493d] text-white px-6 py-4 rounded-xl shadow-2xl font-bold text-sm z-50 flex items-center space-x-3 animate-bounce">
@@ -39,7 +39,7 @@ export default function ContactPage() {
       )}
 
       {/* Breadcrumbs */}
-      <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500 mb-6">
+      <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500 mb-5">
         <button
           onClick={() => navigateTo('home')}
           className="hover:text-[#08493d] transition-colors cursor-pointer"
@@ -51,92 +51,89 @@ export default function ContactPage() {
       </nav>
 
       {/* Main Container: 2 Main Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
 
         {/* LEFT MAIN CARD: Dark Teal Banner with Info Cards */}
-        <div className="bg-[#094d40] rounded-3xl p-6 sm:p-8 lg:p-9 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-start h-full">
+        <div className="bg-[#094d40] rounded-3xl p-5 sm:p-6 lg:p-7 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 sm:gap-6 items-start h-full">
 
-            {/* Left Content + 3D Illustration (7 cols on sm+) */}
-            <div className="sm:col-span-6 lg:col-span-6 flex flex-col justify-between h-full space-y-6">
+            {/* Left Content + 3D Illustration (6 cols on sm+) */}
+            <div className="sm:col-span-6 lg:col-span-6 flex flex-col justify-between h-full space-y-4">
               <div>
-                <span className="text-[11px] font-bold text-[#f1592a] tracking-wider uppercase block mb-2">
+                <span className="text-[11px] font-bold text-[#f1592a] tracking-wider uppercase block mb-1.5">
                   — WE'RE HERE FOR YOU
                 </span>
-                <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight">
+                <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white leading-tight">
                   Let's Start a <br />
                   <span className="text-[#f1592a]">Conversation</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-emerald-100/90 font-medium leading-relaxed pt-3 max-w-xs">
+                <p className="text-xs text-emerald-100/90 font-medium leading-relaxed pt-2 max-w-xs">
                   Have a question, feedback, or need help? Our team is ready to assist you.
                 </p>
               </div>
 
               {/* 3D Headset Illustration Graphic */}
-              <div className="pt-2 flex items-center justify-start">
+              <div className="pt-1 flex items-center justify-start">
                 <img
                   src={contact3dHeadset}
                   alt="Support Graphic"
-                  className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[390px] h-[220px] sm:h-[250px] lg:h-[280px] object-contain "
+                  className="w-full max-w-[350px] sm:max-w-[400px] lg:max-w-[430px]  "
                 />
               </div>
             </div>
 
-            {/* Right Stacked White Cards (5 cols on sm+) */}
-            <div className="sm:col-span-6 lg:col-span-6 space-y-3.5">
+            {/* Right Stacked White Cards (6 cols on sm+) */}
+            <div className="sm:col-span-6 lg:col-span-6 space-y-2.5 sm:space-y-3">
 
               {/* Card 1: Our Address */}
-              <div className="bg-white rounded-2xl p-4 text-gray-900 shadow-md flex items-start space-x-3.5">
-                <div className="w-10 h-10 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
-                  <MapPin className="w-5 h-5" />
+              <div className="bg-white rounded-2xl p-3 sm:p-3.5 text-gray-900 shadow-sm flex items-start space-x-3">
+                <div className="w-9 h-9 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="font-bold text-sm text-gray-900 leading-tight">Our Address</h3>
-                  <p className="text-xs text-gray-500 font-medium leading-tight">
+                  <h3 className="font-bold text-xs sm:text-sm text-gray-900 leading-tight">Our Address</h3>
+                  <p className="text-[11px] sm:text-xs text-gray-500 font-medium leading-tight">
                     123, Silicon Palace,
                   </p>
-                  <p className="text-xs text-gray-500 font-medium leading-tight">
-                    Bengaluru,
-                  </p>
-                  <p className="text-xs text-gray-500 font-medium leading-tight">
-                    Karnataka - 560034
+                  <p className="text-[11px] sm:text-xs text-gray-500 font-medium leading-tight">
+                    Bengaluru, Karnataka - 560034
                   </p>
                 </div>
               </div>
 
               {/* Card 2: Phone Number */}
-              <div className="bg-white rounded-2xl p-4 text-gray-900 shadow-md flex items-start space-x-3.5">
-                <div className="w-10 h-10 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
-                  <Phone className="w-5 h-5" />
+              <div className="bg-white rounded-2xl p-3 sm:p-3.5 text-gray-900 shadow-sm flex items-start space-x-3">
+                <div className="w-9 h-9 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
+                  <Phone className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="font-bold text-sm text-gray-900 leading-tight">Phone Number</h3>
-                  <p className="text-xs font-bold text-gray-900 leading-tight">+91 80 1234 5678</p>
-                  <p className="text-[11px] text-gray-400 font-medium">Mon - Sat : 9:00 AM - 7:00 PM</p>
+                  <h3 className="font-bold text-xs sm:text-sm text-gray-900 leading-tight">Phone Number</h3>
+                  <p className="text-xs sm:text-xs font-bold text-gray-900 leading-tight">+91 80 1234 5678</p>
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium">Mon - Sat : 9:00 AM - 7:00 PM</p>
                 </div>
               </div>
 
               {/* Card 3: Email Address */}
-              <div className="bg-white rounded-2xl p-4 text-gray-900 shadow-md flex items-start space-x-3.5">
-                <div className="w-10 h-10 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
-                  <Mail className="w-5 h-5" />
+              <div className="bg-white rounded-2xl p-3 sm:p-3.5 text-gray-900 shadow-sm flex items-start space-x-3">
+                <div className="w-9 h-9 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
+                  <Mail className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="font-bold text-sm text-gray-900 leading-tight">Email Address</h3>
-                  <p className="text-xs font-medium text-gray-800 leading-tight">support@shopnest.com</p>
-                  <p className="text-[11px] text-gray-400 font-medium">We reply within 24 hours</p>
+                  <h3 className="font-bold text-xs sm:text-sm text-gray-900 leading-tight">Email Address</h3>
+                  <p className="text-[11px] sm:text-xs font-medium text-gray-800 leading-tight">support@shopnest.com</p>
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium">We reply within 24 hours</p>
                 </div>
               </div>
 
               {/* Card 4: Working Hours */}
-              <div className="bg-white rounded-2xl p-4 text-gray-900 shadow-md flex items-start space-x-3.5">
-                <div className="w-10 h-10 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5" />
+              <div className="bg-white rounded-2xl p-3 sm:p-3.5 text-gray-900 shadow-sm flex items-start space-x-3">
+                <div className="w-9 h-9 rounded-full bg-[#063328] text-white flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="font-bold text-sm text-gray-900 leading-tight">Working Hours</h3>
-                  <p className="text-xs font-medium text-gray-800 leading-tight">Monday - Saturday</p>
-                  <p className="text-[11px] text-gray-400 font-medium">8:00 AM - 7:00 PM</p>
+                  <h3 className="font-bold text-xs sm:text-sm text-gray-900 leading-tight">Working Hours</h3>
+                  <p className="text-[11px] sm:text-xs font-medium text-gray-800 leading-tight">Monday - Saturday</p>
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium">8:00 AM - 7:00 PM</p>
                 </div>
               </div>
 
@@ -145,22 +142,22 @@ export default function ContactPage() {
         </div>
 
         {/* RIGHT MAIN CARD: Form Box */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-9 border border-gray-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-5 sm:p-6 lg:p-7 border border-gray-100 shadow-sm flex flex-col justify-between">
           <div>
             {/* Form Title Header */}
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#08493d] flex items-center justify-center shrink-0">
-                <Send className="w-5 h-5 stroke-[2.2]" />
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#08493d] flex items-center justify-center shrink-0">
+                <Send className="w-4 h-4 stroke-[2.2]" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Send Us a Message</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Send Us a Message</h2>
             </div>
 
             {/* Form Controls */}
-            <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form id="contact-form" onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
                     Full Name
                   </label>
                   <input
@@ -169,13 +166,13 @@ export default function ContactPage() {
                     placeholder="Enter your full name"
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors"
+                    className="w-full px-3.5 py-2 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors"
                   />
                 </div>
 
                 {/* Email Address */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
                     Email Address
                   </label>
                   <input
@@ -184,13 +181,13 @@ export default function ContactPage() {
                     placeholder="Enter your email address"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors"
+                    className="w-full px-3.5 py-2 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors"
                   />
                 </div>
 
                 {/* Phone Number (Optional) */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
                     Phone Number (Optional)
                   </label>
                   <input
@@ -198,19 +195,19 @@ export default function ContactPage() {
                     placeholder="Enter your phone number"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors"
+                    className="w-full px-3.5 py-2 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors"
                   />
                 </div>
 
                 {/* Subject */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
                     Subject
                   </label>
                   <select
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none focus:bg-white focus:border-[#08493d] transition-colors cursor-pointer"
+                    className="w-full px-3.5 py-2 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none focus:bg-white focus:border-[#08493d] transition-colors cursor-pointer"
                   >
                     <option value="">Select a subject</option>
                     <option value="General Inquiry">General Inquiry</option>
@@ -222,20 +219,20 @@ export default function ContactPage() {
               </div>
 
               {/* Message */}
-              <div className="relative pt-1">
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <div className="relative pt-0.5">
+                <label className="block text-xs font-bold text-gray-700 mb-1">
                   Message
                 </label>
                 <textarea
-                  rows={5}
+                  rows={3}
                   required
                   maxLength={500}
                   placeholder="Type your message here..."
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors resize-none"
+                  className="w-full px-3.5 py-2.5 bg-gray-50/60 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:bg-white focus:border-[#08493d] transition-colors resize-none"
                 />
-                <span className="absolute bottom-2.5 right-3 text-[10px] text-gray-400 font-medium">
+                <span className="absolute bottom-2 right-3 text-[10px] text-gray-400 font-medium">
                   {formData.message.length}/500
                 </span>
               </div>
@@ -243,11 +240,11 @@ export default function ContactPage() {
           </div>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-3">
             <button
               type="submit"
               form="contact-form"
-              className="py-3 px-6 bg-[#08493d] hover:bg-[#063328] text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98] inline-flex items-center space-x-2 cursor-pointer"
+              className="py-2.5 px-5 bg-[#08493d] hover:bg-[#063328] text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98] inline-flex items-center space-x-2 cursor-pointer"
             >
               <Send className="w-4 h-4 stroke-[2.2]" />
               <span>Send Message</span>

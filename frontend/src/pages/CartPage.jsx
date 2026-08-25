@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Minus, Plus, Trash2, Check, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Minus, Plus, Trash2, Check, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
@@ -71,7 +71,7 @@ export default function CartPage() {
     <div className="max-w-7xl mx-auto px-6 py-6 font-sans text-gray-800 relative">
       {/* Toast Notification */}
       {checkoutToast && (
-        <div className="fixed bottom-6 right-6 bg-[#0d5c46] text-white px-6 py-4 rounded-xl shadow-2xl font-bold text-sm z-50 flex items-center space-x-3 animate-bounce">
+        <div className="fixed bottom-6 right-6 bg-brand-700 text-white px-6 py-4 rounded-xl shadow-2xl font-bold text-sm z-50 flex items-center space-x-3 animate-bounce">
           <Check className="w-5 h-5 text-emerald-300" />
           <span>{checkoutToast}</span>
         </div>
@@ -85,7 +85,7 @@ export default function CartPage() {
       {cartItems.length === 0 ? (
         /* Empty Cart State */
         <div className="bg-white border border-gray-200/90 rounded-2xl p-12 text-center shadow-2xs max-w-lg mx-auto my-8">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#0d5c46]">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-700">
             <ShoppingBag className="w-10 h-10" />
           </div>
           <h2 className="text-xl font-bold text-gray-900">Your Cart is Empty</h2>
@@ -94,7 +94,7 @@ export default function CartPage() {
           </p>
           <button
             onClick={() => navigateTo('electronics')}
-            className="py-3 px-8 bg-[#0d5c46] hover:bg-[#094736] text-white font-bold text-sm rounded-xl shadow-xs transition-all active:scale-[0.98] inline-flex items-center space-x-2"
+            className="py-3 px-8 bg-brand-700 hover:bg-brand-800 text-white font-bold text-sm rounded-xl shadow-xs transition-all active:scale-[0.98] inline-flex items-center space-x-2"
           >
             <span>Explore Electronics</span>
             <ArrowRight className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default function CartPage() {
                       <div>
                         <h3
                           onClick={() => navigateTo('product-detail', item)}
-                          className="font-bold text-gray-900 text-sm sm:text-base hover:text-[#0d5c46] cursor-pointer transition-colors"
+                          className="font-bold text-gray-900 text-sm sm:text-base hover:text-brand-700 cursor-pointer transition-colors"
                         >
                           {item.name}
                         </h3>
@@ -145,7 +145,7 @@ export default function CartPage() {
                             </span>
                           )}
                           {item.discount && (
-                            <span className="text-xs font-bold text-[#ff5100]">
+                            <span className="text-xs font-bold text-accent">
                               {item.discount}
                             </span>
                           )}
@@ -206,7 +206,7 @@ export default function CartPage() {
                         className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                       />
                     </div>
-                    <span className="text-xs font-bold text-gray-900 text-center line-clamp-1 group-hover:text-[#0d5c46]">
+                    <span className="text-xs font-bold text-gray-900 text-center line-clamp-1 group-hover:text-brand-700">
                       {rec.name}
                     </span>
                     <div className="flex items-baseline space-x-1.5 mt-1">
@@ -226,6 +226,14 @@ export default function CartPage() {
           {/* Right Column: Price Details (4 cols) */}
           <div className="lg:col-span-4">
             <div className="bg-white border border-gray-200/90 rounded-2xl p-6 shadow-2xs space-y-4 sticky top-6">
+              {/* Festive Coupon Hint */}
+              <div className="bg-gold/10 border border-gold/30 rounded-xl px-3.5 py-3 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-gold shrink-0" />
+                <p className="text-xs font-semibold text-brand-800">
+                  Rakhi Coupon <span className="font-black text-accent">RAKHI60</span> — up to 60% off at checkout
+                </p>
+              </div>
+
               <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
                 Price Details
               </h2>
@@ -239,13 +247,13 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Discount</span>
-                  <span className="font-bold text-[#0d5c46]">
+                  <span className="font-bold text-brand-700">
                     -₹{totalDiscount.toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Delivery Charges</span>
-                  <span className="font-extrabold text-[#0d5c46]">FREE</span>
+                  <span className="font-extrabold text-brand-700">FREE</span>
                 </div>
               </div>
 
@@ -259,7 +267,7 @@ export default function CartPage() {
 
               {/* Savings Banner */}
               {totalDiscount > 0 && (
-                <div className="bg-emerald-50/80 border border-emerald-200/70 text-[#0d5c46] text-xs font-bold rounded-xl p-3 text-center">
+                <div className="bg-emerald-50/80 border border-emerald-200/70 text-brand-700 text-xs font-bold rounded-xl p-3 text-center">
                   You saved ₹{totalDiscount.toLocaleString('en-IN')} on this order
                 </div>
               )}
@@ -267,7 +275,7 @@ export default function CartPage() {
               {/* Proceed to Checkout Button */}
               <button
                 onClick={handleCheckout}
-                className="w-full py-3.5 bg-[#ff5100] hover:bg-[#e64900] text-white font-bold text-sm rounded-xl shadow-xs transition-all active:scale-[0.98] cursor-pointer mt-2"
+                className="w-full py-3.5 bg-accent hover:bg-accent-600 text-white font-bold text-sm rounded-xl shadow-xs transition-all active:scale-[0.98] cursor-pointer mt-2"
               >
                 Proceed to Checkout
               </button>
@@ -275,7 +283,7 @@ export default function CartPage() {
               {/* Continue Shopping Button */}
               <button
                 onClick={() => navigateTo('electronics')}
-                className="w-full py-3 bg-white border border-[#0d5c46] text-[#0d5c46] hover:bg-emerald-50 font-bold text-sm rounded-xl transition-all cursor-pointer mt-2"
+                className="w-full py-3 bg-white border border-brand-700 text-brand-700 hover:bg-emerald-50 font-bold text-sm rounded-xl transition-all cursor-pointer mt-2"
               >
                 Continue Shopping
               </button>
@@ -286,3 +294,5 @@ export default function CartPage() {
     </div>
   );
 }
+
+

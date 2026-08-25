@@ -331,52 +331,28 @@ export function CartProvider({ children }) {
     }
   };
 
-  const isWishlistedItemMatch = (item, productOrId) => {
-    if (!item || !productOrId) return false;
-    let targetId = typeof productOrId === 'object' ? (productOrId.id || productOrId.productId) : productOrId;
-    let targetName = typeof productOrId === 'object' ? (productOrId.name || productOrId.title || '').trim().toLowerCase() : '';
-
-    const strTargetId = targetId ? String(targetId).toLowerCase() : '';
-    const iId = item.id ? String(item.id).toLowerCase() : '';
-    const iPid = item.productId ? String(item.productId).toLowerCase() : '';
-    const iName = (item.name || '').trim().toLowerCase();
-
-    if (strTargetId && (iId === strTargetId || iPid === strTargetId)) {
-      return true;
-    }
-
-    if (targetName && iName) {
-      if (iName === targetName || iName.includes(targetName) || targetName.includes(iName)) {
-        return true;
+  const toggleWishlist = (product) => {
+    setWishlistItems((prev) => {
+      const exists = prev.some((item) => item.id === product.id);
+      if (exists) {
+        return prev.filter((item) => item.id !== product.id);
       }
-    }
-
-    return false;
+      return [
+        ...prev,
+        {
+          ...product,
+          inStock: product.inStock ?? true,
+          deliveryDate: product.deliveryDate || 'Delivery by 2-3 Days'
+        }
+      ];
+    });
   };
 
-  // Toggle Wishlist
-  const toggleWishlist = async (product) => {
-    if (!product) return;
-    const isWish = isWishlisted(product);
-
-    if (isWish) {
-      const wishItem = wishlistItems.find((i) => isWishlistedItemMatch(i, product));
-      const targetId = wishItem ? (wishItem.productId || wishItem.id) : (product.id || product.productId);
-      await removeFromWishlist(targetId);
-    } else {
-      await addToWishlist(product);
-    }
+  const isInWishlist = (productId) => {
+    return wishlistItems.some((item) => item.id === productId);
   };
 
-  // Check if Wishlisted
-  const isWishlisted = (productOrId) => {
-    if (!productOrId) return false;
-    return wishlistItems.some((i) => isWishlistedItemMatch(i, productOrId));
-  };
-
-  // Clear Wishlist
-  const clearWishlist = async () => {
-    const items = [...wishlistItems];
+  const clearWishlist = () => {
     setWishlistItems([]);
     for (const it of items) {
       try {
@@ -404,10 +380,8 @@ export function CartProvider({ children }) {
         addToWishlist,
         removeFromWishlist,
         toggleWishlist,
-        isWishlisted,
-        clearWishlist,
-        refreshCart,
-        refreshWishlist
+        isInWishlist,
+        clearWishlist
       }}
     >
       {children}
