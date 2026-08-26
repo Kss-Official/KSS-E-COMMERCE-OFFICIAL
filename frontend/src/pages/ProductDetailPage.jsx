@@ -212,6 +212,12 @@ export default function ProductDetailPage() {
       return;
     }
     addToCart({ ...product, quantity });
+    const user = getCurrentUser();
+    if (!user) {
+      sessionStorage.setItem('buyzo_post_login_redirect', 'checkout');
+      navigateTo('login');
+      return;
+    }
     navigateTo('checkout');
   };
 

@@ -42,6 +42,56 @@ const baseSlides = [
     },
   },
   {
+    id: 4,
+    alt: 'Celebrate Rakhi & Raksha Bandhan with Love - BuyZo',
+    bgColor: '#faf4eb',
+    isDarkTheme: false,
+    title: (
+      <div>
+        <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm border border-[#a81c53]/40 px-3.5 py-1 rounded-full text-xs font-bold text-[#a81c53] uppercase tracking-wider mb-2 shadow-2xs">
+          <span className="w-3.5 h-3.5 rounded-full bg-[#a81c53] text-amber-300 flex items-center justify-center text-[7px] font-bold">✦</span>
+          <span>FESTIVAL OF BONDS</span>
+        </div>
+        <div className="text-2xl sm:text-3xl md:text-[38px] lg:text-[42px] font-serif font-bold text-[#153a32] leading-[1.02] tracking-tight">
+          Celebrate
+        </div>
+        <div className="text-3xl sm:text-4xl md:text-[50px] lg:text-[58px] font-serif font-black text-[#a81c53] leading-[0.96] tracking-tight my-0.5">
+          Rakhi with Gifts
+        </div>
+        <div className="text-xl sm:text-3xl md:text-[34px] font-serif italic text-[#c69a48] tracking-normal flex items-center gap-1.5 leading-none mt-1">
+          <span>Made with Love</span>
+          <span className="not-italic text-[#c69a48] text-xl sm:text-2xl font-light">♡</span>
+        </div>
+        {/* Delicate Gold divider ornament */}
+        <div className="flex items-center gap-2 my-2 max-w-xs opacity-75">
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#c69a48]" />
+          <span className="text-[10px] text-[#c69a48]">❖</span>
+          <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#c69a48]" />
+        </div>
+      </div>
+    ),
+    subtitle: (
+      <>
+        Strengthen bonds of love.<br />
+        Surprise your siblings with sweets,<br />
+        chocolates &amp; beautiful Rakhis.
+      </>
+    ),
+    titleColor: 'text-[#153a32]',
+    subtitleColor: 'text-[#384844]',
+    primaryBtn: {
+      label: 'Shop Rakhis',
+      page: 'deals',
+      className: 'bg-[#a81c53] hover:bg-[#8f1544] text-white font-bold shadow-lg shadow-pink-900/20 flex items-center justify-center space-x-1.5',
+    },
+    secondaryBtn: {
+      label: 'Explore Gifts',
+      page: 'deals',
+      className: 'bg-[#faf2ea] hover:bg-white border border-[#a81c53]/70 text-[#a81c53] font-bold shadow-xs flex items-center justify-center space-x-1.5',
+    },
+    isRakhi: true,
+  },
+  {
     id: 2,
     alt: 'Discover, Shop, Save More - BuyZo',
     bgColor: '#f7eee1',
@@ -108,56 +158,6 @@ const baseSlides = [
       className: 'bg-[#dcd1c4] hover:bg-[#d0c3b4] text-[#1c2e29] font-bold shadow-xs flex items-center justify-center space-x-2',
     },
     hasTrustBadges: true,
-  },
-  {
-    id: 4,
-    alt: 'Celebrate Rakhi & Raksha Bandhan with Love - BuyZo',
-    bgColor: '#faf4eb',
-    isDarkTheme: false,
-    title: (
-      <div>
-        <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm border border-[#a81c53]/40 px-3.5 py-1 rounded-full text-xs font-bold text-[#a81c53] uppercase tracking-wider mb-2 shadow-2xs">
-          <span className="w-3.5 h-3.5 rounded-full bg-[#a81c53] text-amber-300 flex items-center justify-center text-[7px] font-bold">✦</span>
-          <span>FESTIVAL OF BONDS</span>
-        </div>
-        <div className="text-2xl sm:text-3xl md:text-[38px] lg:text-[42px] font-serif font-bold text-[#153a32] leading-[1.02] tracking-tight">
-          Celebrate
-        </div>
-        <div className="text-3xl sm:text-4xl md:text-[50px] lg:text-[58px] font-serif font-black text-[#a81c53] leading-[0.96] tracking-tight my-0.5">
-          Rakhi with Gifts
-        </div>
-        <div className="text-xl sm:text-3xl md:text-[34px] font-serif italic text-[#c69a48] tracking-normal flex items-center gap-1.5 leading-none mt-1">
-          <span>Made with Love</span>
-          <span className="not-italic text-[#c69a48] text-xl sm:text-2xl font-light">♡</span>
-        </div>
-        {/* Delicate Gold divider ornament */}
-        <div className="flex items-center gap-2 my-2 max-w-xs opacity-75">
-          <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#c69a48]" />
-          <span className="text-[10px] text-[#c69a48]">❖</span>
-          <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#c69a48]" />
-        </div>
-      </div>
-    ),
-    subtitle: (
-      <>
-        Strengthen bonds of love.<br />
-        Surprise your siblings with sweets,<br />
-        chocolates &amp; beautiful Rakhis.
-      </>
-    ),
-    titleColor: 'text-[#153a32]',
-    subtitleColor: 'text-[#384844]',
-    primaryBtn: {
-      label: 'Shop Rakhis',
-      page: 'deals',
-      className: 'bg-[#a81c53] hover:bg-[#8f1544] text-white font-bold shadow-lg shadow-pink-900/20 flex items-center justify-center space-x-1.5',
-    },
-    secondaryBtn: {
-      label: 'Explore Gifts',
-      page: 'deals',
-      className: 'bg-[#faf2ea] hover:bg-white border border-[#a81c53]/70 text-[#a81c53] font-bold shadow-xs flex items-center justify-center space-x-1.5',
-    },
-    isRakhi: true,
   },
 ];
 

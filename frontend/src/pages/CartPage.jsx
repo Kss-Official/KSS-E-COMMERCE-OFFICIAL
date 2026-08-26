@@ -3,7 +3,7 @@ import { Minus, Plus, Trash2, Check, ShoppingBag, ArrowRight, Sparkles, AlertTri
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
-import { fetchProducts, fetchAvailableCoupons } from '../services/api';
+import { fetchProducts, fetchAvailableCoupons, getCurrentUser } from '../services/api';
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, addToCart } = useCartContext();
@@ -75,6 +75,12 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
+    const user = getCurrentUser();
+    if (!user) {
+      sessionStorage.setItem('buyzo_post_login_redirect', 'checkout');
+      navigateTo('login');
+      return;
+    }
     navigateTo('checkout');
   };
 
