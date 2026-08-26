@@ -63,6 +63,20 @@ export default function LoginPage() {
 
   const goToPortalHome = (user, message) => {
     const role = normalizeRole(user?.role);
+    const postLoginRedirect = sessionStorage.getItem('buyzo_post_login_redirect');
+
+    // If redirected here from checkout or cart, take the customer back to finish placing order
+    if (role === 'CUSTOMER' && postLoginRedirect) {
+      sessionStorage.removeItem('buyzo_post_login_redirect');
+      const name = user?.profile?.first_name || user?.first_name || user?.email?.split('@')[0] || 'there';
+      notify('success', `Welcome back, ${name}! Taking you to complete your order...`);
+      window.setTimeout(() => {
+        setToast(null);
+        navigateTo(postLoginRedirect);
+      }, 700);
+      return;
+    }
+
     const target = homePageForRole(role);
 
     // Signed in successfully, but through the wrong tab. Keep the session (the
@@ -261,6 +275,14 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
             </div>
+
+            {/* Checkout Intent Notice */}
+            {sessionStorage.getItem('buyzo_post_login_redirect') === 'checkout' && (
+              <div className="mb-4 rounded-xl border border-amber-200/90 bg-amber-50/80 p-3 text-xs font-semibold text-amber-900 flex items-center gap-2 shadow-2xs">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900 font-black text-[11px]">!</span>
+                <span>Please sign in or create an account to proceed with placing your order.</span>
+              </div>
+            )}
 
             {/* Login / Sign Up Tabs */}
             <div className="flex items-center border-b border-gray-200 pb-3 mb-6 gap-3">
@@ -495,41 +517,6 @@ export default function LoginPage() {
                 </p>
               )}
             </form>
-          </div>
-
-          {/* Footer Text */}
-          <div className="mt-6 flex flex-col items-center gap-2 text-center text-xs text-gray-500 font-normal">
-            {activeTab === 'login' ? (
-              <p>
-                {isStaffPortal ? `New ${portal.label.toLowerCase()} staff?` : 'New to BuyZo?'}{' '}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('signup')}
-                  className={`${theme.link} font-bold hover:underline cursor-pointer`}
-                >
-                  Sign Up
-                </button>
-              </p>
-            ) : (
-              <p>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('login')}
-                  className={`${theme.link} font-bold hover:underline cursor-pointer`}
-                >
-                  Login
-                </button>
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={() => navigateTo('home')}
-              className="inline-flex items-center gap-1 font-semibold text-gray-400 hover:text-gray-600 cursor-pointer"
-            >
-              <ArrowLeft className="h-3 w-3" />
-              Back to store
-            </button>
           </div>
         </div>
       </div>

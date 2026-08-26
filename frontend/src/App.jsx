@@ -131,18 +131,24 @@ function AppContent() {
 
   const isLoginPage = currentPage === 'login';
 
-  if (showWelcome) {
-    return <WelcomeScreen onDismiss={() => setShowWelcome(false)} />;
-  }
-
   return (
-    <div className="min-h-screen bg-cream font-sans text-ink flex flex-col justify-between">
+    <div className="min-h-screen bg-cream font-sans text-ink flex flex-col justify-between relative">
       {!isLoginPage && <Header />}
       {!isLoginPage && <Navbar />}
       <div className="flex-1">
         {renderCurrentPage()}
       </div>
-      <Footer />
+      {!isLoginPage && <Footer />}
+
+      {showWelcome && (
+        <WelcomeScreen
+          onDismiss={() => setShowWelcome(false)}
+          onNavigate={(target) => {
+            setShowWelcome(false);
+            if (target) navigateTo(target);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
-import { fetchAddressesApi, addAddressApi, createCheckoutOrderApi } from '../services/api';
+import { fetchAddressesApi, addAddressApi, createCheckoutOrderApi, getCurrentUser } from '../services/api';
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCartContext();
@@ -162,6 +162,13 @@ export default function CheckoutPage() {
 
   // Handle Place Order
   const handlePlaceOrder = async () => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      sessionStorage.setItem('buyzo_post_login_redirect', 'checkout');
+      navigateTo('login');
+      return;
+    }
+
     const selectedAddr = addresses.find((a) => a.id === selectedAddressId) || addresses[0];
     if (!selectedAddr) {
       alert('Please add a delivery address before placing your order.');
