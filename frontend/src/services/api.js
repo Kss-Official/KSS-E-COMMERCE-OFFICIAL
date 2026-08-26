@@ -135,7 +135,30 @@ export async function fetchSearchSuggestions(q = '', category = '') {
   return res?.data?.suggestions || res?.data?.results || res?.data || [];
 }
 
+// ----------------- REVIEWS API -----------------
+/** Reviews + rating breakdown for one product (accepts a slug or a numeric id). */
+export async function fetchProductReviews(slugOrId) {
+  if (!slugOrId) return { average_rating: 0, review_count: 0, rating_breakdown: {}, reviews: [] };
+  const res = await apiRequest(`/reviews/product/${slugOrId}/`);
+  return (
+    res?.data || { average_rating: 0, review_count: 0, rating_breakdown: {}, reviews: [] }
+  );
+}
+
+/** Posts a review. Requires a signed-in user; the backend marks verified purchases. */
+export async function submitProductReview(slugOrId, review) {
+  return apiRequest(`/reviews/product/${slugOrId}/`, {
+    method: 'POST',
+    body: JSON.stringify({
+      rating: review.rating,
+      title: review.title || '',
+      comment: review.comment || ''
+    })
+  });
+}
+
 // ----------------- AUTHENTICATION API -----------------
+
 export async function loginUser(emailOrPhone, password) {
   const res = await apiRequest('/auth/login/', {
     method: 'POST',
@@ -191,6 +214,56 @@ export async function registerUser(userData) {
 export function logoutUser() {
   setAuthToken(null);
   setCurrentUser(null);
+}
+
+/**
+ * Re-reads the signed-in user from the server (`GET /api/auth/me/`) and
+ * refreshes the cached copy. Returns null — and clears the stale token — when
+ * the session is no longer valid, so a page refresh never leaves the UI
+ * pretending to be signed in.
+ */
+export async function fetchCurrentUserApi() {
+  if (!getAuthToken()) return null;
+  const res = await apiRequest('/auth/me/');
+  if (res?.status === 'success' && res?.data) {
+    setCurrentUser(res.data);
+    return res.data;
+  }
+  if (res?.status === 'error' || res?.detail) {
+    setAuthToken(null);
+    setCurrentUser(null);
+  }
+  return null;
+}
+
+/**
+ * Reads the signed-in staff member's profile (`GET /api/auth/profile/`).
+ * Used by the portal Settings screens, which edit the operator's own record.
+ */
+export async function fetchStaffProfileApi() {
+  try {
+    const res = await apiRequest('/auth/profile/');
+    return res?.data || null;
+  } catch (err) {
+    console.warn('Profile fetch failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Writes the operator's profile back to MySQL (`PUT /api/auth/profile/`).
+ * Accepts first_name, last_name, phone and bio.
+ */
+export async function updateStaffProfileApi(payload) {
+  try {
+    return await apiRequest('/auth/profile/', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn('Profile update failed:', err);
+    return null;
+  }
 }
 
 // ----------------- CART API -----------------
@@ -348,6 +421,27 @@ export async function submitContactMessage(contactData) {
   return await apiRequest('/support/contact/', {
     method: 'POST',
     body: JSON.stringify(contactData)
+  });
+}
+
+export async function fetchFaqs() {
+  const res = await apiRequest('/support/faqs/');
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.results)) return res.data.results;
+  return [];
+}
+
+// Newsletter signups are stored as support messages so the Admin support inbox
+// picks them up — no separate table needed.
+export async function subscribeToNewsletter(email) {
+  return await apiRequest('/support/contact/', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: 'Newsletter Subscriber',
+      email,
+      subject: 'Newsletter Subscription',
+      message: `Please add ${email} to the BuyZo offers and festival alerts list.`
+    })
   });
 }
 
@@ -530,13 +624,54 @@ export async function fetchOrderDetailApi(orderNumber) {
   const token = getAuthToken();
   if (token && orderNumber) {
     try {
-      const res = await apiRequest(`/orders/detail/${orderNumber}/`);
+      // Backend route is /orders/<order_number>/ (apps/orders/urls.py).
+      const res = await apiRequest(`/orders/${orderNumber}/`);
       if (res?.data) return res.data;
     } catch (err) {
       console.warn('Order detail fetch failed:', err);
     }
   }
   return null;
+}
+
+// Newest order first — used by the order-confirmed screen when it is opened
+// directly instead of arriving from checkout.
+export async function fetchLatestOrderApi() {
+  const { apiOrders } = await fetchCustomerOrdersApi();
+  if (!Array.isArray(apiOrders) || apiOrders.length === 0) return null;
+
+  const newest = [...apiOrders].sort(
+    (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+  )[0];
+
+  // The list serializer omits shipping fields, so top it up with the detail row.
+  const detail = await fetchOrderDetailApi(newest.order_number);
+  return detail ? { ...newest, ...detail } : newest;
+}
+
+// Streams the server-rendered invoice for an order and hands it to the browser.
+export async function downloadInvoiceApi(orderNumber) {
+  const token = getAuthToken();
+  try {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderNumber}/invoice/`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) return false;
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `BuyZo-Invoice-${orderNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    return true;
+  } catch (err) {
+    console.warn('Invoice download failed:', err);
+    return false;
+  }
 }
 
 export async function fetchUserWalletApi() {
@@ -568,7 +703,10 @@ export async function updateOrderStatusApi(orderId, statusVal) {
   const token = getAuthToken();
   if (token && orderId) {
     try {
-      const res = await apiRequest(`/orders/admin/orders/${orderId}/`, {
+      // The dedicated status action also moves the tracking milestones and mirrors
+      // the change onto the Warehouse shipment and the rider's task, which a plain
+      // PATCH on the order row would skip.
+      const res = await apiRequest(`/orders/admin/orders/${orderId}/status/`, {
         method: 'PATCH',
         body: JSON.stringify({ status: statusVal })
       });
@@ -621,6 +759,19 @@ export async function fetchWarehouseOutboundApi() {
   return { apiOutbound, localOrders };
 }
 
+// Real customer orders for the warehouse pack queue. AdminOrderViewSet is open
+// to any authenticated staff, so warehouse operators read the same rows Admin does.
+export async function fetchWarehouseOrderQueueApi() {
+  try {
+    const res = await apiRequest('/orders/admin/?no_page=true');
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.data?.results)) return res.data.results;
+  } catch (err) {
+    console.warn('Warehouse order queue fetch failed:', err);
+  }
+  return [];
+}
+
 export async function fetchWarehouseInboundApi() {
   const token = getAuthToken();
   if (token) {
@@ -647,6 +798,138 @@ export async function fetchWarehouseTransfersApi() {
     }
   }
   return [];
+}
+
+// ----------------- WAREHOUSE PORTAL API -----------------
+// Every warehouse tab reads through these; each one degrades to an empty
+// collection so a tab renders its own empty state instead of crashing.
+function unwrapList(res) {
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.results)) return res.data.results;
+  if (Array.isArray(res)) return res;
+  return [];
+}
+
+export async function fetchWarehouseInventoryApi(params = {}) {
+  try {
+    const qs = new URLSearchParams(params).toString();
+    const res = await apiRequest(`/warehouse/inventory/${qs ? `?${qs}` : ''}`);
+    return unwrapList(res);
+  } catch (err) {
+    console.warn('Warehouse inventory fetch failed:', err);
+    return [];
+  }
+}
+
+export async function updateWarehouseInventoryApi(id, payload) {
+  return apiRequest(`/warehouse/inventory/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function adjustWarehouseStockApi(id, delta, binLocation) {
+  const body = { delta };
+  if (binLocation) body.bin_location = binLocation;
+  return apiRequest(`/warehouse/inventory/${id}/adjust/`, {
+    method: 'PATCH',
+    body: JSON.stringify(body)
+  });
+}
+
+export async function fetchWarehouseSummaryApi() {
+  try {
+    const res = await apiRequest('/warehouse/dashboard/summary/');
+    return res?.data || null;
+  } catch (err) {
+    console.warn('Warehouse summary fetch failed:', err);
+    return null;
+  }
+}
+
+export async function fetchWarehouseAlertsApi() {
+  try {
+    const res = await apiRequest('/warehouse/alerts/');
+    return res?.data || { alerts: [], counts: {}, total: 0 };
+  } catch (err) {
+    console.warn('Warehouse alerts fetch failed:', err);
+    return { alerts: [], counts: {}, total: 0 };
+  }
+}
+
+export async function fetchWarehouseReportsApi(days = 30) {
+  try {
+    const res = await apiRequest(`/warehouse/reports/?days=${days}`);
+    return res?.data || null;
+  } catch (err) {
+    console.warn('Warehouse reports fetch failed:', err);
+    return null;
+  }
+}
+
+export async function fetchWarehouseReturnsApi() {
+  try {
+    const res = await apiRequest('/warehouse/returns/');
+    return unwrapList(res);
+  } catch (err) {
+    console.warn('Warehouse returns fetch failed:', err);
+    return [];
+  }
+}
+
+export async function verifyInboundReceiptApi(id) {
+  return apiRequest(`/warehouse/inbound/${id}/verify/`, { method: 'PATCH' });
+}
+
+export async function createInboundReceiptApi(payload) {
+  return apiRequest('/warehouse/inbound/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+// Turns a customer order that is sitting in the pack queue into a real
+// OutboundShipment row the warehouse can pack and dispatch.
+export async function createOutboundShipmentApi(payload) {
+  try {
+    return await apiRequest('/warehouse/outbound/', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn('Create outbound shipment failed:', err);
+    return null;
+  }
+}
+
+export async function packOutboundShipmentApi(id) {
+  return apiRequest(`/warehouse/outbound/${id}/pack/`, { method: 'PATCH' });
+}
+
+export async function dispatchOutboundShipmentApi(id) {
+  return apiRequest(`/warehouse/outbound/${id}/dispatch/`, { method: 'PATCH' });
+}
+
+export async function createStockTransferApi(payload) {
+  return apiRequest('/warehouse/transfers/', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function advanceStockTransferApi(id, statusVal) {
+  return apiRequest(`/warehouse/transfers/${id}/advance/`, {
+    method: 'PATCH',
+    body: JSON.stringify(statusVal ? { status: statusVal } : {})
+  });
+}
+
+export async function restockReturnApi(id) {
+  return apiRequest(`/warehouse/returns/${id}/restock/`, { method: 'PATCH' });
+}
+
+export async function discardReturnApi(id) {
+  return apiRequest(`/warehouse/returns/${id}/discard/`, { method: 'PATCH' });
 }
 
 export async function fetchDeliveryTasksApi() {
@@ -680,6 +963,127 @@ export async function updateDeliveryTaskStatusApi(taskId, statusVal) {
   return null;
 }
 
+// Dashboard cards for the Delivery portal (active/completed counts + earnings).
+export async function fetchDeliveryDashboardApi() {
+  try {
+    const res = await apiRequest('/delivery/dashboard/');
+    return res?.data || null;
+  } catch (err) {
+    console.warn('Delivery dashboard fetch failed:', err);
+    return null;
+  }
+}
+
+// Moves a task one stage forward (Assigned -> Picked Up -> In Transit -> At Doorstep).
+export async function advanceDeliveryStageApi(taskId) {
+  try {
+    return await apiRequest(`/delivery/tasks/${taskId}/advance-stage/`, { method: 'POST' });
+  } catch (err) {
+    console.warn('Advance delivery stage failed:', err);
+    return null;
+  }
+}
+
+// Closes a delivery: verifies the customer OTP, completes the order and credits earnings.
+export async function verifyDeliveryOtpApi(taskId, otp, collectCash = true) {
+  try {
+    return await apiRequest(`/delivery/tasks/${taskId}/verify-otp/`, {
+      method: 'POST',
+      body: JSON.stringify({ otp: String(otp), collect_cash: collectCash })
+    });
+  } catch (err) {
+    console.warn('Delivery OTP verification failed:', err);
+    return null;
+  }
+}
+
+// Marks cash-on-delivery as collected without closing the task.
+export async function collectCodApi(taskId) {
+  try {
+    return await apiRequest(`/delivery/tasks/${taskId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_cod_collected: true })
+    });
+  } catch (err) {
+    console.warn('COD collection update failed:', err);
+    return null;
+  }
+}
+
+export async function fetchDeliveryEarningsApi() {
+  try {
+    const res = await apiRequest('/delivery/earnings/');
+    return res?.data || { earnings: [], total_earned: 0 };
+  } catch (err) {
+    console.warn('Delivery earnings fetch failed:', err);
+    return { earnings: [], total_earned: 0 };
+  }
+}
+
+export async function fetchDeliveryHistoryApi(days = 90) {
+  try {
+    const res = await apiRequest(`/delivery/history/?days=${days}`);
+    return res?.data || { history: [], summary: {} };
+  } catch (err) {
+    console.warn('Delivery history fetch failed:', err);
+    return { history: [], summary: {} };
+  }
+}
+
+export async function fetchDeliveryNotificationsApi() {
+  try {
+    const res = await apiRequest('/delivery/notifications/');
+    return res?.data || { notifications: [], unread_count: 0 };
+  } catch (err) {
+    console.warn('Delivery notifications fetch failed:', err);
+    return { notifications: [], unread_count: 0 };
+  }
+}
+
+export async function fetchDeliveryProfileApi() {
+  try {
+    const res = await apiRequest('/delivery/profile/');
+    return res?.data || null;
+  } catch (err) {
+    console.warn('Delivery profile fetch failed:', err);
+    return null;
+  }
+}
+
+export async function updateDeliveryProfileApi(payload) {
+  try {
+    return await apiRequest('/delivery/profile/', {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn('Delivery profile update failed:', err);
+    return null;
+  }
+}
+
+export async function fetchDeliverySupportApi() {
+  try {
+    const res = await apiRequest('/delivery/support/');
+    return res?.data || { contacts: [], faqs: [], tickets: [], open_tickets: 0 };
+  } catch (err) {
+    console.warn('Delivery support fetch failed:', err);
+    return { contacts: [], faqs: [], tickets: [], open_tickets: 0 };
+  }
+}
+
+export async function createDeliveryTicketApi(payload) {
+  try {
+    return await apiRequest('/delivery/support/', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn('Delivery ticket creation failed:', err);
+    return null;
+  }
+}
+
 // ----------------- ADMIN API -----------------
 export async function fetchAdminUsers(params = {}) {
   try {
@@ -687,6 +1091,9 @@ export async function fetchAdminUsers(params = {}) {
     if (params.search) query.append('search', params.search);
     if (params.role && params.role !== 'All') query.append('role', params.role.toUpperCase().replace(/\s+/g, '_'));
     if (typeof params.is_active !== 'undefined') query.append('is_active', params.is_active);
+    // The endpoint paginates 12 at a time; the Users tab does its own paging over
+    // the full roster, so ask for the largest page the backend allows.
+    query.append('page_size', String(params.page_size || 100));
 
     const url = `/auth/admin/users/${query.toString() ? `?${query.toString()}` : ''}`;
     const res = await apiRequest(url);
@@ -778,6 +1185,75 @@ export async function fetchAdminDashboardSummaryApi() {
   return null;
 }
 
+/**
+ * Reads the single StoreSetting row plus live store counters
+ * (`GET /api/admin/settings/`). Backs the Admin Settings tab.
+ */
+export async function fetchStoreSettingsApi() {
+  try {
+    const res = await apiRequest('/admin/settings/');
+    return res?.data || null;
+  } catch (err) {
+    console.warn('Store settings fetch failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Persists the Admin Settings form to MySQL (`PATCH /api/admin/settings/`).
+ * Returns the saved row so the screen can re-render from the server's copy.
+ */
+export async function updateStoreSettingsApi(payload) {
+  const res = await apiRequest('/admin/settings/', {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || null;
+}
+
+/**
+ * Revenue timeline for the Admin reports chart
+ * (`GET /api/admin/analytics/revenue/`) -> [{label, sales, orders_count}].
+ */
+export async function fetchAdminRevenueTimelineApi() {
+  try {
+    const res = await apiRequest('/admin/analytics/revenue/');
+    return res?.data?.timeline || [];
+  } catch (err) {
+    console.warn('Revenue analytics fetch failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Best sellers by actual units shipped, aggregated from OrderItem rows
+ * (`GET /api/admin/analytics/top-products/`). More honest than sorting the
+ * catalog by review count.
+ */
+export async function fetchAdminTopProductsApi() {
+  try {
+    const res = await apiRequest('/admin/analytics/top-products/');
+    return Array.isArray(res?.data) ? res.data : [];
+  } catch (err) {
+    console.warn('Top products fetch failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Products at or below their own `low_stock_threshold`
+ * (`GET /api/admin/analytics/low-stock/`).
+ */
+export async function fetchAdminLowStockApi() {
+  try {
+    const res = await apiRequest('/admin/analytics/low-stock/');
+    return Array.isArray(res?.data) ? res.data : [];
+  } catch (err) {
+    console.warn('Low stock fetch failed:', err);
+    return [];
+  }
+}
+
 export async function createProductApi(productData) {
   const payload = {
     title: productData.name || productData.title,
@@ -834,20 +1310,36 @@ export async function fetchCategoriesApi() {
   return [];
 }
 
+// Category writes go through the admin viewset — /catalog/categories/ is read-only.
 export async function createCategoryApi(categoryData) {
   const payload = {
     name: categoryData.name,
-    is_active: true
+    description: categoryData.description || `Shop ${categoryData.name} on BuyZo.`,
+    is_active: categoryData.status ? categoryData.status === 'Active' : true
   };
-  const res = await apiRequest('/catalog/categories/', {
+  const res = await apiRequest('/catalog/admin/categories/', {
     method: 'POST',
     body: JSON.stringify(payload)
   });
   return res?.data || res;
 }
 
+export async function updateCategoryApi(id, categoryData) {
+  const payload = {};
+  if (categoryData.name) payload.name = categoryData.name;
+  if (categoryData.description !== undefined) payload.description = categoryData.description;
+  if (categoryData.status !== undefined) payload.is_active = categoryData.status === 'Active';
+  if (typeof categoryData.is_active !== 'undefined') payload.is_active = categoryData.is_active;
+
+  const res = await apiRequest(`/catalog/admin/categories/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
 export async function deleteCategoryApi(id) {
-  const res = await apiRequest(`/catalog/categories/${id}/`, {
+  const res = await apiRequest(`/catalog/admin/categories/${id}/`, {
     method: 'DELETE'
   });
   return res?.status === 'success' || true;
@@ -855,7 +1347,7 @@ export async function deleteCategoryApi(id) {
 
 export async function fetchCouponsApi() {
   try {
-    const res = await apiRequest('/coupons/');
+    const res = await apiRequest('/coupons/?page_size=100');
     if (Array.isArray(res)) return res;
     if (Array.isArray(res?.data)) return res.data;
     if (res?.data?.results) return res.data.results;
@@ -865,15 +1357,87 @@ export async function fetchCouponsApi() {
   return [];
 }
 
+// Public, in-window offers for the storefront (cart hint + checkout picker).
+export async function fetchAvailableCoupons() {
+  const res = await apiRequest('/coupons/available/');
+  if (Array.isArray(res?.data)) return res.data;
+  return [];
+}
+
+export async function applyCouponApi(code) {
+  return apiRequest('/coupons/apply/', {
+    method: 'POST',
+    body: JSON.stringify({ code })
+  });
+}
+
+export async function removeCouponApi() {
+  return apiRequest('/coupons/remove/', { method: 'POST' });
+}
+
 export async function createCouponApi(couponData) {
+  // The form may hand over a raw string like "20%" or "₹100"; the numeric value
+  // and the type are both derived from it when not given explicitly.
+  const raw = String(couponData.discount ?? couponData.discount_value ?? '10');
+  const numeric = parseFloat(raw.replace(/[^0-9.]/g, ''));
+  const inferredType = raw.includes('%') ? 'PERCENTAGE' : raw.includes('₹') ? 'FIXED' : null;
+
   const payload = {
     code: couponData.code.toUpperCase(),
-    discount_value: parseFloat(couponData.discount.replace(/[^0-9.]/g, '')) || 10,
-    discount_type: (couponData.type || 'PERCENTAGE').toUpperCase(),
+    discount_value: Number.isFinite(numeric) ? numeric : 10,
+    discount_type: (couponData.type || inferredType || 'PERCENTAGE').toUpperCase().replace('FIXED AMOUNT', 'FIXED'),
+    min_order_value: Number(couponData.minOrder || couponData.min_order_value || 0),
     is_active: couponData.status !== 'Inactive'
   };
+  if (couponData.validTo || couponData.valid_to) {
+    payload.valid_to = couponData.validTo || couponData.valid_to;
+  }
+  if (couponData.maxDiscount || couponData.max_discount_amount) {
+    payload.max_discount_amount = Number(couponData.maxDiscount || couponData.max_discount_amount);
+  }
+  if (couponData.usageLimit || couponData.total_usage_limit) {
+    payload.total_usage_limit = Number(couponData.usageLimit || couponData.total_usage_limit);
+  }
+
   const res = await apiRequest('/coupons/', {
     method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res?.data || res;
+}
+
+export async function updateCouponApi(id, couponData) {
+  const payload = {};
+  if (couponData.code) payload.code = couponData.code.toUpperCase();
+  if (couponData.discount !== undefined || couponData.discount_value !== undefined) {
+    const raw = String(couponData.discount ?? couponData.discount_value);
+    const numeric = parseFloat(raw.replace(/[^0-9.]/g, ''));
+    if (Number.isFinite(numeric)) payload.discount_value = numeric;
+  }
+  if (couponData.type) {
+    payload.discount_type = couponData.type.toUpperCase().replace('FIXED AMOUNT', 'FIXED');
+  }
+  // Both the camelCase form keys and the raw column names are accepted so the
+  // Admin edit modal can send either.
+  const minOrder = couponData.minOrder ?? couponData.min_order_value;
+  if (minOrder !== undefined && minOrder !== '') payload.min_order_value = Number(minOrder) || 0;
+
+  const maxDiscount = couponData.maxDiscount ?? couponData.max_discount_amount;
+  if (maxDiscount !== undefined && maxDiscount !== '' && maxDiscount !== null) {
+    payload.max_discount_amount = Number(maxDiscount);
+  }
+
+  const validTo = couponData.validTo ?? couponData.valid_to;
+  if (validTo) payload.valid_to = validTo;
+
+  const usageLimit = couponData.usageLimit ?? couponData.total_usage_limit;
+  if (usageLimit !== undefined && usageLimit !== '' && usageLimit !== null) {
+    payload.total_usage_limit = Number(usageLimit);
+  }
+  if (couponData.status !== undefined) payload.is_active = couponData.status === 'Active';
+
+  const res = await apiRequest(`/coupons/${id}/`, {
+    method: 'PATCH',
     body: JSON.stringify(payload)
   });
   return res?.data || res;

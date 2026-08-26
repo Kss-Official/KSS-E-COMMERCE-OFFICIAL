@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from django.db import models
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -83,15 +84,45 @@ class RegisterSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     first_name = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     last_name = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
+    staff_code = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
 
     class Meta:
         model = User
-        fields = ['email', 'phone', 'password', 'password_confirm', 'first_name', 'last_name', 'role']
+        fields = [
+            'email', 'phone', 'password', 'password_confirm',
+            'first_name', 'last_name', 'role', 'staff_code',
+        ]
         extra_kwargs = {
             'role': {'required': False, 'default': 'CUSTOMER'}
         }
 
+    def validate_role(self, value):
+        role = (value or 'CUSTOMER').strip().upper()
+        valid = dict(User.ROLE_CHOICES)
+        if role not in valid:
+            raise serializers.ValidationError(
+                f"Unknown portal role. Choose one of: {', '.join(valid)}."
+            )
+        return role
+
     def validate(self, attrs):
+        # Privileged roles need the access code issued for that portal; without a
+        # valid code the signup is rejected rather than silently downgraded.
+        role = attrs.get('role') or 'CUSTOMER'
+        staff_codes = getattr(settings, 'STAFF_SIGNUP_CODES', {})
+        submitted = (attrs.pop('staff_code', '') or '').strip()
+        if role in staff_codes:
+            expected = str(staff_codes[role] or '').strip()
+            if not submitted:
+                raise serializers.ValidationError({
+                    "staff_code": "This portal requires a staff access code. "
+                                  "Ask your BuyZo administrator for it."
+                })
+            if submitted.upper() != expected.upper():
+                raise serializers.ValidationError({
+                    "staff_code": "That staff access code is not valid for this portal."
+                })
+
         pw = attrs.get('password')
         pw_confirm = attrs.get('password_confirm')
         if pw_confirm and pw != pw_confirm:
@@ -134,11 +165,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         first_name = validated_data.pop('first_name', '')
         last_name = validated_data.pop('last_name', '')
         
+        validated_data.pop('staff_code', None)
+        role = validated_data.get('role', 'CUSTOMER')
+
         user = User.objects.create_user(
             email=validated_data.get('email'),
             phone=validated_data.get('phone'),
             password=validated_data['password'],
-            role=validated_data.get('role', 'CUSTOMER')
+            role=role,
+            # Staff accounts are pre-verified: they were vouched for by the
+            # access code, and they must not be blocked behind an email OTP.
+            is_verified=role != 'CUSTOMER',
+            is_staff=role == 'ADMIN',
         )
         
         # Profile is created or updated

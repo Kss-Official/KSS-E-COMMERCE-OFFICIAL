@@ -1,39 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MapPin,
   Phone,
   Mail,
   Clock,
   Send,
-  Check
+  Check,
+  AlertCircle,
+  ChevronDown,
+  HelpCircle
 } from 'lucide-react';
 import { useNavigationContext } from '../context/NavigationContext';
+import { submitContactMessage, fetchFaqs, getCurrentUser } from '../services/api';
 import contact3dHeadset from '../assets/images/contact_3d_headset.png';
 
 export default function ContactPage() {
   const { navigateTo } = useNavigationContext();
+  const currentUser = getCurrentUser();
+
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
+    fullName: currentUser
+      ? [currentUser.first_name, currentUser.last_name].filter(Boolean).join(' ')
+      : '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
     subject: '',
     message: ''
   });
   const [submittedToast, setSubmittedToast] = useState(null);
+  const [toastType, setToastType] = useState('success');
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmittedToast('Thank you! Your message has been sent successfully.');
-    setFormData({ fullName: '', email: '', phone: '', subject: '', message: '' });
+  // FAQs are content-managed in the DB (support.FAQ).
+  const [faqs, setFaqs] = useState([]);
+  const [openFaqId, setOpenFaqId] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchFaqs();
+      if (!cancelled) setFaqs(rows);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const notify = (type, message) => {
+    setToastType(type);
+    setSubmittedToast(message);
     setTimeout(() => setSubmittedToast(null), 4000);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSending) return;
+
+    setIsSending(true);
+    const res = await submitContactMessage({
+      name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      subject: formData.subject || 'General Inquiry',
+      message: formData.message
+    });
+    setIsSending(false);
+
+    if (res?.status === 'success') {
+      notify('success', res.message || 'Thank you! Your message has been sent successfully.');
+      setFormData({ fullName: '', email: '', phone: '', subject: '', message: '' });
+    } else {
+      notify('error', res?.message || 'Could not send your message. Please try again.');
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-6 font-sans text-gray-800 relative">
       {/* Toast Notification */}
       {submittedToast && (
-        <div className="fixed bottom-6 right-6 bg-[#08493d] text-white px-6 py-4 rounded-xl shadow-2xl font-bold text-sm z-50 flex items-center space-x-3 animate-bounce">
-          <Check className="w-5 h-5 text-emerald-300" />
+        <div
+          className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl font-bold text-sm z-50 flex items-center space-x-3 animate-bounce text-white ${
+            toastType === 'error' ? 'bg-crimson-700' : 'bg-[#08493d]'
+          }`}
+        >
+          {toastType === 'error' ? (
+            <AlertCircle className="w-5 h-5" />
+          ) : (
+            <Check className="w-5 h-5 text-emerald-300" />
+          )}
           <span>{submittedToast}</span>
         </div>
       )}
@@ -120,7 +174,7 @@ export default function ContactPage() {
                 </div>
                 <div className="space-y-0.5">
                   <h3 className="font-bold text-xs sm:text-sm text-gray-900 leading-tight">Email Address</h3>
-                  <p className="text-[11px] sm:text-xs font-medium text-gray-800 leading-tight">support@shopnest.com</p>
+                  <p className="text-[11px] sm:text-xs font-medium text-gray-800 leading-tight">support@buyzo.com</p>
                   <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium">We reply within 24 hours</p>
                 </div>
               </div>
@@ -244,15 +298,63 @@ export default function ContactPage() {
             <button
               type="submit"
               form="contact-form"
-              className="py-2.5 px-5 bg-[#08493d] hover:bg-[#063328] text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98] inline-flex items-center space-x-2 cursor-pointer"
+              disabled={isSending}
+              className="py-2.5 px-5 bg-[#08493d] hover:bg-[#063328] text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98] inline-flex items-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               <Send className="w-4 h-4 stroke-[2.2]" />
-              <span>Send Message</span>
+              <span>{isSending ? 'Sending...' : 'Send Message'}</span>
             </button>
           </div>
         </div>
 
       </div>
+
+      {/* Frequently Asked Questions — served from support.FAQ */}
+      {faqs.length > 0 && (
+        <div className="mt-5 bg-white rounded-3xl p-5 sm:p-6 lg:p-7 border border-gray-100 shadow-sm">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#08493d] flex items-center justify-center shrink-0">
+              <HelpCircle className="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Frequently Asked Questions</h2>
+              <p className="text-xs font-medium text-gray-500">
+                Quick answers to the {faqs.length} things shoppers ask us most.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {faqs.map((faq) => {
+              const isOpen = openFaqId === faq.id;
+              return (
+                <div
+                  key={faq.id}
+                  className="rounded-2xl border border-gray-200 bg-gray-50/60 overflow-hidden transition-colors hover:border-[#08493d]/40"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqId(isOpen ? null : faq.id)}
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
+                  >
+                    <span className="text-xs font-bold text-gray-900">{faq.question}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 shrink-0 text-[#08493d] transition-transform ${
+                        isOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <p className="border-t border-gray-200 bg-white px-4 py-3 text-xs font-medium leading-relaxed text-gray-600">
+                      {faq.answer}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

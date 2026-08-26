@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, FolderTree, X, RefreshCw } from 'lucide-react';
-import { fetchCategoriesApi, createCategoryApi, deleteCategoryApi } from '../../src/services/api';
+import { Search, Plus, Edit, Trash2, FolderTree, X, RefreshCw } from 'lucide-react';
+import { fetchCategoriesApi, createCategoryApi, updateCategoryApi, deleteCategoryApi } from '../../src/services/api';
 
 export default function CategoriesTab() {
   const [categories, setCategories] = useState([]);
@@ -9,11 +9,15 @@ export default function CategoriesTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [editingCat, setEditingCat] = useState(null);
 
   const formatCategory = (cat) => {
     return {
       id: cat.id,
       name: cat.name,
+      slug: cat.slug || '',
+      description: cat.description || '',
+      subcategories: Array.isArray(cat.subcategories) ? cat.subcategories.length : 0,
       products: Number(cat.product_count || cat.products_count || cat.products || 0),
       status: cat.is_active !== false ? 'Active' : 'Inactive'
     };
@@ -64,6 +68,22 @@ export default function CategoriesTab() {
       loadCategories();
     } catch (err) {
       alert('Failed to delete category: ' + err.message);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editingCat) return;
+    try {
+      await updateCategoryApi(editingCat.id, {
+        name: editingCat.name,
+        description: editingCat.description,
+        status: editingCat.status
+      });
+      setEditingCat(null);
+      loadCategories();
+    } catch (err) {
+      alert('Failed to update category: ' + err.message);
     }
   };
 
@@ -126,6 +146,7 @@ export default function CategoriesTab() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
                 <th className="py-3.5 px-6">Category</th>
+                <th className="py-3.5 px-6">Subcategories</th>
                 <th className="py-3.5 px-6">Products</th>
                 <th className="py-3.5 px-6">Status</th>
                 <th className="py-3.5 px-6 text-right">Actions</th>
@@ -138,16 +159,33 @@ export default function CategoriesTab() {
                     <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700">
                       <FolderTree className="w-4 h-4" />
                     </div>
-                    <span>{cat.name}</span>
+                    <div>
+                      <div>{cat.name}</div>
+                      {cat.slug && <span className="text-[11px] text-gray-400 font-normal font-mono">/{cat.slug}</span>}
+                    </div>
                   </td>
+                  <td className="py-4 px-6 text-gray-600 font-semibold">{cat.subcategories}</td>
                   <td className="py-4 px-6 text-gray-600 font-semibold">{cat.products}</td>
                   <td className="py-4 px-6">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
+                        cat.status === 'Active'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
                       {cat.status}
                     </span>
                   </td>
                   <td className="py-4 px-6 text-right">
                     <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => setEditingCat({ ...cat })}
+                        className="p-1.5 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                        title="Edit Category"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleDelete(cat.id)}
                         className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
@@ -161,7 +199,7 @@ export default function CategoriesTab() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="py-8 text-center text-gray-400 font-medium">
+                  <td colSpan="5" className="py-8 text-center text-gray-400 font-medium">
                     No categories found.
                   </td>
                 </tr>
@@ -195,6 +233,58 @@ export default function CategoriesTab() {
               <div className="pt-2 flex justify-end space-x-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" className="px-5 py-2 text-sm font-bold bg-[#ff5100] text-white hover:bg-[#e64900] rounded-xl cursor-pointer">Create Category</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingCat && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100 animate-fade-in">
+            <div className="px-6 py-4 bg-[#093529] text-white flex items-center justify-between">
+              <h3 className="font-bold text-base">Edit Category #{editingCat.id}</h3>
+              <button onClick={() => setEditingCat(null)} className="text-emerald-300 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingCat.name}
+                  onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Description</label>
+                <textarea
+                  rows="3"
+                  value={editingCat.description}
+                  onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Status</label>
+                <select
+                  value={editingCat.status}
+                  onChange={(e) => setEditingCat({ ...editingCat, status: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <p className="text-[11px] text-gray-400 font-medium">
+                {editingCat.products} product{editingCat.products === 1 ? '' : 's'} and {editingCat.subcategories} subcategor{editingCat.subcategories === 1 ? 'y' : 'ies'} are linked to this category.
+              </p>
+              <div className="pt-2 flex justify-end space-x-3">
+                <button type="button" onClick={() => setEditingCat(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" className="px-5 py-2 text-sm font-bold bg-[#093529] text-white hover:bg-[#0c4737] rounded-xl cursor-pointer">Save Changes</button>
               </div>
             </form>
           </div>

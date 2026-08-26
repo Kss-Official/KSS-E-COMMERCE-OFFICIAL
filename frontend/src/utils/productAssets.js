@@ -45,6 +45,15 @@ import beautyRosewaterMistImg from '../assets/images/beauty_rosewater_mist.jpg';
 import beautySunscreenGelImg from '../assets/images/beauty_sunscreen_gel.png';
 import beautyVitaminCFacewashImg from '../assets/images/beauty_vitamin_c_facewash.png';
 
+// Kitchen, Lighting & Furniture Images
+import pressureCookerImg from '../assets/images/pressure_cooker.jpg';
+import pendantLampImg from '../assets/images/pendant_lamp.jpg';
+import brownLeatherArmchairImg from '../assets/images/brown_leather_armchair.jpg';
+import emeraldAccentChairImg from '../assets/images/emerald_accent_chair.jpg';
+import loungeReclinerImg from '../assets/images/lounge_recliner.jpg';
+import midcenturyArmchairImg from '../assets/images/midcentury_armchair.jpg';
+import beigeBoucleChairImg from '../assets/images/beige_boucle_chair.jpg';
+
 // Flagship Smartphones
 import iphone15ProImg from '../assets/images/iphone_15_pro.jpg';
 import samsungS24UltraImg from '../assets/images/samsung_s24_ultra.jpg';

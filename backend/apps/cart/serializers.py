@@ -53,16 +53,24 @@ class CartSerializer(serializers.ModelSerializer):
         # 18% GST estimate
         return round(float(obj.subtotal) * 0.18, 2)
 
+    def _free_delivery_threshold(self):
+        # The Admin Settings tab owns this number, so read it rather than assume it.
+        try:
+            from apps.analytics.models import StoreSetting
+            return float(StoreSetting.load().free_delivery_threshold)
+        except Exception:
+            return 499.0
+
     def get_estimated_shipping(self, obj):
-        # Free delivery above ₹499
-        if obj.subtotal >= 499 or obj.subtotal == 0:
+        sub = float(obj.subtotal)
+        if sub >= self._free_delivery_threshold() or sub == 0:
             return 0.00
         return 49.00
 
     def get_grand_total(self, obj):
         sub = float(obj.subtotal)
         tax = sub * 0.18
-        ship = 0.00 if sub >= 499 or sub == 0 else 49.00
+        ship = self.get_estimated_shipping(obj)
         return round(sub + tax + ship, 2)
 
 class WishlistItemSerializer(serializers.ModelSerializer):

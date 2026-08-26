@@ -504,6 +504,10 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
         elif new_status == 'DELIVERED':
             order.milestones.all().update(is_completed=True)
 
+        # Keep the Warehouse and Delivery portals in step with the Admin's change.
+        from ._propagate import propagate_order_status
+        propagate_order_status(order)
+
         # Notify Customer
         if serializer.validated_data.get('notify_customer'):
             send_mail(

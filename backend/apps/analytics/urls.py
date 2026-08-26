@@ -3,7 +3,8 @@ from .views import (
     AdminDashboardSummaryView,
     AdminRevenueAnalyticsView,
     AdminTopProductsView,
-    AdminLowStockAlertsView
+    AdminLowStockAlertsView,
+    AdminStoreSettingsView
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path('analytics/revenue/', AdminRevenueAnalyticsView.as_view(), name='admin_revenue_analytics'),
     path('analytics/top-products/', AdminTopProductsView.as_view(), name='admin_top_products'),
     path('analytics/low-stock/', AdminLowStockAlertsView.as_view(), name='admin_low_stock'),
+    path('settings/', AdminStoreSettingsView.as_view(), name='admin_store_settings'),
 ]

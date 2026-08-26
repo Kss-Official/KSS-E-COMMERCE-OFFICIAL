@@ -266,9 +266,10 @@ const initialHomeProducts = [
 ];
 
 export default function HomeKitchenPage() {
-  const { addToCart, addToWishlist, wishlistItems } = useCartContext();
+  const { addToCart, addToWishlist, toggleWishlist, isWishlisted, isProductInWishlist, wishlistItems } = useCartContext();
   const { navigateTo, selectedSubCategory } = useNavigationContext();
 
+  const [productsList, setProductsList] = useState(initialHomeProducts);
   const [activeCategory, setActiveCategory] = useState(selectedSubCategory || 'All');
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [maxPrice, setMaxPrice] = useState(15000);
@@ -293,6 +294,46 @@ export default function HomeKitchenPage() {
       setActiveCategory(selectedSubCategory);
     }
   }, [selectedSubCategory]);
+
+  // Pull the live Home & Kitchen catalogue from the backend, falling back to the
+  // bundled list if the API is unreachable so the page never renders empty.
+  useEffect(() => {
+    const homeCategoryNames = [
+      'Home & Kitchen', 'Home and Kitchen', 'Home', 'Kitchen', 'Furniture',
+      'Cookware', 'Home Decor', 'Appliances', 'Bedding', 'Dining', 'Lighting', 'Storage'
+    ];
+    fetchProducts({ no_page: 'true' })
+      .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+        const homeData = data.filter((p) => {
+          const cat = String(p.category || p.category_name || '');
+          return homeCategoryNames.some((c) => c.toLowerCase() === cat.toLowerCase());
+        });
+        if (homeData.length === 0) return;
+        const mapped = homeData.map((p) => {
+          const titleName = p.name || p.title || 'Product';
+          const price = Number(p.price || p.current_price || p.base_price || 0);
+          const originalPrice = Number(p.originalPrice || p.original_price || p.base_price || 0) || Math.round(price * 1.3);
+          return {
+            ...p,
+            name: titleName,
+            brand: p.brand || p.brand_name || 'BuyZo',
+            category: p.subcategory || p.subcategory_name || p.category || p.category_name || 'All',
+            image: getProductImage(titleName, p.image || p.primary_image),
+            price,
+            originalPrice,
+            discount: p.discount || (originalPrice > price ? `${Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF` : ''),
+            rating: Number(p.rating || p.average_rating || 4.2),
+            reviews: Number(p.reviews || p.review_count || 0),
+            popularity: Number(p.popularity || p.review_count || 90)
+          };
+        });
+        setProductsList(mapped);
+      })
+      .catch((err) => {
+        console.warn('[HomeKitchenPage] Falling back to bundled products:', err);
+      });
+  }, []);
 
   const handleToggleBrand = (brandName) => {
     setSelectedBrands((prev) =>

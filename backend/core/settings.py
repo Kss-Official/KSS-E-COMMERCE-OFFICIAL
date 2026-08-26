@@ -213,3 +213,16 @@ RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='rzp_test_mock')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='rzp_test_secret_mock')
 STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY', default='pk_test_mock')
 STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='sk_test_mock')
+
+
+# ---------------------------------------------------------------------------
+# Staff portal signup codes
+# ---------------------------------------------------------------------------
+# Customer signup is open. Admin / Warehouse / Delivery signup additionally
+# requires the matching access code below, so a visitor cannot grant themselves
+# a privileged role just by picking a different tab on the login screen.
+STAFF_SIGNUP_CODES = {
+    'ADMIN': env('BUYZO_ADMIN_SIGNUP_CODE', default='BUYZO-ADM-2026'),
+    'WAREHOUSE': env('BUYZO_WAREHOUSE_SIGNUP_CODE', default='BUYZO-WHS-2026'),
+    'DELIVERY_AGENT': env('BUYZO_DELIVERY_SIGNUP_CODE', default='BUYZO-DLV-2026'),
+}

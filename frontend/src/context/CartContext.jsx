@@ -52,9 +52,33 @@ export function CartProvider({ children }) {
     });
   };
 
+  // Normalises a product name so the same item is recognised regardless of
+  // casing/spacing differences between the local UI shape and the API shape.
+  const wishlistNameKey = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+  // Decides whether a stored wishlist row refers to the same product as the
+  // target. The target may be a full product object or a bare id, because
+  // wishlist rows carry their own backend `id` distinct from `productId`.
+  const isWishlistedItemMatch = (item, target) => {
+    if (!item || target === null || target === undefined) return false;
+
+    if (typeof target !== 'object') {
+      return String(item.id) === String(target) || String(item.productId) === String(target);
+    }
+
+    const targetIds = [target.id, target.productId, target.product_id].filter(
+      (v) => v !== null && v !== undefined && v !== ''
+    );
+    if (targetIds.some((id) => String(item.id) === String(id) || String(item.productId) === String(id))) {
+      return true;
+    }
+
+    const targetName = wishlistNameKey(target.name || target.title);
+    return targetName !== '' && wishlistNameKey(item.name) === targetName;
+  };
+
   // Helper to format wishlist items consistently for the UI
-  const formatWishlistItems = (rawItems) => {
-    if (!Array.isArray(rawItems)) return [];
+  const formatWishlistItems = (rawItems) => {    if (!Array.isArray(rawItems)) return [];
     return rawItems.map((item) => {
       const p = item.product_details || item.product || {};
       const itemName = item.name || p.name || p.title || 'Product';
@@ -348,8 +372,8 @@ export function CartProvider({ children }) {
     });
   };
 
-  const isInWishlist = (productId) => {
-    return wishlistItems.some((item) => item.id === productId);
+  const isInWishlist = (productIdOrObject) => {
+    return wishlistItems.some((item) => isWishlistedItemMatch(item, productIdOrObject));
   };
 
   const clearWishlist = async () => {
@@ -382,6 +406,9 @@ export function CartProvider({ children }) {
         removeFromWishlist,
         toggleWishlist,
         isInWishlist,
+        // Pages consume this predicate under both names; keep them in sync.
+        isWishlisted: isInWishlist,
+        isProductInWishlist: isInWishlist,
         clearWishlist
       }}
     >

@@ -1,37 +1,57 @@
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  ArrowDownToLine, 
-  Boxes, 
-  ArrowUpFromLine, 
-  ShoppingBag, 
-  Truck, 
-  RotateCcw, 
-  ArrowLeftRight, 
-  BarChart3, 
-  Bell, 
-  Users, 
-  Settings, 
+import React, { useState, useEffect } from 'react';
+import {
+  LayoutDashboard,
+  ArrowDownToLine,
+  Boxes,
+  ArrowUpFromLine,
+  ShoppingBag,
+  Truck,
+  RotateCcw,
+  ArrowLeftRight,
+  BarChart3,
+  Bell,
+  Users,
+  Settings,
   ChevronLeft,
   Warehouse,
   PackageCheck
 } from 'lucide-react';
+import { fetchWarehouseSummaryApi, fetchWarehouseAlertsApi } from '../../src/services/api';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'inbound', label: 'Inbound', icon: ArrowDownToLine },
-  { id: 'inventory', label: 'Inventory', icon: Boxes },
-  { id: 'outbound', label: 'Outbound', icon: ArrowUpFromLine },
+  { id: 'inbound', label: 'Inbound', icon: ArrowDownToLine, badgeKey: 'pending_verification' },
+  { id: 'inventory', label: 'Inventory', icon: Boxes, badgeKey: 'low_stock_count' },
+  { id: 'outbound', label: 'Outbound', icon: ArrowUpFromLine, badgeKey: 'orders_awaiting_pack' },
   { id: 'orders', label: 'Orders', icon: ShoppingBag },
-  { id: 'shipments', label: 'Shipments', icon: Truck },
-  { id: 'returns', label: 'Returns', icon: RotateCcw },
-  { id: 'transfers', label: 'Stock Transfers', icon: ArrowLeftRight },
+  { id: 'shipments', label: 'Shipments', icon: Truck, badgeKey: 'pending_dispatch' },
+  { id: 'returns', label: 'Returns', icon: RotateCcw, badgeKey: 'pending_returns' },
+  { id: 'transfers', label: 'Stock Transfers', icon: ArrowLeftRight, badgeKey: 'open_transfers' },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
-  { id: 'alerts', label: 'Alerts', icon: Bell, badge: 4 },
+  { id: 'alerts', label: 'Alerts', icon: Bell, badgeKey: 'alerts' },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
   const [isOnline, setIsOnline] = useState(true);
+  const [counts, setCounts] = useState({});
+  const [warehouseCode, setWarehouseCode] = useState('WH01');
+
+  // Badge counts come straight from the warehouse summary + alerts endpoints.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [summary, alertData] = await Promise.all([
+        fetchWarehouseSummaryApi(),
+        fetchWarehouseAlertsApi()
+      ]);
+      if (cancelled) return;
+      setCounts({ ...(summary || {}), alerts: alertData?.total || 0 });
+      if (summary?.warehouse_code) setWarehouseCode(summary.warehouse_code);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <aside className="w-16 lg:w-64 bg-[#092540] text-white flex flex-col justify-between min-h-screen border-r border-blue-950/40 shadow-xl shrink-0">
@@ -52,8 +72,12 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
             <Warehouse className="w-9 h-9" />
           </div>
 
-          <h3 className="hidden lg:block font-extrabold text-white text-base tracking-wide leading-tight">Warehouse - WH01</h3>
-          <span className="hidden lg:inline text-[11px] text-blue-300 font-medium">Main Warehouse</span>
+          <h3 className="hidden lg:block font-extrabold text-white text-base tracking-wide leading-tight">
+            Warehouse - {warehouseCode}
+          </h3>
+          <span className="hidden lg:inline text-[11px] text-blue-300 font-medium">
+            {counts.total_skus ? `${counts.total_skus.toLocaleString('en-IN')} SKUs on floor` : 'Main Warehouse'}
+          </span>
 
           {/* Interactive Status Toggle Pill */}
           <button
@@ -74,6 +98,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const badge = item.badgeKey ? Number(counts[item.badgeKey] || 0) : 0;
             return (
               <button
                 key={item.id}
@@ -88,9 +113,9 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
                   <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300'}`} />
                   <span className="hidden lg:inline">{item.label}</span>
                 </div>
-                {item.badge && (
+                {badge > 0 && (
                   <span className="hidden lg:inline bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                    {item.badge}
+                    {badge > 99 ? '99+' : badge}
                   </span>
                 )}
               </button>

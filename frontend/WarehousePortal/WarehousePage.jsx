@@ -7,6 +7,8 @@ import InventoryTab from './components/InventoryTab';
 import OutboundTab from './components/OutboundTab';
 import StockTransfersTab from './components/StockTransfersTab';
 import ReturnsTab from './components/ReturnsTab';
+import OrdersTab from './components/OrdersTab';
+import ShipmentsTab from './components/ShipmentsTab';
 import ReportsTab from './components/ReportsTab';
 import AlertsTab from './components/AlertsTab';
 import SettingsTab from './components/SettingsTab';
@@ -32,6 +34,10 @@ export default function WarehousePage() {
         return <InventoryTab />;
       case 'outbound':
         return <OutboundTab />;
+      case 'orders':
+        return <OrdersTab />;
+      case 'shipments':
+        return <ShipmentsTab />;
       case 'transfers':
         return <StockTransfersTab />;
       case 'returns':

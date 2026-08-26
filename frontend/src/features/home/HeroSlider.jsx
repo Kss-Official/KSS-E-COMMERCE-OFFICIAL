@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Star, Award, Tag, ShieldCheck, ArrowRight, Gift, Truck, Sparkles } from 'lucide-react';
 import { useNavigationContext } from '../../context/NavigationContext';
+import { fetchHeroBanner } from '../../services/api';
 import heroArmchairSlide1Img from '../../assets/images/hero_armchair_slide1.png';
 import heroPendantLampImg from '../../assets/images/hero_pendant_lamp.png';
 import heroGearSlide2Img from '../../assets/images/hero_gear_slide2.png';
@@ -9,7 +10,7 @@ import heroFashionSlide3Img from '../../assets/images/hero_fashion_slide3.png';
 import heroBanner4RakhiImg from '../../assets/images/HeroBanner4Rakhi.png';
 import rakhiHangingLampsImg from '../../assets/images/rakhi_hanging_lamps.png';
 
-const slides = [
+const baseSlides = [
   {
     id: 1,
     alt: 'Discover, Shop, Save More - BuyZo',
@@ -163,13 +164,66 @@ const slides = [
 export default function HeroSlider() {
   const { navigateTo } = useNavigationContext();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [heroBanner, setHeroBanner] = useState(null);
+
+  // The lead slide's copy and CTAs are editable from the Admin portal
+  // (catalog.HeroBanner). The bespoke artwork of every slide is untouched.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const banner = await fetchHeroBanner();
+      if (!cancelled && banner) setHeroBanner(banner);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const slides = useMemo(() => {
+    if (!heroBanner) return baseSlides;
+
+    return baseSlides.map((slide) => {
+      if (slide.id !== 1) return slide;
+
+      const lines = String(heroBanner.title || '')
+        .split('\n')
+        .filter((line) => line.trim() !== '');
+
+      return {
+        ...slide,
+        title: lines.length > 0
+          ? (
+            <>
+              {lines.map((line, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <br />}
+                  {line}
+                </React.Fragment>
+              ))}
+            </>
+          )
+          : slide.title,
+        subtitle: heroBanner.subtitle || slide.subtitle,
+        primaryBtn: {
+          ...slide.primaryBtn,
+          label: heroBanner.primary_button_text || slide.primaryBtn.label,
+          page: heroBanner.primary_button_link || slide.primaryBtn.page
+        },
+        secondaryBtn: {
+          ...slide.secondaryBtn,
+          label: heroBanner.secondary_button_text || slide.secondaryBtn.label,
+          page: heroBanner.secondary_button_link || slide.secondaryBtn.page
+        }
+      };
+    });
+  }, [heroBanner]);
 
   const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? baseSlides.length - 1 : prev - 1));
   }, []);
 
   const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) => (prev === baseSlides.length - 1 ? 0 : prev + 1));
   }, []);
 
   useEffect(() => {

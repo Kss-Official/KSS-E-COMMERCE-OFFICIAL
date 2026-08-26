@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, IndianRupee, ShoppingBag, Users, TrendingUp, CheckCircle, RefreshCw } from 'lucide-react';
-import { fetchAdminDashboardSummaryApi, fetchProducts } from '../../src/services/api';
+import { fetchAdminDashboardSummaryApi, fetchAdminRevenueTimelineApi, fetchAdminTopProductsApi } from '../../src/services/api';
+
+const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
 
 export default function ReportsTab() {
   const [metrics, setMetrics] = useState({
@@ -10,6 +12,7 @@ export default function ReportsTab() {
     avgOrderValue: 0
   });
   const [topProducts, setTopProducts] = useState([]);
+  const [timeline, setTimeline] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('Current Period');
@@ -20,9 +23,10 @@ export default function ReportsTab() {
     else setIsRefreshing(true);
 
     try {
-      const [summary, productsData] = await Promise.all([
+      const [summary, revenueTimeline, sellers] = await Promise.all([
         fetchAdminDashboardSummaryApi(),
-        fetchProducts()
+        fetchAdminRevenueTimelineApi(),
+        fetchAdminTopProductsApi()
       ]);
 
       const rev = summary?.total_revenue || 0;
@@ -41,12 +45,33 @@ export default function ReportsTab() {
         avgOrderValue: avg
       });
 
-      if (Array.isArray(productsData) && productsData.length > 0) {
-        const topList = productsData.slice(0, 5).map(p => ({
-          name: p.name || p.title,
-          percentage: Math.min(25, Math.max(5, Math.round(Number(p.stock || p.stock_quantity || 10) / 2)))
+      // Bars are drawn relative to the busiest bucket so the tallest one always
+      // reaches the top of the plot area.
+      const peak = revenueTimeline.reduce((m, p) => Math.max(m, Number(p.sales) || 0), 0);
+      setTimeline(revenueTimeline.map(p => ({
+        label: p.label,
+        sales: Number(p.sales) || 0,
+        orders: Number(p.orders_count) || 0,
+        height: peak > 0 ? Math.max(3, Math.round((Number(p.sales) || 0) / peak * 100)) : 3
+      })));
+
+      if (Array.isArray(sellers) && sellers.length > 0) {
+        // Share is of revenue actually booked by the top sellers, not of the catalog.
+        const sellerTotal = sellers.reduce((s, p) => s + (Number(p.revenue) || 0), 0);
+        const topRevenue = Number(sellers[0].revenue) || 0;
+        setTopProducts(sellers.slice(0, 5).map(p => {
+          const rev = Number(p.revenue) || 0;
+          return {
+            name: p.title,
+            sku: p.sku,
+            units: Number(p.units_sold) || 0,
+            revenue: rev,
+            percentage: sellerTotal > 0 ? Math.round(rev / sellerTotal * 100) : 0,
+            barWidth: topRevenue > 0 ? Math.max(4, Math.round(rev / topRevenue * 100)) : 4
+          };
         }));
-        setTopProducts(topList);
+      } else {
+        setTopProducts([]);
       }
     } catch (err) {
       console.warn('[ReportsTab] Error loading report metrics:', err);
@@ -74,11 +99,17 @@ export default function ReportsTab() {
       ['Refunded Orders Count', metrics.refundCount],
       ['Average Order Value', metrics.avgOrderValue],
       [],
-      ['Top Product Catalog Items', 'Calculated Share %']
+      ['Top Selling Product', 'Units Sold', 'Revenue (INR)', 'Revenue Share %']
     ];
 
     topProducts.forEach(p => {
-      csvRows.push([p.name, `${p.percentage}%`]);
+      csvRows.push([`"${p.name}"`, p.units, p.revenue, `${p.percentage}%`]);
+    });
+
+    csvRows.push([]);
+    csvRows.push(['Period', 'Paid Sales (INR)', 'Orders']);
+    timeline.forEach(b => {
+      csvRows.push([b.label, b.sales, b.orders]);
     });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.map(e => e.join(',')).join('\n');
@@ -196,14 +227,21 @@ export default function ReportsTab() {
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between">
           <div>
             <h3 className="text-base font-bold text-gray-900">Revenue Distribution</h3>
-            <p className="text-xs text-gray-500">Relative sales volume across system lifecycle</p>
+            <p className="text-xs text-gray-500">Paid sales per period, straight from the orders table</p>
           </div>
 
           <div className="h-56 mt-6 flex items-end justify-between gap-1.5 px-2 pb-2 border-b border-gray-200">
-            {[35, 45, 60, 40, 75, 50, 90, 65, 80, 55, 70, 85, 95, 60, 75, 85, 100, 70, 80, 90, 65, 75, 85].map((height, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center group relative cursor-pointer">
+            {timeline.length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-medium">
+                No paid orders recorded yet.
+              </div>
+            ) : timeline.map((bucket, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center group relative cursor-pointer h-full justify-end">
+                <div className="absolute -top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[#093529] text-white text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap z-10 pointer-events-none">
+                  {bucket.label} · {money(bucket.sales)} · {bucket.orders} order{bucket.orders === 1 ? '' : 's'}
+                </div>
                 <div
-                  style={{ height: `${height}%` }}
+                  style={{ height: `${bucket.height}%` }}
                   className="w-full bg-[#1b4d3e] hover:bg-[#ff5100] transition-colors rounded-t-sm"
                 ></div>
               </div>
@@ -211,9 +249,9 @@ export default function ReportsTab() {
           </div>
 
           <div className="flex justify-between text-[11px] font-semibold text-gray-400 mt-3 px-2">
-            <span>Start</span>
-            <span>Mid-Period</span>
-            <span>Current Date</span>
+            <span>{timeline[0]?.label || 'Start'}</span>
+            <span>{timeline[Math.floor(timeline.length / 2)]?.label || 'Mid-Period'}</span>
+            <span>{timeline[timeline.length - 1]?.label || 'Current Date'}</span>
           </div>
         </div>
 
@@ -221,13 +259,13 @@ export default function ReportsTab() {
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-gray-900">Top Catalog Products</h3>
-              <span className="text-xs text-emerald-700 font-bold">Catalog Share</span>
+              <h3 className="text-base font-bold text-gray-900">Top Selling Products</h3>
+              <span className="text-xs text-emerald-700 font-bold">Revenue Share</span>
             </div>
 
             {topProducts.length === 0 ? (
               <div className="py-8 text-center text-gray-400 text-xs font-medium">
-                No catalog items found.
+                No sales recorded yet.
               </div>
             ) : (
               <div className="space-y-4">
@@ -235,13 +273,17 @@ export default function ReportsTab() {
                   <div key={idx} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-gray-800 truncate pr-2">{prod.name}</span>
-                      <span className="font-extrabold text-emerald-800">{prod.percentage}%</span>
+                      <span className="font-extrabold text-emerald-800 shrink-0">{prod.percentage}%</span>
                     </div>
                     <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-[#1b4d3e] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${prod.percentage * 4}%` }}
+                        style={{ width: `${prod.barWidth}%` }}
                       ></div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400">
+                      <span>{prod.units} unit{prod.units === 1 ? '' : 's'} sold</span>
+                      <span>{money(prod.revenue)}</span>
                     </div>
                   </div>
                 ))}

@@ -15,13 +15,19 @@ import {
   Home,
   ShoppingBag,
   Check,
-  Zap
+  Zap,
+  Wallet,
+  Package,
+  LayoutDashboard,
+  Shield,
+  LogOut
 } from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
 import { getCurrentUser, logoutUser, fetchCategories, fetchSearchSuggestions, fetchProducts, fetchUserWalletApi } from '../../services/api';
 import WalletModal from '../WalletModal';
 import { getProductImage } from '../../utils/productAssets';
+import { ROLES, normalizeRole } from '../../utils/roles';
 import logo from '../../assets/logo.png';
 
 // Import product images for search suggestions
@@ -659,7 +665,7 @@ export default function Header() {
                   <span>My Wishlist</span>
                 </button>
 
-                {currentUser.role === 'ADMIN' && (
+                {normalizeRole(currentUser.role) === ROLES.ADMIN && (
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
@@ -672,7 +678,7 @@ export default function Header() {
                   </button>
                 )}
 
-                {(currentUser.role === 'ADMIN' || currentUser.role === 'WAREHOUSE_STAFF') && (
+                {[ROLES.ADMIN, ROLES.WAREHOUSE].includes(normalizeRole(currentUser.role)) && (
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
@@ -685,7 +691,7 @@ export default function Header() {
                   </button>
                 )}
 
-                {(currentUser.role === 'ADMIN' || currentUser.role === 'DELIVERY_AGENT') && (
+                {[ROLES.ADMIN, ROLES.DELIVERY_AGENT].includes(normalizeRole(currentUser.role)) && (
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);

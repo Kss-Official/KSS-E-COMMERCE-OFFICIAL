@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, AlertTriangle, Minus, X, RefreshCw } from 'lucide-react';
-import { fetchProducts, updateProductApi, createProductApi } from '../../src/services/api';
+import { fetchProducts, updateProductApi, createProductApi, fetchStoreSettingsApi } from '../../src/services/api';
+
+// Fallback only — the real number lives in the Settings tab and is loaded below.
+const DEFAULT_LOW_STOCK = 10;
 
 export default function InventoryTab() {
   const [items, setItems] = useState([]);

@@ -1,82 +1,144 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, ArrowDownToLine, CheckCircle2, X } from 'lucide-react';
-import { fetchWarehouseInboundApi } from '../../src/services/api';
-
-const initialInbound = [
-  { id: 'RCPT-250522-001', supplier: 'Samsung India Logistics', item: 'Wireless Headphones (WH-1001)', qty: 120, status: 'Verified', date: '22 May, 09:15 AM' },
-  { id: 'RCPT-250522-002', supplier: 'Anker Tech Pvt Ltd', item: 'Power Bank (PB-5001)', qty: 200, status: 'Verified', date: '22 May, 02:05 PM' },
-  { id: 'RCPT-250522-003', supplier: 'BoAt Lifestyle Logistics', item: 'Bluetooth Speaker (BS-3001)', qty: 150, status: 'Pending Verification', date: '22 May, 04:30 PM' },
-];
+import { Search, Plus, ArrowDownToLine, CheckCircle2, X, RefreshCw, Check, ShieldCheck } from 'lucide-react';
+import {
+  fetchWarehouseInboundApi,
+  createInboundReceiptApi,
+  verifyInboundReceiptApi
+} from '../../src/services/api';
 
 export default function InboundTab() {
-  const [items, setItems] = useState(initialInbound);
+  const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ supplier: '', item: '', qty: 50 });
+  const [formData, setFormData] = useState({ supplier: '', item: '', sku: '', qty: 50 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [busyId, setBusyId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const notify = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const loadInbound = async () => {
+    setIsLoading(true);
+    const data = await fetchWarehouseInboundApi();
+    setItems(Array.isArray(data) ? data : []);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    async function loadInbound() {
-      const data = await fetchWarehouseInboundApi();
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted = data.map(i => ({
-          id: i.receipt_number || `RCPT-${i.id}`,
-          supplier: i.supplier_name || 'Vendor Partner',
-          item: i.product_name || 'Stock Items',
-          qty: i.quantity_received || 100,
-          status: i.status || 'Verified',
-          date: i.received_at ? new Date(i.received_at).toLocaleDateString('en-IN') : 'Recent'
-        }));
-        const combined = [...formatted, ...initialInbound];
-        const unique = [];
-        const seen = new Set();
-        for (const item of combined) {
-          if (!seen.has(item.id)) {
-            seen.add(item.id);
-            unique.push(item);
-          }
-        }
-        setItems(unique);
-      }
-    }
     loadInbound();
   }, []);
 
-  const handleAddInbound = (e) => {
+  // Writes a real InboundReceipt row; the backend generates the receipt_id.
+  const handleAddInbound = async (e) => {
     e.preventDefault();
     if (!formData.supplier || !formData.item) return;
-    const newItem = {
-      id: `RCPT-${Date.now().toString().slice(-6)}`,
-      supplier: formData.supplier,
-      item: formData.item,
-      qty: Number(formData.qty) || 50,
-      status: 'Pending Verification',
-      date: 'Just Now'
-    };
-    setItems([newItem, ...items]);
-    setIsModalOpen(false);
-    setFormData({ supplier: '', item: '', qty: 50 });
+
+    setIsSaving(true);
+    const res = await createInboundReceiptApi({
+      supplier_name: formData.supplier,
+      item_title: formData.item,
+      sku: formData.sku,
+      quantity: Number(formData.qty) || 50,
+      status: 'Pending Verification'
+    });
+    setIsSaving(false);
+
+    if (res?.status === 'success') {
+      setItems((prev) => [res.data, ...prev]);
+      setIsModalOpen(false);
+      setFormData({ supplier: '', item: '', sku: '', qty: 50 });
+      notify('Goods receipt logged successfully.');
+    } else {
+      notify(res?.message || 'Could not save this receipt.');
+    }
   };
 
-  const filtered = items.filter(i =>
-    i.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.item.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Verifying a receipt pushes the received units into Product.stock_quantity.
+  const handleVerify = async (row) => {
+    setBusyId(row.id);
+    const res = await verifyInboundReceiptApi(row.id);
+    setBusyId(null);
+
+    if (res?.status === 'success') {
+      setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, ...res.data } : r)));
+      notify(res.message || `${row.quantity} units added to floor stock.`);
+    } else {
+      notify(res?.message || 'Could not verify this receipt.');
+    }
+  };
+
+  const filtered = items.filter((i) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      (i.receipt_id || '').toLowerCase().includes(term) ||
+      (i.supplier_name || '').toLowerCase().includes(term) ||
+      (i.item_title || '').toLowerCase().includes(term) ||
+      (i.sku || '').toLowerCase().includes(term)
+    );
+  });
+
+  const pendingCount = items.filter((i) => i.status !== 'Verified').length;
+  const unitsReceived = items.reduce((acc, i) => acc + Number(i.quantity || 0), 0);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-blue-900 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-bold z-50 flex items-center space-x-2">
+          <Check className="w-4 h-4 text-blue-300" />
+          <span>{toast}</span>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Inbound Goods Receipts</h2>
           <p className="text-sm text-gray-500 font-medium">Log supplier deliveries, verify stock quality, and update warehouse bin allocations.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#ff5100] hover:bg-[#e64900] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center space-x-2 shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Goods Receipt</span>
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={loadInbound}
+            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-[#ff5100] hover:bg-[#e64900] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center space-x-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Goods Receipt</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Live counters */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <ArrowDownToLine className="w-4 h-4 text-blue-600" />
+            <span>Total Receipts</span>
+          </div>
+          <p className="text-2xl font-black text-gray-900 mt-1">{items.length}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Units Received</span>
+          </div>
+          <p className="text-2xl font-black text-gray-900 mt-1">{unitsReceived.toLocaleString('en-IN')}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-amber-600" />
+            <span>Awaiting Verification</span>
+          </div>
+          <p className="text-2xl font-black text-amber-600 mt-1">{pendingCount}</p>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
@@ -93,36 +155,83 @@ export default function InboundTab() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-              <th className="py-3.5 px-6">Receipt ID</th>
-              <th className="py-3.5 px-6">Supplier Partner</th>
-              <th className="py-3.5 px-6">Item / Category</th>
-              <th className="py-3.5 px-6">Qty Received</th>
-              <th className="py-3.5 px-6">Log Date</th>
-              <th className="py-3.5 px-6">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-sm">
-            {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-blue-50/20 transition-colors">
-                <td className="py-4 px-6 font-mono font-bold text-gray-900">{item.id}</td>
-                <td className="py-4 px-6 font-bold text-gray-900">{item.supplier}</td>
-                <td className="py-4 px-6 text-gray-700 font-semibold text-xs">{item.item}</td>
-                <td className="py-4 px-6 font-extrabold text-gray-900">{item.qty}</td>
-                <td className="py-4 px-6 text-gray-500 text-xs font-medium">{item.date}</td>
-                <td className="py-4 px-6">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
-                    item.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {item.status}
-                  </span>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[960px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="py-3.5 px-6">Receipt ID</th>
+                <th className="py-3.5 px-6">Supplier Partner</th>
+                <th className="py-3.5 px-6">Item / Category</th>
+                <th className="py-3.5 px-6">Qty Received</th>
+                <th className="py-3.5 px-6">Log Date</th>
+                <th className="py-3.5 px-6">Status</th>
+                <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {isLoading && items.length === 0 && (
+                [1, 2, 3, 4].map((n) => (
+                  <tr key={n} className="animate-pulse">
+                    <td colSpan={7} className="py-4 px-6">
+                      <div className="h-4 bg-gray-100 rounded" />
+                    </td>
+                  </tr>
+                ))
+              )}
+
+              {!isLoading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 px-6 text-center">
+                    <ArrowDownToLine className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="font-bold text-gray-900">No inbound receipts</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {searchTerm ? 'Nothing matched that search.' : 'Log your first supplier delivery to get started.'}
+                    </p>
+                  </td>
+                </tr>
+              )}
+
+              {filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-blue-50/20 transition-colors">
+                  <td className="py-4 px-6 font-mono font-bold text-gray-900">{item.receipt_id}</td>
+                  <td className="py-4 px-6 font-bold text-gray-900 text-xs">{item.supplier_name}</td>
+                  <td className="py-4 px-6 text-gray-700 font-semibold text-xs">
+                    <span className="line-clamp-1">{item.item_title}</span>
+                    {item.sku && (
+                      <span className="block text-[11px] font-mono text-gray-400 mt-0.5">{item.sku}</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6 font-extrabold text-gray-900">{item.quantity}</td>
+                  <td className="py-4 px-6 text-gray-500 text-xs font-medium">{item.formatted_date}</td>
+                  <td className="py-4 px-6">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
+                      item.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    {item.status === 'Verified' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Stocked
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleVerify(item)}
+                        disabled={busyId === item.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>{busyId === item.id ? 'Verifying...' : 'Verify & Stock'}</span>
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isModalOpen && (
@@ -130,7 +239,7 @@ export default function InboundTab() {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <h3 className="font-extrabold text-lg text-gray-900">Create Inbound Goods Receipt</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -147,15 +256,28 @@ export default function InboundTab() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Item Title / SKU</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Item Title</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Wireless Headphones (WH-1001)"
+                  placeholder="e.g. Wireless Headphones"
                   value={formData.item}
                   onChange={(e) => setFormData({ ...formData, item: e.target.value })}
                   className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-600"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">SKU Code (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. WH-1001"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-600"
+                />
+                <p className="text-[11px] text-gray-400 font-medium mt-1">
+                  Matching a real SKU lets "Verify &amp; Stock" push these units straight into floor stock.
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Quantity Received</label>
@@ -169,11 +291,15 @@ export default function InboundTab() {
                 />
               </div>
               <div className="flex items-center justify-end space-x-3 pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 cursor-pointer">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 bg-[#ff5100] text-white font-extrabold text-xs rounded-xl shadow-xs">
-                  Save Receipt
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2 bg-[#ff5100] text-white font-extrabold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'Saving...' : 'Save Receipt'}
                 </button>
               </div>
             </form>

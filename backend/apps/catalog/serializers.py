@@ -1,5 +1,9 @@
+import uuid
+from decimal import Decimal
+
 from rest_framework import serializers
 from django.conf import settings
+from django.utils.text import slugify
 from .models import Category, SubCategory, Brand, Product, ProductImage, ProductVariant, HeroBanner
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -67,6 +71,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     brand_name = serializers.CharField(source='brand.name', read_only=True)
     category = serializers.CharField(source='category.name', read_only=True)
     brand = serializers.CharField(source='brand.name', read_only=True)
+    subcategory = serializers.CharField(source='subcategory.name', read_only=True, default='')
+    subcategory_name = serializers.CharField(source='subcategory.name', read_only=True, default='')
     
     price = serializers.SerializerMethodField()
     originalPrice = serializers.SerializerMethodField()
@@ -87,6 +93,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'name', 'slug', 'sku', 'category', 'category_name',
+            'subcategory', 'subcategory_name',
             'brand', 'brand_name', 'base_price', 'discount_price', 'price',
             'originalPrice', 'current_price', 'discount', 'discount_percentage',
             'discountRange', 'stock_quantity', 'rating', 'average_rating',
@@ -247,7 +254,46 @@ class HeroBannerSerializer(serializers.ModelSerializer):
         return None
 
 class AdminProductCreateUpdateSerializer(serializers.ModelSerializer):
+    # The admin "Add Product" form only asks for the essentials, so the columns a
+    # product cannot live without are derived here instead of being demanded of
+    # the operator. It also speaks the storefront's price vocabulary
+    # (current/original) which maps onto discount_price/base_price.
+    sku = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    base_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    current_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, write_only=True)
+    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, write_only=True)
+
     class Meta:
         model = Product
         fields = '__all__'
         read_only_fields = ['id', 'slug', 'average_rating', 'review_count', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        # Translate the storefront aliases onto the real columns.
+        selling = attrs.pop('current_price', None)
+        mrp = attrs.pop('original_price', None)
+        if mrp is not None and not attrs.get('base_price'):
+            attrs['base_price'] = mrp
+        if selling is not None:
+            if not attrs.get('base_price') and not getattr(self.instance, 'base_price', None):
+                attrs['base_price'] = selling
+            attrs['discount_price'] = selling
+
+        title = attrs.get('title') or getattr(self.instance, 'title', '') or 'Product'
+
+        if not attrs.get('sku') and not getattr(self.instance, 'sku', None):
+            base = slugify(title)[:24].upper().replace('-', '') or 'PROD'
+            candidate = f"{base}-{uuid.uuid4().hex[:6].upper()}"
+            while Product.objects.filter(sku=candidate).exists():
+                candidate = f"{base}-{uuid.uuid4().hex[:6].upper()}"
+            attrs['sku'] = candidate
+
+        if not attrs.get('description') and not getattr(self.instance, 'description', None):
+            attrs['description'] = f"{title} available on BuyZo."
+
+        if attrs.get('base_price') in (None, '') and getattr(self.instance, 'base_price', None) in (None, ''):
+            attrs['base_price'] = Decimal('0.00')
+
+        return attrs
+

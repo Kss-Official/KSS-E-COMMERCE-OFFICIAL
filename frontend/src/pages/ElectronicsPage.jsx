@@ -1,5 +1,5 @@
 import StripBanner from '../features/festive/components/StripBanner';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Heart, LayoutGrid, List, ChevronRight, Star, ChevronDown, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
@@ -523,7 +523,7 @@ export default function ElectronicsPage() {
                   >
                     <Heart
                       className={`w-4 h-4 transition-colors ${
-                        wishlistActive[product.id]
+                        isWishlisted(product.id)
                           ? 'fill-red-500 text-red-500'
                           : 'text-brand-700 hover:text-red-500'
                       }`}

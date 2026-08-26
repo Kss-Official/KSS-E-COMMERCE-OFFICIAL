@@ -1,32 +1,96 @@
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  PackageCheck, 
-  Navigation, 
-  Clock, 
-  Wallet, 
-  Bell, 
-  User, 
-  HelpCircle, 
+import React, { useState, useEffect } from 'react';
+import {
+  LayoutDashboard,
+  PackageCheck,
+  Navigation,
+  Clock,
+  Wallet,
+  Bell,
+  User,
+  HelpCircle,
   LogOut,
   ChevronLeft,
   Star,
   Gift
 } from 'lucide-react';
+import {
+  fetchDeliveryDashboardApi,
+  fetchDeliveryProfileApi,
+  fetchDeliveryTasksApi,
+  fetchDeliveryNotificationsApi
+} from '../../src/services/api';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'my-deliveries', label: 'My Deliveries', icon: PackageCheck },
-  { id: 'active-delivery', label: 'Active Delivery', icon: Navigation },
+  { id: 'my-deliveries', label: 'My Deliveries', icon: PackageCheck, badgeKey: 'open' },
+  { id: 'active-delivery', label: 'Active Delivery', icon: Navigation, badgeKey: 'transit' },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'earnings', label: 'Earnings', icon: Wallet },
-  { id: 'notifications', label: 'Notifications', icon: Bell, badge: 3 },
+  { id: 'notifications', label: 'Notifications', icon: Bell, badgeKey: 'unread' },
   { id: 'profile', label: 'Profile', icon: User },
-  { id: 'support', label: 'Support', icon: HelpCircle },
+  { id: 'support', label: 'Support', icon: HelpCircle }
 ];
 
+// The backend has no availability column, so the rider's on/off duty choice is
+// remembered per browser.
+const ONLINE_KEY = 'buyzo_rider_online';
+
 export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(() => {
+    try {
+      return localStorage.getItem(ONLINE_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [agent, setAgent] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [counts, setCounts] = useState({ open: 0, transit: 0, unread: 0 });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [dash, prof, tasks, notes] = await Promise.all([
+        fetchDeliveryDashboardApi(),
+        fetchDeliveryProfileApi(),
+        fetchDeliveryTasksApi(),
+        fetchDeliveryNotificationsApi()
+      ]);
+      if (!alive) return;
+      setAgent(dash || null);
+      setProfile(prof || null);
+      const rows = Array.isArray(tasks) ? tasks : [];
+      setCounts({
+        open: rows.filter((t) => !['DELIVERED', 'FAILED'].includes(t.status)).length,
+        transit: rows.filter((t) => t.status === 'IN_TRANSIT').length,
+        unread: Number(notes?.unread_count || 0)
+      });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [activeTab]);
+
+  const toggleOnline = () => {
+    const next = !isOnline;
+    setIsOnline(next);
+    try {
+      localStorage.setItem(ONLINE_KEY, String(next));
+    } catch {
+      /* storage unavailable — the toggle still works for this session */
+    }
+  };
+
+  const name = profile?.full_name || agent?.agent_name || 'Delivery Agent';
+  const successRate = profile?.stats?.success_rate;
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase();
+  const delivered = profile?.stats?.delivered ?? agent?.total_completed ?? 0;
 
   return (
     <aside className="w-16 lg:w-64 bg-[#063328] text-white flex flex-col justify-between min-h-screen border-r border-emerald-950/40 shadow-xl shrink-0">
@@ -44,11 +108,17 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
           )}
 
           <div className="relative mb-2">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-              alt="Amit Kumar"
-              className="w-20 h-20 rounded-full object-cover border-4 border-emerald-500 shadow-md"
-            />
+            {profile?.avatar ? (
+              <img
+                src={profile.avatar}
+                alt={name}
+                className="w-20 h-20 rounded-full object-cover border-4 border-emerald-500 shadow-md"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-700 to-emerald-400 text-white flex items-center justify-center text-2xl font-black border-4 border-emerald-500 shadow-md">
+                {initials || 'AG'}
+              </div>
+            )}
             <span
               className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#04241c] ${
                 isOnline ? 'bg-emerald-400' : 'bg-gray-400'
@@ -56,16 +126,17 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
             ></span>
           </div>
 
-          <h3 className="hidden lg:block font-extrabold text-white text-base tracking-wide">Amit Kumar</h3>
-          
+          <h3 className="hidden lg:block font-extrabold text-white text-base tracking-wide">{name}</h3>
+
+          {/* Success rate is a real aggregate over this rider's completed tasks. */}
           <div className="hidden lg:flex items-center space-x-1 mt-0.5 text-xs font-bold text-amber-300">
-            <span>4.8</span>
             <Star className="w-3.5 h-3.5 fill-amber-300 stroke-none" />
+            <span>{successRate != null ? `${successRate}% success` : `${delivered} delivered`}</span>
           </div>
 
           {/* Interactive Online/Offline Toggle Pill */}
           <button
-            onClick={() => setIsOnline(!isOnline)}
+            onClick={toggleOnline}
             className={`mt-3 flex items-center justify-center lg:space-x-2 px-2 lg:px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
               isOnline
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/30'
@@ -82,6 +153,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const badge = item.badgeKey ? counts[item.badgeKey] : 0;
             return (
               <button
                 key={item.id}
@@ -96,9 +168,9 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
                   <Icon className={`w-5 h-5 ${isActive ? 'text-[#ff5100]' : 'text-emerald-300'}`} />
                   <span className="hidden lg:inline">{item.label}</span>
                 </div>
-                {item.badge && (
+                {badge > 0 && (
                   <span className="hidden lg:inline bg-[#ff5100] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                    {item.badge}
+                    {badge}
                   </span>
                 )}
               </button>
@@ -114,7 +186,11 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
             <Gift className="w-4 h-4 text-emerald-300" />
           </div>
           <h4 className="text-xs font-bold text-white">Excellent Job!</h4>
-          <p className="text-[11px] text-emerald-300/80 mt-0.5">You are doing great. Keep it up!</p>
+          <p className="text-[11px] text-emerald-300/80 mt-0.5">
+            {Number(agent?.completed_today || 0) > 0
+              ? `${agent.completed_today} delivered today. Keep it up!`
+              : 'You are doing great. Keep it up!'}
+          </p>
         </div>
 
         <button

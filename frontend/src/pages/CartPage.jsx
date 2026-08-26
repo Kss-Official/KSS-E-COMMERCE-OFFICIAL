@@ -1,53 +1,58 @@
-import React, { useState } from 'react';
-import { Minus, Plus, Trash2, Check, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Minus, Plus, Trash2, Check, ShoppingBag, ArrowRight, Sparkles, AlertTriangle } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
-
-// Import images for recommendations
-import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
-import jblSpeakerImg from '../assets/images/jbl_speaker.jpg';
-import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
-
-const recommendations = [
-  {
-    id: 'rec-1',
-    name: 'boAt Airdopes 141',
-    image: boatRockerzImg,
-    price: 1299,
-    originalPrice: 4490,
-    discount: '71% OFF'
-  },
-  {
-    id: 'rec-2',
-    name: 'JBL Flip Essential 2',
-    image: jblSpeakerImg,
-    price: 4499,
-    originalPrice: 6999,
-    discount: '35% OFF'
-  },
-  {
-    id: 'rec-3',
-    name: 'Fast Charger 65W',
-    image: noiseSmartwatchImg,
-    price: 1499,
-    originalPrice: 2999,
-    discount: '50% OFF'
-  },
-  {
-    id: 'rec-4',
-    name: 'Wireless Mouse',
-    image: boatRockerzImg,
-    price: 699,
-    originalPrice: 1299,
-    discount: '46% OFF'
-  }
-];
+import { fetchProducts, fetchAvailableCoupons } from '../services/api';
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, addToCart } = useCartContext();
   const { navigateTo } = useNavigationContext();
   const [checkoutToast, setCheckoutToast] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [topCoupon, setTopCoupon] = useState(null);
+
+  // "You may also like" and the coupon hint both come from MySQL.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const [rows, coupons] = await Promise.all([
+        fetchProducts({ is_featured: 'true', no_page: 'true' }),
+        fetchAvailableCoupons()
+      ]);
+      if (cancelled) return;
+
+      if (Array.isArray(rows) && rows.length > 0) {
+        const inCart = new Set(cartItems.map((item) => String(item.id)));
+        setRecommendations(
+          rows
+            .filter((p) => !inCart.has(String(p.id)))
+            .slice(0, 4)
+            .map((p) => ({
+              ...p,
+              name: p.name || p.title,
+              image: p.image || p.primary_image || getProductImage(p.name || p.title),
+              price: Number(p.price ?? p.current_price ?? 0),
+              originalPrice: Number(p.originalPrice ?? p.base_price ?? 0)
+            }))
+        );
+      }
+
+      if (Array.isArray(coupons) && coupons.length > 0) {
+        // Show the single most generous live offer.
+        const best = [...coupons].sort(
+          (a, b) => (b.max_discount_amount || b.discount_value) - (a.max_discount_amount || a.discount_value)
+        )[0];
+        setTopCoupon(best);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Calculations
   const totalItemsCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -62,6 +67,12 @@ export default function CartPage() {
   }, 0);
 
   const totalDiscount = totalOriginalPrice - finalTotalAmount;
+
+  // Warehouse stock decides the quantity ceiling for each line.
+  const stockCapFor = (item) => {
+    const stock = Number(item.stock_quantity ?? item.stock ?? 0);
+    return stock > 0 ? Math.min(stock, 10) : 10;
+  };
 
   const handleCheckout = () => {
     navigateTo('checkout');
@@ -134,6 +145,20 @@ export default function CartPage() {
                             Color: <span className="text-gray-600 font-semibold">{item.selectedColor}</span>
                           </p>
                         )}
+                        {/* Live stock signal straight off the catalogue row */}
+                        {Number(item.stock_quantity ?? item.stock ?? 0) > 0 &&
+                          Number(item.stock_quantity ?? item.stock) <= 10 && (
+                            <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
+                              <AlertTriangle className="w-3 h-3" />
+                              Only {Number(item.stock_quantity ?? item.stock)} left in stock
+                            </p>
+                          )}
+                        {item.is_in_stock === false && (
+                          <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-red-600">
+                            <AlertTriangle className="w-3 h-3" />
+                            Out of stock — remove to continue
+                          </p>
+                        )}
                         {/* Price Display */}
                         <div className="flex items-baseline space-x-2 mt-2">
                           <span className="text-base font-extrabold text-gray-900">
@@ -168,8 +193,13 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                          title="Increase Quantity"
+                          disabled={item.quantity >= stockCapFor(item)}
+                          className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md transition-colors disabled:cursor-not-allowed disabled:text-gray-300"
+                          title={
+                            item.quantity >= stockCapFor(item)
+                              ? `Maximum ${stockCapFor(item)} per order`
+                              : 'Increase Quantity'
+                          }
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -190,49 +220,56 @@ export default function CartPage() {
             </div>
 
             {/* You May Also Like Section */}
-            <div>
-              <h2 className="text-base font-bold text-gray-900 mb-4">You may also like</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {recommendations.map((rec) => (
-                  <div
-                    key={rec.id}
-                    onClick={() => navigateTo('product-detail', rec)}
-                    className="bg-white border border-gray-200/90 rounded-2xl p-3 flex flex-col items-center cursor-pointer hover:shadow-md transition-all group"
-                  >
-                    <div className="w-24 h-24 bg-white rounded-xl flex items-center justify-center p-2 mb-2">
-                      <img
-                        src={rec.image}
-                        alt={rec.name}
-                        className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-gray-900 text-center line-clamp-1 group-hover:text-brand-700">
-                      {rec.name}
-                    </span>
-                    <div className="flex items-baseline space-x-1.5 mt-1">
-                      <span className="text-xs font-extrabold text-gray-900">
-                        ₹{rec.price.toLocaleString('en-IN')}
+            {recommendations.length > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-gray-900 mb-4">You may also like</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {recommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      onClick={() => navigateTo('product-detail', rec)}
+                      className="bg-white border border-gray-200/90 rounded-2xl p-3 flex flex-col items-center cursor-pointer hover:shadow-md transition-all group"
+                    >
+                      <div className="w-24 h-24 bg-white rounded-xl flex items-center justify-center p-2 mb-2">
+                        <img
+                          src={rec.image}
+                          alt={rec.name}
+                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-gray-900 text-center line-clamp-1 group-hover:text-brand-700">
+                        {rec.name}
                       </span>
-                      <span className="text-[10px] text-gray-400 line-through">
-                        ₹{rec.originalPrice.toLocaleString('en-IN')}
-                      </span>
+                      <div className="flex items-baseline space-x-1.5 mt-1">
+                        <span className="text-xs font-extrabold text-gray-900">
+                          ₹{rec.price.toLocaleString('en-IN')}
+                        </span>
+                        {rec.originalPrice > rec.price && (
+                          <span className="text-[10px] text-gray-400 line-through">
+                            ₹{rec.originalPrice.toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right Column: Price Details (4 cols) */}
           <div className="lg:col-span-4">
             <div className="bg-white border border-gray-200/90 rounded-2xl p-6 shadow-2xs space-y-4 sticky top-6">
-              {/* Festive Coupon Hint */}
-              <div className="bg-gold/10 border border-gold/30 rounded-xl px-3.5 py-3 flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-gold shrink-0" />
-                <p className="text-xs font-semibold text-brand-800">
-                  Rakhi Coupon <span className="font-black text-accent">RAKHI60</span> — up to 60% off at checkout
-                </p>
-              </div>
+              {/* Live Coupon Hint — best in-window offer from the DB */}
+              {topCoupon && (
+                <div className="bg-gold/10 border border-gold/30 rounded-xl px-3.5 py-3 flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4 text-gold shrink-0" />
+                  <p className="text-xs font-semibold text-brand-800">
+                    Use <span className="font-black text-accent">{topCoupon.code}</span> — {topCoupon.label} at
+                    checkout. <span className="font-medium text-brand-700/80">{topCoupon.terms}</span>
+                  </p>
+                </div>
+              )}
 
               <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
                 Price Details

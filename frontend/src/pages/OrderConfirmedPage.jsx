@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Check,
   CheckCircle2,
@@ -18,33 +18,40 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useNavigationContext } from '../context/NavigationContext';
+import { getProductImage } from '../utils/productAssets';
+import { fetchLatestOrderApi, downloadInvoiceApi } from '../services/api';
 
-// Import fallback product images
-import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
-import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
+const formatDateShort = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-export default function OrderConfirmedPage() {
-  const { navigateTo, selectedOrderData } = useNavigationContext();
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [showAllItems, setShowAllItems] = useState(false);
+const formatMoney = (value) => Number(value || 0).toLocaleString('en-IN');
 
-  // Retrieve dynamic order data from context, localStorage, or compute dynamic fallback
-  const getOrderData = () => {
-    if (selectedOrderData) return selectedOrderData;
-    try {
-      const saved = localStorage.getItem('buyzo_last_order');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
+// Used when an order has no OrderTrackingMilestone rows yet.
+function projectedTimeline(placedOn, orderDateStr) {
+  const minDelivery = new Date(placedOn);
+  minDelivery.setDate(placedOn.getDate() + 3);
+  const maxDelivery = new Date(placedOn);
+  maxDelivery.setDate(placedOn.getDate() + 5);
 
-    // Dynamic fallback if page opened directly without placing order in current session
-    const now = new Date();
-    const minDelivery = new Date(now);
-    minDelivery.setDate(now.getDate() + 3);
-    const maxDelivery = new Date(now);
-    maxDelivery.setDate(now.getDate() + 5);
-    const formatDateShort = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return [
+    { status: 'Order Confirmed', date: orderDateStr, completed: true, current: false },
+    { status: 'Processing', date: 'We are packing your order', completed: false, current: true },
+    { status: 'Shipped', date: `Expected by ${formatDateShort(minDelivery)}`, completed: false, current: false },
+    { status: 'Out for Delivery', date: `Expected by ${formatDateShort(maxDelivery)}`, completed: false, current: false },
+    { status: 'Delivered', date: `Expected by ${formatDateShort(maxDelivery)}`, completed: false, current: false }
+  ];
+}
 
-    const orderDateStr = now.toLocaleDateString('en-IN', {
+// Maps a real MySQL order row onto the shape this screen renders.
+function mapOrderRow(order) {
+  const placedOn = order.created_at ? new Date(order.created_at) : new Date();
+  const minDelivery = new Date(placedOn);
+  minDelivery.setDate(placedOn.getDate() + 3);
+  const maxDelivery = new Date(placedOn);
+  maxDelivery.setDate(placedOn.getDate() + 5);
+
+  const orderDateStr =
+    order.formatted_date?.replace('Placed on ', '') ||
+    placedOn.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -52,50 +59,155 @@ export default function OrderConfirmedPage() {
       minute: '2-digit'
     });
 
-    return {
-      orderId: '#BZ' + Date.now().toString().slice(-8),
-      orderDate: orderDateStr,
-      estimatedDelivery: `${formatDateShort(minDelivery)} – ${formatDateShort(maxDelivery)}`,
-      totalPaid: '4,498',
-      paymentMethod: 'UPI',
-      address: {
-        name: 'Customer',
-        type: 'HOME',
-        details: 'Delivery Address',
-        phone: ''
-      },
-      items: [
-        {
-          id: 1,
-          name: 'boAt Rockerz 450',
-          variant: 'Teal Green',
-          quantity: 1,
-          price: '1,499',
-          image: boatRockerzImg
-        },
-        {
-          id: 2,
-          name: 'Noise ColorFit Pro 5',
-          variant: 'Jet Black',
-          quantity: 1,
-          price: '2,999',
-          image: noiseSmartwatchImg
-        }
-      ],
-      timeline: [
-        { status: 'Order Confirmed', date: orderDateStr, completed: true, current: false },
-        { status: 'Processing', date: 'We are packing your order', completed: false, current: true },
-        { status: 'Shipped', date: `Expected by ${formatDateShort(minDelivery)}`, completed: false, current: false },
-        { status: 'Out for Delivery', date: `Expected by ${formatDateShort(maxDelivery)}`, completed: false, current: false },
-        { status: 'Delivered', date: `Expected by ${formatDateShort(maxDelivery)}`, completed: false, current: false }
-      ]
+  const milestones = Array.isArray(order.milestones)
+    ? [...order.milestones].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    : [];
+
+  const addressLine = [
+    order.shipping_address,
+    order.shipping_city,
+    order.shipping_state,
+    order.shipping_pincode
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    orderId: order.order_number || '',
+    orderDate: orderDateStr,
+    estimatedDelivery: `${formatDateShort(minDelivery)} – ${formatDateShort(maxDelivery)}`,
+    totalPaid: formatMoney(order.total_amount),
+    paymentMethod: order.payment_method || 'UPI',
+    address: {
+      name: order.shipping_name || 'Customer',
+      type: 'HOME',
+      details: addressLine || 'Delivery Address',
+      phone: order.shipping_phone || ''
+    },
+    items: (order.items || []).map((item, i) => ({
+      id: item.id || i,
+      name: item.product_title || 'BuyZo Product',
+      variant:
+        [item.selected_color, item.selected_size].filter(Boolean).join(' / ') || 'Standard',
+      quantity: item.quantity || 1,
+      price: formatMoney(item.total_price ?? item.unit_price),
+      image: item.product_image
+    })),
+    timeline:
+      milestones.length > 0
+        ? milestones.map((m) => ({
+            status: m.step_title,
+            date: m.description || m.formatted_time || '',
+            completed: !!m.is_completed,
+            current: !!m.is_active
+          }))
+        : projectedTimeline(placedOn, orderDateStr)
+  };
+}
+
+export default function OrderConfirmedPage() {
+  const { navigateTo, selectedOrderData } = useNavigationContext();
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Order data comes from the checkout hand-off, the last-order cache, or MySQL.
+  const [orderData, setOrderData] = useState(() => {
+    if (selectedOrderData) return selectedOrderData;
+    try {
+      const saved = localStorage.getItem('buyzo_last_order');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(!orderData);
+
+  useEffect(() => {
+    if (orderData) return;
+    let cancelled = false;
+
+    (async () => {
+      const latest = await fetchLatestOrderApi();
+      if (cancelled) return;
+      if (latest) setOrderData(mapOrderRow(latest));
+      setIsLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDownloadInvoice = async () => {
+    if (!orderData?.orderId || isDownloading) return;
+    setIsDownloading(true);
+    await downloadInvoiceApi(String(orderData.orderId).replace('#', ''));
+    setIsDownloading(false);
   };
 
-  const orderData = getOrderData();
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+          <div className="lg:col-span-8">
+            <div className="bg-white rounded-3xl border border-gray-200/90 p-6 sm:p-8 shadow-xs animate-pulse space-y-6">
+              <div className="w-14 h-14 rounded-full bg-gray-200 mx-auto" />
+              <div className="h-7 w-2/3 bg-gray-200 rounded-lg mx-auto" />
+              <div className="h-24 bg-gray-100 rounded-2xl" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="h-40 bg-gray-100 rounded-2xl" />
+                <div className="h-40 bg-gray-100 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+          <div className="lg:col-span-4">
+            <div className="bg-white rounded-3xl border border-gray-200/90 p-6 sm:p-7 shadow-xs animate-pulse space-y-5">
+              <div className="w-20 h-20 rounded-2xl bg-gray-200 mx-auto" />
+              <div className="h-5 w-1/2 bg-gray-200 rounded mx-auto" />
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="flex items-center space-x-3">
+                  <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0" />
+                  <div className="h-4 flex-1 bg-gray-100 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Signed-out visitor landing here directly with nothing to show.
+  if (!orderData) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-gray-800">
+        <div className="bg-white rounded-3xl border border-gray-200/90 p-12 text-center shadow-xs max-w-lg mx-auto my-8">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-800">
+            <PackageCheck className="w-10 h-10 stroke-[1.5]" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">No recent order found</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            Once you place an order, your confirmation and tracking timeline will appear here.
+          </p>
+          <button
+            onClick={() => navigateTo('shop')}
+            className="py-3 px-8 bg-brand-800 hover:bg-brand-900 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-[0.98] inline-flex items-center gap-2 cursor-pointer"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Start Shopping</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const orderItems = orderData.items || [];
+  const orderTimeline = orderData.timeline || [];
+  const orderAddress = orderData.address || { name: 'Customer', type: 'HOME', details: '', phone: '' };
 
   // Dynamic items to display (handle "View All Items" toggle if > 2 items)
-  const itemsToDisplay = showAllItems ? orderData.items : orderData.items.slice(0, 2);
+  const itemsToDisplay = showAllItems ? orderItems : orderItems.slice(0, 2);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-gray-800">
@@ -177,14 +289,14 @@ export default function OrderConfirmedPage() {
               <div className="rounded-2xl border border-gray-200/90 p-4 flex flex-col justify-between">
                 <div>
                   <h3 className="font-bold text-xs sm:text-sm text-gray-900 mb-3">
-                    Order Items ({orderData.items.length})
+                    Order Items ({orderItems.length})
                   </h3>
                   <div className="space-y-3">
                     {itemsToDisplay.map((item, index) => (
                       <div key={item.id || index} className="flex items-center justify-between space-x-3">
                         <div className="flex items-center space-x-3">
                           <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200/70 p-1 flex items-center justify-center shrink-0 overflow-hidden">
-                            <img src={item.image || boatRockerzImg} alt={item.name} className="w-full h-full object-contain" />
+                            <img src={getProductImage(item.name, item.image)} alt={item.name} className="w-full h-full object-contain" />
                           </div>
                           <div>
                             <div className="font-bold text-xs text-gray-900 line-clamp-1">{item.name}</div>
@@ -200,13 +312,13 @@ export default function OrderConfirmedPage() {
                   </div>
                 </div>
 
-                {orderData.items.length > 2 && (
+                {orderItems.length > 2 && (
                   <div className="pt-3 text-center border-t border-gray-100 mt-3">
                     <button
                       onClick={() => setShowAllItems(!showAllItems)}
                       className="text-xs font-semibold text-gray-600 hover:text-black cursor-pointer inline-flex items-center space-x-1"
                     >
-                      <span>{showAllItems ? 'Show Less' : `View All ${orderData.items.length} Items`}</span>
+                      <span>{showAllItems ? 'Show Less' : `View All ${orderItems.length} Items`}</span>
                       <span className="transform transition-transform">{showAllItems ? '▴' : '⌄'}</span>
                     </button>
                   </div>
@@ -222,14 +334,14 @@ export default function OrderConfirmedPage() {
                     <MapPin className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
                     <div>
                       <div className="flex items-center space-x-1.5 mb-0.5">
-                        <span className="font-bold text-xs text-gray-900">{orderData.address.name}</span>
+                        <span className="font-bold text-xs text-gray-900">{orderAddress.name}</span>
                         <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded">
-                          {orderData.address.type}
+                          {orderAddress.type || 'HOME'}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600 leading-relaxed">{orderData.address.details}</p>
-                      {orderData.address.phone && (
-                        <p className="text-xs text-gray-700 font-semibold mt-1">{orderData.address.phone}</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">{orderAddress.details}</p>
+                      {orderAddress.phone && (
+                        <p className="text-xs text-gray-700 font-semibold mt-1">{orderAddress.phone}</p>
                       )}
                     </div>
                   </div>
@@ -246,7 +358,7 @@ export default function OrderConfirmedPage() {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-gray-500">Paid via {orderData.paymentMethod}</span>
                     <span className="font-black italic text-brand-800 text-xs">
-                      UPI <span className="text-accent">▶</span>
+                      {orderData.paymentMethod} <span className="text-accent">▶</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-1">
@@ -319,8 +431,8 @@ export default function OrderConfirmedPage() {
 
             {/* Vertical Stepper Timeline */}
             <div className="space-y-6 relative pl-3">
-              {orderData.timeline.map((step, idx) => {
-                const isLast = idx === orderData.timeline.length - 1;
+              {orderTimeline.map((step, idx) => {
+                const isLast = idx === orderTimeline.length - 1;
                 return (
                   <div key={idx} className="relative flex items-start space-x-3.5 group">
                     {/* Vertical Connector Line */}
@@ -398,11 +510,11 @@ export default function OrderConfirmedPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Billed To:</span>
-                <span className="font-bold text-gray-900">{orderData.address.name}</span>
+                <span className="font-bold text-gray-900">{orderAddress.name}</span>
               </div>
 
               <div className="border-t border-b border-gray-100 py-2 my-2 space-y-1.5">
-                {orderData.items.map((item, i) => (
+                {orderItems.map((item, i) => (
                   <div key={i} className="flex justify-between">
                     <span>{item.name} ({item.variant}) x{item.quantity}</span>
                     <span className="font-bold text-gray-900">₹{item.price}</span>
@@ -417,6 +529,14 @@ export default function OrderConfirmedPage() {
             </div>
 
             <div className="pt-5 flex justify-end space-x-3">
+              <button
+                onClick={handleDownloadInvoice}
+                disabled={isDownloading}
+                className="px-4 py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 flex items-center space-x-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{isDownloading ? 'Preparing...' : 'Download'}</span>
+              </button>
               <button
                 onClick={() => window.print()}
                 className="px-4 py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 flex items-center space-x-1.5 cursor-pointer"

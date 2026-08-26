@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -13,20 +13,73 @@ import {
   LogOut,
   ChevronLeft
 } from 'lucide-react';
+import {
+  fetchAdminDashboardSummaryApi,
+  fetchAdminUsers,
+  fetchCategoriesApi,
+  fetchCouponsApi,
+  fetchProducts
+} from '../../src/services/api';
 
+// badgeKey points at a counter loaded from MySQL below; items without one never
+// show a pill.
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'products', label: 'Products', icon: Package },
-  { id: 'categories', label: 'Categories', icon: FolderTree },
-  { id: 'users', label: 'Users', icon: Users },
-  { id: 'orders', label: 'Orders', icon: ShoppingBag },
+  { id: 'products', label: 'Products', icon: Package, badgeKey: 'products' },
+  { id: 'categories', label: 'Categories', icon: FolderTree, badgeKey: 'categories' },
+  { id: 'users', label: 'Users', icon: Users, badgeKey: 'users' },
+  { id: 'orders', label: 'Orders', icon: ShoppingBag, badgeKey: 'pendingOrders', alert: true },
   { id: 'payments', label: 'Payments', icon: CreditCard },
-  { id: 'inventory', label: 'Inventory', icon: Boxes },
-  { id: 'coupons', label: 'Coupons', icon: Ticket },
+  { id: 'inventory', label: 'Inventory', icon: Boxes, badgeKey: 'lowStock', alert: true },
+  { id: 'coupons', label: 'Coupons', icon: Ticket, badgeKey: 'coupons' },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
 ];
 
+const LOW_STOCK_THRESHOLD = 10;
+
 export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
+  const [counts, setCounts] = useState({});
+
+  // Refreshed whenever the operator switches tabs, so the pills track the writes
+  // they just made in another tab.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const [summary, users, categories, coupons, products] = await Promise.all([
+          fetchAdminDashboardSummaryApi(),
+          fetchAdminUsers(),
+          fetchCategoriesApi(),
+          fetchCouponsApi(),
+          fetchProducts({ no_page: 'true' })
+        ]);
+        if (!alive) return;
+
+        const breakdown = summary?.order_status_breakdown || {};
+        const pendingOrders =
+          Number(breakdown.pending || 0) + Number(breakdown.confirmed || 0);
+        const productList = Array.isArray(products) ? products : [];
+        const lowStock = productList.filter(
+          (p) => Number(p.stock_quantity ?? 0) <= LOW_STOCK_THRESHOLD
+        ).length;
+
+        setCounts({
+          products: Number(summary?.total_products || productList.length || 0),
+          categories: Array.isArray(categories) ? categories.length : 0,
+          users: Array.isArray(users) ? users.length : Number(summary?.total_customers || 0),
+          pendingOrders,
+          coupons: Array.isArray(coupons) ? coupons.filter((c) => c.is_active !== false).length : 0,
+          lowStock
+        });
+      } catch (err) {
+        console.warn('[Admin Sidebar] Badge counts unavailable:', err);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [activeTab]);
+
   return (
     <aside className="w-16 lg:w-64 bg-[#093529] text-white flex flex-col justify-between min-h-screen border-r border-emerald-950/40 shadow-xl shrink-0">
       {/* Brand Header */}
@@ -51,6 +104,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const badge = item.badgeKey ? counts[item.badgeKey] : 0;
             return (
               <button
                 key={item.id}
@@ -62,6 +116,18 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-emerald-300'}`} />
                 <span className="hidden lg:inline">{item.label}</span>
+                {badge > 0 && (
+                  <span
+                    className={`hidden lg:flex ml-auto items-center justify-center min-w-[22px] h-[20px] px-1.5 rounded-full text-[10px] font-black ${isActive
+                      ? 'bg-white/25 text-white'
+                      : item.alert
+                        ? 'bg-[#ff5100]/90 text-white'
+                        : 'bg-emerald-800/70 text-emerald-100'
+                      }`}
+                  >
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
               </button>
             );
           })}

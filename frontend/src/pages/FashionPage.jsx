@@ -1,5 +1,5 @@
 import StripBanner from '../features/festive/components/StripBanner';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Heart,
   LayoutGrid,

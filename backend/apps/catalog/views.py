@@ -7,6 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from core.response import APIResponse
 from core.permissions import IsAdminUserRole, ReadOnlyOrAdmin
+from core.pagination import StandardResultsSetPagination
 from .models import Category, SubCategory, Brand, Product, ProductImage, ProductVariant, HeroBanner
 from .serializers import (
     CategorySerializer,
@@ -64,7 +65,7 @@ class BrandListView(generics.ListAPIView):
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductListSerializer
     permission_classes = [AllowAny]
-    pagination_class = None
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         qs = Product.objects.filter(is_active=True).select_related('category', 'brand').prefetch_related('images')

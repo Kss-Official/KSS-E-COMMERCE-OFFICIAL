@@ -1,7 +1,6 @@
 import React from 'react';
 import { CartProvider } from './context/CartContext';
 import { NavigationProvider, useNavigationContext } from './context/NavigationContext';
-import TopAnnouncement from './components/layout/TopAnnouncement';
 import Header from './components/layout/Header';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -22,28 +21,56 @@ import LoginPage from './pages/LoginPage';
 import NewArrivalsPage from './pages/NewArrivalsPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmedPage from './pages/OrderConfirmedPage';
+import WelcomeScreen, { hasSeenWelcome } from './components/WelcomeScreen';
 
-import { getCurrentUser } from './services/api';
+import { getCurrentUser, fetchCurrentUserApi } from './services/api';
+import { homePageForRole, isStaffRole } from './utils/roles';
 import AdminPage from '../Admin';
 import DeliveryAgentPage from '../DeliveryAgentPortal';
 import WarehousePage from '../WarehousePortal';
 
 function AppContent() {
   const { currentPage, navigateTo } = useNavigationContext();
+  const hasRestoredSession = React.useRef(false);
 
+  // First-time visitors get the branded intro once per browser. A returning
+  // visitor, or anyone already signed in, skips straight to the storefront.
+  const [showWelcome, setShowWelcome] = React.useState(
+    () => !hasSeenWelcome() && !getCurrentUser()
+  );
+
+  // On first load only, revalidate the cached session against the server and
+  // drop a signed-in staff member straight into their portal. Guarded by a ref
+  // so it does not fight with in-portal navigation (or trap staff on the login
+  // page when they want to switch accounts).
   React.useEffect(() => {
-    const user = getCurrentUser();
-    if (user && user.role) {
-      const role = String(user.role).toUpperCase();
-      if (role === 'ADMIN' && currentPage !== 'admin') {
-        navigateTo('admin');
-      } else if (role === 'WAREHOUSE_STAFF' && currentPage !== 'warehouse') {
-        navigateTo('warehouse');
-      } else if (role === 'DELIVERY_AGENT' && currentPage !== 'delivery-agent') {
-        navigateTo('delivery-agent');
+    if (hasRestoredSession.current) return;
+    hasRestoredSession.current = true;
+
+    const cached = getCurrentUser();
+    if (!cached) return;
+
+    let cancelled = false;
+    (async () => {
+      // `/api/auth/me/` returns the authoritative role plus a `home_page` key;
+      // it also clears the token when the session has expired.
+      const fresh = await fetchCurrentUserApi();
+      if (cancelled) return;
+
+      const user = fresh || cached;
+      if (!user?.role || !isStaffRole(user.role)) return;
+
+      const portalPage = fresh?.home_page || homePageForRole(user.role);
+      if (portalPage !== currentPage) {
+        navigateTo(portalPage);
       }
-    }
-  }, [currentPage]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (currentPage === 'admin') {
     return <AdminPage />;
@@ -104,9 +131,12 @@ function AppContent() {
 
   const isLoginPage = currentPage === 'login';
 
+  if (showWelcome) {
+    return <WelcomeScreen onDismiss={() => setShowWelcome(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-cream font-sans text-ink flex flex-col justify-between">
-      {!isLoginPage && <TopAnnouncement />}
       {!isLoginPage && <Header />}
       {!isLoginPage && <Navbar />}
       <div className="flex-1">

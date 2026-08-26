@@ -24,19 +24,12 @@ import {
   Shirt,
   Watch
 } from 'lucide-react';
-import rakhiVisualImg from '../assets/rakhi_hero_visual.png';
 import rakhiDealsExactCardImg from '../assets/images/rakhi_deals_exact_card.png';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
+import { fetchProducts } from '../services/api';
 
-// Import local images
-import noiseSmartwatchImg from '../assets/images/noise_smartwatch.jpg';
-import boatAirdopesImg from '../assets/images/boat_airdopes.png';
-import tealBackpackImg from '../assets/images/teal_backpack.jpg';
-import streetSneakersImg from '../assets/images/fashion_street_sneakers.jpg';
-import accentChairImg from '../assets/images/accent_chair.jpg';
-import beautyPerfumeImg from '../assets/images/boat_rockerz.jpg';
 
 export default function DealsPage() {
   const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
@@ -52,6 +45,59 @@ export default function DealsPage() {
   const [discountSlider, setDiscountSlider] = useState(70);
   const [wishlistActive, setWishlistActive] = useState({});
   const [addedToast, setAddedToast] = useState(null);
+
+  // Live deals straight from MySQL (`is_deal_of_day` products).
+  const [dealProducts, setDealProducts] = useState([]);
+  const [isLoadingDeals, setIsLoadingDeals] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setIsLoadingDeals(true);
+      // Deals first; if the flag has not been applied yet, fall back to the
+      // steepest discounts in the catalogue so the page is never empty.
+      let rows = await fetchProducts({ is_deal_of_day: 'true', no_page: 'true' });
+      if (!rows.length) {
+        rows = await fetchProducts({ ordering: '-discount_percentage', no_page: 'true' });
+      }
+      if (cancelled) return;
+
+      const mapped = rows
+        .map((p) => {
+          const price = Number(p.price ?? p.current_price ?? p.discount_price ?? 0);
+          const originalPrice = Number(p.originalPrice ?? p.base_price ?? price);
+          const saved = Math.max(0, originalPrice - price);
+          const percent = originalPrice > 0 ? Math.round((saved / originalPrice) * 100) : 0;
+          return {
+            id: p.id,
+            slug: p.slug,
+            name: p.name || p.title,
+            image: p.image || p.primary_image || getProductImage(p.name || p.title),
+            price,
+            originalPrice,
+            discount: p.discount || `${percent}% OFF`,
+            discountPercent: percent,
+            saveAmount: saved.toLocaleString('en-IN'),
+            saveText: `Save ₹${saved.toLocaleString('en-IN')}`,
+            rating: Number(p.rating ?? p.average_rating ?? 0) || 4.2,
+            reviews: Number(p.reviews ?? p.review_count ?? 0),
+            soldCount: `${Number(p.popularity ?? p.reviews ?? 0)}+ sold`,
+            category: p.category || p.category_name || 'Deals',
+            subcategory: p.subcategory || p.subcategory_name || '',
+            brand: p.brand || p.brand_name || '',
+            stock: Number(p.stock_quantity ?? 0),
+            inStock: p.is_in_stock !== false
+          };
+        })
+        .sort((a, b) => b.discountPercent - a.discountPercent);
+
+      setDealProducts(mapped);
+      setIsLoadingDeals(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Accordion toggle states
   const [openSections, setOpenSections] = useState({
@@ -119,106 +165,45 @@ export default function DealsPage() {
     { id: 'Combo Offers', label: 'Combo Offers', icon: Gift }
   ];
 
-  // Discount filter options
-  const discountOptions = [
-    { label: '10% and above', count: 120 },
-    { label: '20% and above', count: 86 },
-    { label: '30% and above', count: 42 },
-    { label: '50% and above', count: 18 }
-  ];
+  // Discount filter options — counts are computed from the live deal set.
+  const discountOptions = [10, 20, 30, 50].map((threshold) => ({
+    label: `${threshold}% and above`,
+    threshold,
+    count: dealProducts.filter((p) => p.discountPercent >= threshold).length
+  }));
 
-  // Categories filter options
-  const categoryFilterOptions = [
-    { label: 'Electronics', count: 45 },
-    { label: 'Fashion', count: 38 },
-    { label: 'Home & Kitchen', count: 24 },
-    { label: 'Beauty', count: 16 },
-    { label: 'Sports', count: 12 }
-  ];
+  // Categories filter options, ordered by how many deals each holds.
+  const categoryFilterOptions = Object.entries(
+    dealProducts.reduce((acc, p) => {
+      acc[p.category] = (acc[p.category] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
 
   // Category Tabs
-  const categoryTabs = [
-    'All',
-    'Electronics',
-    'Fashion',
-    'Home & Kitchen',
-    'Beauty',
-    'Sports',
-    'Toys & Games'
-  ];
+  const categoryTabs = ['All', ...categoryFilterOptions.map((c) => c.label)];
 
-  // Main Deal of the Day Product
-  const featuredDeal = {
-    id: 'feat-1',
-    name: 'boAt Wave Call 2 Smartwatch',
-    image: noiseSmartwatchImg,
-    rating: 4.6,
-    soldCount: '2.3k+ sold',
-    price: 1299,
-    originalPrice: 3499,
-    discount: '63% OFF',
-    saveAmount: '2,200',
-    category: 'Electronics'
-  };
+  // Main Deal of the Day Product — the steepest live discount.
+  const featuredDeal = dealProducts[0] || null;
 
-  // Top Deals 5 Products
-  const topDealsProducts = [
-    {
-      id: 'top-1',
-      name: 'Realme Buds T300 Wireless Earbuds',
-      image: boatAirdopesImg,
-      price: 999,
-      originalPrice: 2699,
-      discount: '63% OFF',
-      saveText: 'Save ₹1,700',
-      category: 'Electronics'
-    },
-    {
-      id: 'top-2',
-      name: 'Skybags Brat 15.6 inch Laptop Backpack',
-      image: tealBackpackImg,
-      price: 1199,
-      originalPrice: 1999,
-      discount: '40% OFF',
-      saveText: 'Save ₹800',
-      category: 'Fashion'
-    },
-    {
-      id: 'top-3',
-      name: "Red Tape Men's Casual Sneakers",
-      image: streetSneakersImg,
-      price: 1399,
-      originalPrice: 3199,
-      discount: '56% OFF',
-      saveText: 'Save ₹1,800',
-      category: 'Fashion'
-    },
-    {
-      id: 'top-4',
-      name: 'Prestige Iris 750W Mixer Grinder',
-      image: accentChairImg,
-      price: 2999,
-      originalPrice: 4599,
-      discount: '35% OFF',
-      saveText: 'Save ₹1,600',
-      category: 'Home & Kitchen'
-    },
-    {
-      id: 'top-5',
-      name: 'Home Select Plastic Storage Box (Pack of 3)',
-      image: beautyPerfumeImg,
-      price: 499,
-      originalPrice: 1599,
-      discount: '68% OFF',
-      saveText: 'Save ₹1,100',
-      category: 'Home & Kitchen'
+  // Everything below the hero card.
+  const topDealsProducts = dealProducts.slice(1);
+
+  // Filtered products: category tab + sidebar filters all apply.
+  const displayedProducts = topDealsProducts.filter((p) => {
+    if (activeCategory !== 'All' && p.category !== activeCategory) return false;
+    if (selectedCategories.length && !selectedCategories.includes(p.category)) return false;
+    if (selectedDiscounts.length) {
+      const minDiscount = Math.min(
+        ...selectedDiscounts.map((label) => parseInt(label, 10) || 0)
+      );
+      if (p.discountPercent < minDiscount) return false;
     }
-  ];
-
-  // Filtered products based on activeCategory
-  const displayedProducts = activeCategory === 'All'
-    ? topDealsProducts
-    : topDealsProducts.filter(p => p.category.toLowerCase().includes(activeCategory.toLowerCase()));
+    if (p.price < priceMin || p.price > priceMax) return false;
+    return true;
+  });
 
   return (
     <div className="bg-[#f8fafc] min-h-screen py-6 px-4 sm:px-6 lg:px-8 font-sans text-gray-800">
@@ -465,6 +450,7 @@ export default function DealsPage() {
                 </div>
 
                 {/* Card Content: Image Left, Details Right */}
+                {featuredDeal ? (
                 <div className="grid grid-cols-12 gap-5 items-center mt-4">
                   {/* Product Image in Container */}
                   <div className="col-span-5 bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center h-44 shadow-2xs">
@@ -524,6 +510,18 @@ export default function DealsPage() {
                     </button>
                   </div>
                 </div>
+                ) : (
+                  /* Loading skeleton in the same card geometry */
+                  <div className="grid grid-cols-12 gap-5 items-center mt-4 animate-pulse">
+                    <div className="col-span-5 h-44 rounded-2xl bg-gray-100 border border-gray-100" />
+                    <div className="col-span-7 space-y-3">
+                      <div className="h-4 w-4/5 rounded bg-gray-100" />
+                      <div className="h-3 w-1/2 rounded bg-gray-100" />
+                      <div className="h-5 w-2/3 rounded bg-gray-100" />
+                      <div className="h-9 w-full rounded-xl bg-gray-100" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Rakhi Promo Banner (Exact Design 100% Matching Uploaded Asset) */}
@@ -544,7 +542,14 @@ export default function DealsPage() {
             <div className="space-y-4">
               {/* Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-black text-gray-900">Top Deals</h2>
+                <h2 className="text-base sm:text-lg font-black text-gray-900">
+                  Top Deals
+                  {!isLoadingDeals && displayedProducts.length > 0 && (
+                    <span className="ml-2 align-middle text-xs font-bold text-gray-400">
+                      {displayedProducts.length} live offers
+                    </span>
+                  )}
+                </h2>
                 <button
                   onClick={() => setActiveCategory('All')}
                   className="text-xs font-bold text-brand-800 hover:underline flex items-center space-x-1 cursor-pointer"
@@ -574,8 +579,21 @@ export default function DealsPage() {
                 })}
               </div>
 
-              {/* 5 Product Cards Grid */}
+              {/* Product Cards Grid (live from MySQL) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                {isLoadingDeals &&
+                  [...Array(10)].map((_, i) => (
+                    <div
+                      key={`skeleton-${i}`}
+                      className="bg-white rounded-2xl border border-gray-200 p-3 shadow-xs animate-pulse"
+                    >
+                      <div className="h-4 w-14 rounded-md bg-gray-100" />
+                      <div className="mt-2 h-28 sm:h-32 w-full rounded-xl bg-gray-100" />
+                      <div className="mt-3 h-3 w-full rounded bg-gray-100" />
+                      <div className="mt-1.5 h-3 w-2/3 rounded bg-gray-100" />
+                      <div className="mt-2.5 h-3 w-1/2 rounded bg-gray-100" />
+                    </div>
+                  ))}
                 {displayedProducts.map((product) => {
                   const inWish = isWishlisted(product);
                   return (
@@ -641,6 +659,25 @@ export default function DealsPage() {
                   );
                 })}
               </div>
+
+              {/* Empty state — filters excluded every live deal */}
+              {!isLoadingDeals && displayedProducts.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-12 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#e4f1ed] text-brand-800">
+                    <Tag className="h-5 w-5" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">No deals match these filters</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Try widening the price range or clearing the discount filter.
+                  </p>
+                  <button
+                    onClick={clearAllFilters}
+                    className="mt-4 rounded-xl bg-brand-800 px-5 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-brand-700 cursor-pointer"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Bottom Banners Row (Flash Deals + Weekend Bonanza) */}

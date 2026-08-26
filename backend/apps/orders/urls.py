@@ -19,7 +19,10 @@ urlpatterns = [
 
     # Admin Order Management (Direct endpoints for admin portal)
     path('admin/', AdminOrderViewSet.as_view({'get': 'list'}), name='admin_orders_direct'),
-    path('admin/orders/', include(admin_router.urls)),
+    # The router already namespaces itself under 'orders', so mounting it at
+    # 'admin/' yields /api/orders/admin/orders/<pk>/status/ — the path the Admin
+    # portal calls. Mounting at 'admin/orders/' doubled the segment and 404'd.
+    path('admin/', include(admin_router.urls)),
 
     path('<str:order_number>/', CustomerOrderDetailView.as_view(), name='customer_order_detail'),
     path('<str:order_number>/cancel/', CancelOrderView.as_view(), name='customer_order_cancel'),

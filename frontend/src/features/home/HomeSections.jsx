@@ -1,72 +1,95 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Zap, ShieldCheck, BadgeCheck, Truck, Star, Mail } from 'lucide-react';
 import { useNavigationContext } from '../../context/NavigationContext';
+import { fetchProducts, subscribeToNewsletter } from '../../services/api';
+import { getProductImage } from '../../utils/productAssets';
 import boatRockerzImg from '../../assets/trending_deals/boat_rockerz.png';
 import noiseSmartwatchImg from '../../assets/trending_deals/noise_smartwatch.png';
 import sonyHeadphonesImg from '../../assets/trending_deals/sony_headphones.png';
 import jblSpeakerImg from '../../assets/trending_deals/jbl_speaker.png';
 
-const deals = [
+// The four card palettes are part of the design, so they cycle by position
+// while the products themselves come from MySQL.
+const CARD_PALETTES = [
   {
-    id: 'elec-1',
-    name: 'boAt Rockerz 450',
-    image: boatRockerzImg,
-    price: 1499,
-    originalPrice: 2499,
-    discount: '40% OFF',
-    discountNum: 40,
-    rating: 4.4,
-    reviewsCount: 3840,
     cardBg: 'radial-gradient(circle at 16% 63%, #d9f9ff 0%, transparent 28%), linear-gradient(135deg, #ffffff 0%, #fbffff 100%)',
     badgeColor: '#0794a5',
     glowColor: '#a9f1fa',
   },
   {
-    id: 'elec-2',
-    name: 'Noise ColorFit Pro 5',
-    image: noiseSmartwatchImg,
-    price: 2999,
-    originalPrice: 4999,
-    discount: '40% OFF',
-    discountNum: 40,
-    rating: 4.5,
-    reviewsCount: 2910,
     cardBg: 'radial-gradient(circle at 12% 68%, #efffd6 0%, transparent 35%), linear-gradient(135deg, #ffffff 0%, #fcfff7 100%)',
     badgeColor: '#5bac39',
     glowColor: '#050801',
   },
   {
-    id: 'elec-3',
-    name: 'Sony WH-CH510',
-    image: sonyHeadphonesImg,
-    price: 2499,
-    originalPrice: 3990,
-    discount: '37% OFF',
-    discountNum: 37,
-    rating: 4.6,
-    reviewsCount: 4120,
     cardBg: 'radial-gradient(circle at 36% 76%, #eee8ff 0%, transparent 38%), linear-gradient(135deg, #ffffff 0%, #fdfbff 100%)',
     badgeColor: '#7052ed',
     glowColor: '#d8cdfc',
   },
   {
-    id: 'elec-4',
-    name: 'JBL Flip Essential 2',
-    image: jblSpeakerImg,
-    price: 4499,
-    originalPrice: 6999,
-    discount: '35% OFF',
-    discountNum: 35,
-    rating: 4.7,
-    reviewsCount: 5280,
     cardBg: 'radial-gradient(circle at 50% 70%, #fff0c7 0%, transparent 40%), linear-gradient(135deg, #ffffff 0%, #fffdf8 100%)',
     badgeColor: '#ff680d',
     glowColor: '#ffe4a1',
   },
 ];
 
+const fallbackDeals = [
+  { id: 'elec-1', name: 'boAt Rockerz 450', image: boatRockerzImg, price: 1499, originalPrice: 2499, discount: '40% OFF', discountNum: 40, rating: 4.4, reviewsCount: 3840 },
+  { id: 'elec-2', name: 'Noise ColorFit Pro 5', image: noiseSmartwatchImg, price: 2999, originalPrice: 4999, discount: '40% OFF', discountNum: 40, rating: 4.5, reviewsCount: 2910 },
+  { id: 'elec-3', name: 'Sony WH-CH510', image: sonyHeadphonesImg, price: 2499, originalPrice: 3990, discount: '37% OFF', discountNum: 37, rating: 4.6, reviewsCount: 4120 },
+  { id: 'elec-4', name: 'JBL Flip Essential 2', image: jblSpeakerImg, price: 4499, originalPrice: 6999, discount: '35% OFF', discountNum: 35, rating: 4.7, reviewsCount: 5280 },
+].map((deal, i) => ({ ...deal, ...CARD_PALETTES[i % CARD_PALETTES.length] }));
+
 export function TrendingDealsBand() {
   const { navigateTo } = useNavigationContext();
+  const [deals, setDeals] = useState(fallbackDeals);
+
+  // Steepest live discounts flagged as deal-of-the-day.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      let rows = await fetchProducts({
+        is_deal_of_day: 'true',
+        ordering: '-discount_percentage',
+        no_page: 'true'
+      });
+      if (!Array.isArray(rows) || rows.length === 0) {
+        rows = await fetchProducts({ ordering: '-discount_percentage', no_page: 'true' });
+      }
+      if (cancelled || !Array.isArray(rows) || rows.length === 0) return;
+
+      const mapped = rows.slice(0, 4).map((p, i) => {
+        const price = Number(p.price ?? p.current_price ?? p.discount_price ?? 0);
+        const originalPrice = Number(p.originalPrice ?? p.base_price ?? price);
+        const discountNum = Math.round(
+          Number(p.discount_percentage) ||
+            (originalPrice > price ? ((originalPrice - price) / originalPrice) * 100 : 0)
+        );
+        return {
+          ...p,
+          id: p.id,
+          slug: p.slug,
+          name: p.name || p.title,
+          image: p.image || p.primary_image || getProductImage(p.name || p.title),
+          price,
+          originalPrice,
+          discount: p.discount || `${discountNum}% OFF`,
+          discountNum,
+          rating: Number(p.rating ?? p.average_rating ?? 0),
+          reviewsCount: Number(p.reviewsCount ?? p.review_count ?? 0),
+          ...CARD_PALETTES[i % CARD_PALETTES.length]
+        };
+      });
+
+      setDeals(mapped);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="mx-4 my-10 sm:mx-6 lg:mx-8">
       {/* Section Header */}
@@ -184,6 +207,24 @@ export function BrandValueBand() {
 }
 
 export function NewsletterBand() {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState('idle'); // idle | saving | done | error
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || state === 'saving') return;
+    setState('saving');
+    const res = await subscribeToNewsletter(email.trim());
+    if (res?.status === 'success') {
+      setState('done');
+      setEmail('');
+      window.setTimeout(() => setState('idle'), 5000);
+    } else {
+      setState('error');
+      window.setTimeout(() => setState('idle'), 5000);
+    }
+  };
+
   return (
     <section className="mx-4 sm:mx-6 lg:mx-8 my-10">
       <div className="bg-gradient-to-r from-accent to-accent-600 rounded-3xl px-6 sm:px-12 py-8 sm:py-10 text-white relative overflow-hidden">
@@ -194,22 +235,31 @@ export function NewsletterBand() {
             </div>
             <div>
               <h3 className="font-display text-2xl font-extrabold tracking-tight">Get Festival Alerts & Offers</h3>
-              <p className="text-sm text-white/85 font-medium">Be first to know about Rakhi, Diwali & mega-sale drops.</p>
+              <p className="text-sm text-white/85 font-medium">
+                {state === 'done'
+                  ? "You're on the list — festival drops land in your inbox first."
+                  : state === 'error'
+                    ? 'Could not subscribe right now. Please try again.'
+                    : 'Be first to know about Rakhi, Diwali & mega-sale drops.'}
+              </p>
             </div>
           </div>
-          <form onSubmit={(e) => e.preventDefault()} className="flex w-full md:w-auto gap-2">
+          <form onSubmit={handleSubscribe} className="flex w-full md:w-auto gap-2">
             <input
               type="email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               aria-label="Email address"
               className="flex-1 md:w-64 px-4 py-3 rounded-xl bg-white text-ink text-sm font-medium outline-none focus:ring-2 focus:ring-white/60"
             />
             <button
               type="submit"
-              className="bg-brand-900 hover:bg-brand-800 text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors cursor-pointer"
+              disabled={state === 'saving'}
+              className="bg-brand-900 hover:bg-brand-800 text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
-              Subscribe
+              {state === 'saving' ? 'Saving...' : state === 'done' ? 'Subscribed' : 'Subscribe'}
             </button>
           </form>
         </div>

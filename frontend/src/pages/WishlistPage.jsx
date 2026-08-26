@@ -1,15 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Share2, Trash2, Heart, ShoppingBag, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
+import { fetchProductDetail } from '../services/api';
+
+// Standard BuyZo promise: dispatched next day, delivered inside three.
+function deliveryEstimate() {
+  const eta = new Date();
+  eta.setDate(eta.getDate() + 3);
+  return `Delivery by ${eta.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`;
+}
 
 export default function WishlistPage() {
   const { wishlistItems, addToCart, removeFromWishlist, clearWishlist } = useCartContext();
   const { navigateTo } = useNavigationContext();
-  
+
   const [selectedItems, setSelectedItems] = useState([]);
   const [addedToast, setAddedToast] = useState(null);
+  // productId -> { stock_quantity, is_in_stock } straight from MySQL.
+  const [stockMap, setStockMap] = useState({});
+
+  const wishlistKey = wishlistItems.map((item) => item.productId || item.id).join(',');
+
+  useEffect(() => {
+    if (wishlistItems.length === 0) {
+      setStockMap({});
+      return;
+    }
+    let cancelled = false;
+
+    (async () => {
+      const targets = wishlistItems.slice(0, 20);
+      const rows = await Promise.all(
+        targets.map((item) => fetchProductDetail(item.slug || item.productId || item.id))
+      );
+      if (cancelled) return;
+
+      const map = {};
+      targets.forEach((item, i) => {
+        const row = rows[i];
+        if (!row) return;
+        map[String(item.productId || item.id)] = {
+          stock: Number(row.stock_quantity ?? 0),
+          inStock: row.is_in_stock !== false
+        };
+      });
+      setStockMap(map);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wishlistKey]);
 
   const toggleSelectItem = (id) => {
     setSelectedItems((prev) =>
@@ -33,6 +77,19 @@ export default function WishlistPage() {
     };
     addToCart(targetProduct);
     setAddedToast(`Added "${product.name}" to your cart!`);
+    setTimeout(() => setAddedToast(null), 3000);
+  };
+
+  // Bulk action for the row checkboxes.
+  const handleAddSelectedToCart = () => {
+    const picked = wishlistItems.filter((item) => selectedItems.includes(item.id));
+    picked.forEach((item) =>
+      addToCart({ ...item, id: item.productId || item.id, productId: item.productId || item.id })
+    );
+    setSelectedItems([]);
+    setAddedToast(
+      `Added ${picked.length} ${picked.length === 1 ? 'item' : 'items'} to your cart!`
+    );
     setTimeout(() => setAddedToast(null), 3000);
   };
 
@@ -84,7 +141,16 @@ export default function WishlistPage() {
 
         {wishlistItems.length > 0 && (
           <div className="flex items-center space-x-3">
-            <button 
+            {selectedItems.length > 0 && (
+              <button
+                onClick={handleAddSelectedToCart}
+                className="flex items-center space-x-1.5 bg-accent hover:bg-accent-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Add {selectedItems.length} to Cart</span>
+              </button>
+            )}
+            <button
               onClick={handleShare}
               className="flex items-center space-x-1.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold px-3.5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer"
             >
@@ -212,17 +278,38 @@ export default function WishlistPage() {
                       </div>
                     </td>
 
-                    {/* Stock Status Column */}
+                    {/* Stock Status Column — live from the catalogue */}
                     <td className="py-4 px-6 align-middle whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <div className="flex items-center space-x-1.5 text-xs font-semibold text-emerald-600">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                          <span>In Stock</span>
-                        </div>
-                        <span className="text-xs text-gray-500 font-normal mt-0.5">
-                          {item.deliveryDate || 'Delivery by 24 May'}
-                        </span>
-                      </div>
+                      {(() => {
+                        const live = stockMap[String(item.productId || item.id)];
+                        const inStock = live ? live.inStock && live.stock > 0 : true;
+                        const isLow = live && inStock && live.stock <= 10;
+                        return (
+                          <div className="flex flex-col">
+                            <div
+                              className={`flex items-center space-x-1.5 text-xs font-semibold ${
+                                !inStock ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-emerald-600'
+                              }`}
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full inline-block ${
+                                  !inStock ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`}
+                              />
+                              <span>
+                                {!inStock
+                                  ? 'Out of Stock'
+                                  : isLow
+                                    ? `Only ${live.stock} left`
+                                    : 'In Stock'}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 font-normal mt-0.5">
+                              {inStock ? item.deliveryDate || deliveryEstimate() : 'Notify me when back'}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Actions Column */}

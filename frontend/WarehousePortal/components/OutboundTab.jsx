@@ -1,85 +1,205 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ArrowUpFromLine, Truck, CheckCircle2 } from 'lucide-react';
-import { fetchWarehouseOutboundApi, updateOrderStatusApi } from '../../src/services/api';
-
-const initialOutbound = [
-  { id: 'SHP-250522-037', order_db_id: 1, destination: 'Delhi Hub', item: 'Smart Watch (SW-2001)', qty: 80, courier: 'BlueDart Express', status: 'Dispatched', time: '22 May, 10:30 AM' },
-  { id: 'SHP-250522-038', order_db_id: 2, destination: 'Mumbai Hub', item: 'Wireless Headphones (WH-1001)', qty: 150, courier: 'Delhivery', status: 'Packing In Progress', time: '22 May, 01:45 PM' },
-  { id: 'SHP-250522-039', order_db_id: 3, destination: 'Bengaluru Hub', item: 'Bluetooth Speaker (BS-3001)', qty: 60, courier: 'Ecom Express', status: 'Ready for Pickup', time: '22 May, 03:20 PM' },
-];
+import { Search, ArrowUpFromLine, Truck, CheckCircle2, RefreshCw, Check, PackageCheck, Box } from 'lucide-react';
+import {
+  fetchWarehouseOutboundApi,
+  fetchWarehouseOrderQueueApi,
+  packOutboundShipmentApi,
+  dispatchOutboundShipmentApi,
+  createOutboundShipmentApi,
+  updateOrderStatusApi
+} from '../../src/services/api';
 
 export default function OutboundTab() {
-  const [items, setItems] = useState(initialOutbound);
+  const [items, setItems] = useState([]);
+  const [packQueue, setPackQueue] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const notify = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const loadOutbound = async () => {
+    setIsLoading(true);
     try {
-      const { apiOutbound, localOrders } = await fetchWarehouseOutboundApi();
+      const [{ apiOutbound }, orders] = await Promise.all([
+        fetchWarehouseOutboundApi(),
+        fetchWarehouseOrderQueueApi()
+      ]);
+      setItems(Array.isArray(apiOutbound) ? apiOutbound : []);
 
-      const mappedApi = (apiOutbound || []).map(s => ({
-        id: s.shipment_id || `SHP-${s.id}`,
-        order_db_id: s.id,
-        destination: s.destination_hub || 'Central Hub',
-        item: s.item_title || 'Order Package',
-        qty: s.quantity || 1,
-        courier: s.courier_partner || 'BuyZo Express Logistics',
-        status: s.status || 'Ready for Pickup',
-        time: s.created_at ? new Date(s.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Just now'
-      }));
-
-      const mappedLocal = (localOrders || []).map(o => {
-        const firstItem = o.items && o.items[0] ? o.items[0].name : 'Order Item';
-        const totalQty = (o.items || []).reduce((acc, i) => acc + (parseInt(i.quantity) || 1), 0);
-        return {
-          id: `SHP-${(o.orderId || '').replace('#', '')}`,
-          order_db_id: o.id || o.orderId,
-          destination: `${o.address?.details ? o.address.details.split(',')[1] || 'Central' : 'Central'} Hub`,
-          item: `${firstItem} (${totalQty} item${totalQty > 1 ? 's' : ''})`,
-          qty: totalQty,
-          courier: 'BuyZo Express Logistics',
-          status: o.status === 'SHIPPED' ? 'Dispatched' : 'Ready for Pickup',
-          time: o.orderDate ? o.orderDate.split(',')[1] || 'Just now' : 'Just now'
-        };
-      });
-
-      const combined = [...mappedLocal, ...mappedApi, ...initialOutbound];
-      const unique = [];
-      const seen = new Set();
-      for (const item of combined) {
-        if (!seen.has(item.id)) {
-          seen.add(item.id);
-          unique.push(item);
-        }
-      }
-      setItems(unique);
+      // Real customer orders still sitting in the warehouse before dispatch.
+      const queue = (Array.isArray(orders) ? orders : [])
+        .filter((o) => ['PENDING', 'CONFIRMED', 'PROCESSING'].includes(o.status))
+        .map((o) => {
+          const items = o.items || [];
+          const firstItem = items[0]?.product_title || 'Order Item';
+          const totalQty = items.reduce((acc, i) => acc + (parseInt(i.quantity, 10) || 1), 0);
+          return {
+            key: o.id,
+            orderDbId: o.id,
+            orderNumber: o.order_number,
+            destination: `${o.shipping_city || 'Central'} Hub`,
+            item: `${firstItem}${items.length > 1 ? ` +${items.length - 1} more` : ''}`,
+            qty: totalQty,
+            date: o.formatted_date || 'Recent'
+          };
+        });
+      setPackQueue(queue);
     } catch (err) {
       console.error('Error loading warehouse outbound:', err);
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
     loadOutbound();
   }, []);
 
-  const handleDispatch = async (item) => {
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'Dispatched' } : i));
-    if (item.order_db_id) {
-      await updateOrderStatusApi(item.order_db_id, 'SHIPPED');
+  const handlePack = async (row) => {
+    setBusyId(row.id);
+    const res = await packOutboundShipmentApi(row.id);
+    setBusyId(null);
+    if (res?.status === 'success') {
+      setItems((prev) => prev.map((i) => (i.id === row.id ? { ...i, ...res.data } : i)));
+      notify(res.message || 'Shipment packed and ready for pickup.');
+    } else {
+      notify(res?.message || 'Could not pack this shipment.');
     }
   };
 
-  const filtered = items.filter(i =>
-    i.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.item.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleDispatch = async (row) => {
+    setBusyId(row.id);
+    const res = await dispatchOutboundShipmentApi(row.id);
+    setBusyId(null);
+    if (res?.status === 'success') {
+      setItems((prev) => prev.map((i) => (i.id === row.id ? { ...i, ...res.data } : i)));
+      notify(res.message || 'Shipment handed over to the courier.');
+    } else {
+      notify(res?.message || 'Could not dispatch this shipment.');
+    }
+  };
+
+  // Creates a real OutboundShipment for a pending order and marks the order
+  // SHIPPED so the customer's Orders page and Delivery portal both see it.
+  const handleCreateShipment = async (order) => {
+    setBusyId(order.key);
+    const res = await createOutboundShipmentApi({
+      destination_hub: order.destination,
+      item_title: order.item,
+      sku: order.orderNumber,
+      quantity: order.qty,
+      courier_partner: 'BuyZo Express Logistics',
+      status: 'Packing In Progress'
+    });
+
+    if (res?.status === 'success') {
+      if (order.orderDbId) await updateOrderStatusApi(order.orderDbId, 'SHIPPED');
+      setItems((prev) => [res.data, ...prev]);
+      setPackQueue((prev) => prev.filter((o) => o.key !== order.key));
+      notify(`Shipment created for order ${order.orderNumber}.`);
+    } else {
+      notify(res?.message || 'Could not create this shipment.');
+    }
+    setBusyId(null);
+  };
+
+  const filtered = items.filter((i) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      (i.shipment_id || '').toLowerCase().includes(term) ||
+      (i.destination_hub || '').toLowerCase().includes(term) ||
+      (i.item_title || '').toLowerCase().includes(term) ||
+      (i.courier_partner || '').toLowerCase().includes(term)
+    );
+  });
+
+  const dispatchedCount = items.filter((i) => i.status === 'Dispatched').length;
+  const statusChip = (status) => {
+    if (status === 'Dispatched') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'Ready for Pickup') return 'bg-blue-100 text-blue-800';
+    return 'bg-amber-100 text-amber-800';
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h2 className="text-2xl font-black text-gray-900 tracking-tight">Outbound Packing & Shipments</h2>
-        <p className="text-sm text-gray-500 font-medium">Process outgoing customer orders, packing slips, and courier manifest handover.</p>
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-blue-900 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-bold z-50 flex items-center space-x-2">
+          <Check className="w-4 h-4 text-blue-300" />
+          <span>{toast}</span>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Outbound Packing &amp; Shipments</h2>
+          <p className="text-sm text-gray-500 font-medium">Process outgoing customer orders, packing slips, and courier manifest handover.</p>
+        </div>
+        <button
+          onClick={loadOutbound}
+          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </div>
+
+      {/* Live counters */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <ArrowUpFromLine className="w-4 h-4 text-blue-600" />
+            <span>Total Shipments</span>
+          </div>
+          <p className="text-2xl font-black text-gray-900 mt-1">{items.length}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <Truck className="w-4 h-4 text-emerald-600" />
+            <span>Dispatched</span>
+          </div>
+          <p className="text-2xl font-black text-emerald-700 mt-1">{dispatchedCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <Box className="w-4 h-4 text-amber-600" />
+            <span>Orders Awaiting Shipment</span>
+          </div>
+          <p className="text-2xl font-black text-amber-600 mt-1">{packQueue.length}</p>
+        </div>
+      </div>
+
+      {/* Orders that still need a shipment record */}
+      {packQueue.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-gray-100 flex items-center space-x-2">
+            <PackageCheck className="w-4 h-4 text-amber-600" />
+            <h3 className="font-bold text-base text-gray-900">Orders Awaiting Shipment</h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {packQueue.map((order) => (
+              <div key={order.key} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 line-clamp-1">{order.item}</p>
+                  <p className="text-[11px] font-semibold text-gray-400 mt-0.5">
+                    Order {order.orderNumber} &middot; {order.destination} &middot; {order.qty} unit(s)
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleCreateShipment(order)}
+                  disabled={busyId === order.key}
+                  className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold shrink-0 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {busyId === order.key ? 'Creating...' : 'Create Shipment'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
         <div className="relative w-full sm:w-80">
@@ -95,49 +215,90 @@ export default function OutboundTab() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-              <th className="py-3.5 px-6">Shipment ID</th>
-              <th className="py-3.5 px-6">Destination Hub</th>
-              <th className="py-3.5 px-6">Item / SKU</th>
-              <th className="py-3.5 px-6">Quantity</th>
-              <th className="py-3.5 px-6">Courier Partner</th>
-              <th className="py-3.5 px-6">Status</th>
-              <th className="py-3.5 px-6">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-sm">
-            {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-blue-50/20 transition-colors">
-                <td className="py-4 px-6 font-mono font-bold text-gray-900">{item.id}</td>
-                <td className="py-4 px-6 font-bold text-gray-900">{item.destination}</td>
-                <td className="py-4 px-6 text-gray-700 font-semibold text-xs">{item.item}</td>
-                <td className="py-4 px-6 font-extrabold text-gray-900">{item.qty}</td>
-                <td className="py-4 px-6 text-gray-600 font-bold text-xs">{item.courier}</td>
-                <td className="py-4 px-6">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
-                    item.status === 'Dispatched' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  {item.status !== 'Dispatched' ? (
-                    <button
-                      onClick={() => handleDispatch(item)}
-                      className="px-3 py-1.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-lg text-xs font-bold transition-colors"
-                    >
-                      Dispatch
-                    </button>
-                  ) : (
-                    <span className="text-xs font-bold text-emerald-700">Handed Over</span>
-                  )}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="py-3.5 px-6">Shipment ID</th>
+                <th className="py-3.5 px-6">Destination Hub</th>
+                <th className="py-3.5 px-6">Item / SKU</th>
+                <th className="py-3.5 px-6">Quantity</th>
+                <th className="py-3.5 px-6">Courier Partner</th>
+                <th className="py-3.5 px-6">Status</th>
+                <th className="py-3.5 px-6 text-right">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {isLoading && items.length === 0 && (
+                [1, 2, 3, 4].map((n) => (
+                  <tr key={n} className="animate-pulse">
+                    <td colSpan={7} className="py-4 px-6">
+                      <div className="h-4 bg-gray-100 rounded" />
+                    </td>
+                  </tr>
+                ))
+              )}
+
+              {!isLoading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 px-6 text-center">
+                    <ArrowUpFromLine className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="font-bold text-gray-900">No outbound shipments</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {searchTerm ? 'Nothing matched that search.' : 'Create a shipment from the order queue above.'}
+                    </p>
+                  </td>
+                </tr>
+              )}
+
+              {filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-blue-50/20 transition-colors">
+                  <td className="py-4 px-6 font-mono font-bold text-gray-900">{item.shipment_id}</td>
+                  <td className="py-4 px-6 font-bold text-gray-900 text-xs">{item.destination_hub}</td>
+                  <td className="py-4 px-6 text-gray-700 font-semibold text-xs">
+                    <span className="line-clamp-1">{item.item_title}</span>
+                    {item.sku && (
+                      <span className="block text-[11px] font-mono text-gray-400 mt-0.5">{item.sku}</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6 font-extrabold text-gray-900">{item.quantity}</td>
+                  <td className="py-4 px-6 text-gray-600 font-bold text-xs">{item.courier_partner}</td>
+                  <td className="py-4 px-6">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${statusChip(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    {item.status === 'Dispatched' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Handed Over
+                      </span>
+                    ) : item.status === 'Ready for Pickup' ? (
+                      <button
+                        onClick={() => handleDispatch(item)}
+                        disabled={busyId === item.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#063328] hover:bg-[#ff5100] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <Truck className="w-3 h-3" />
+                        <span>{busyId === item.id ? 'Dispatching...' : 'Dispatch'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handlePack(item)}
+                        disabled={busyId === item.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <PackageCheck className="w-3 h-3" />
+                        <span>{busyId === item.id ? 'Packing...' : 'Mark Packed'}</span>
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

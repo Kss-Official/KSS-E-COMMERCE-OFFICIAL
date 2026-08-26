@@ -1,4 +1,6 @@
+from django.utils import timezone
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
@@ -110,5 +112,37 @@ class AdminCouponViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        code = instance.code
         instance.delete()
-        return APIResponse.success(message="Coupon deleted successfully.")
+        return APIResponse.success(message=f"Coupon {code} deleted successfully.")
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='available')
+    def available(self, request):
+        """Live, in-window offers for the storefront's coupon picker."""
+        now = timezone.now()
+        coupons = Coupon.objects.filter(is_active=True, valid_from__lte=now, valid_to__gte=now)
+        data = [
+            {
+                'id': coupon.id,
+                'code': coupon.code,
+                'discount_type': coupon.discount_type,
+                'discount_value': float(coupon.discount_value),
+                'max_discount_amount': float(coupon.max_discount_amount) if coupon.max_discount_amount else None,
+                'min_order_value': float(coupon.min_order_value),
+                'valid_to': coupon.valid_to.isoformat(),
+                'expires_on': coupon.valid_to.strftime('%d %b %Y'),
+                'label': (
+                    f'{coupon.discount_value:.0f}% off' if coupon.discount_type == 'PERCENTAGE'
+                    else f'Rs.{coupon.discount_value:.0f} off'
+                ),
+                'terms': (
+                    f'On orders above Rs.{coupon.min_order_value:.0f}.'
+                    if coupon.min_order_value else 'No minimum order value.'
+                ) + (
+                    f' Maximum discount Rs.{coupon.max_discount_amount:.0f}.'
+                    if coupon.max_discount_amount else ''
+                ),
+            }
+            for coupon in coupons.order_by('min_order_value')
+        ]
+        return APIResponse.success(data=data, message="Available offers retrieved.")

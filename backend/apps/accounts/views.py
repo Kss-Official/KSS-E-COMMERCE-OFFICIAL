@@ -389,3 +389,32 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         user_email = instance.email
         instance.delete()
         return APIResponse.success(message=f"User {user_email} deleted successfully from database.")
+
+class CurrentUserView(APIView):
+    """
+    ``GET /api/auth/me/`` - session restore on a page refresh.
+
+    Returns the signed-in user plus the portal landing page their role maps to,
+    so the frontend can put a staff member straight back into their portal.
+    """
+    permission_classes = [IsAuthenticated]
+
+    ROLE_HOME_PAGE = {
+        'CUSTOMER': 'home',
+        'ADMIN': 'admin',
+        'WAREHOUSE': 'warehouse',
+        'DELIVERY_AGENT': 'delivery-agent',
+    }
+
+    def get(self, request):
+        user = request.user
+        Profile.objects.get_or_create(user=user)
+        user.refresh_from_db()
+        data = UserSerializer(user).data
+        data['home_page'] = self.ROLE_HOME_PAGE.get(user.role, 'home')
+        data['is_staff_portal'] = user.role != 'CUSTOMER'
+        data['wallet_balance'] = float(user.wallet_balance)
+        data['default_address'] = AddressSerializer(
+            user.addresses.filter(is_default=True).first()
+        ).data if user.addresses.filter(is_default=True).exists() else None
+        return APIResponse.success(data=data, message="Current user retrieved.")

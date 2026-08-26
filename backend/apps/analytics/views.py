@@ -9,6 +9,8 @@ from core.permissions import IsAdminUserRole
 from apps.accounts.models import User
 from apps.catalog.models import Product
 from apps.orders.models import Order, OrderItem
+from .models import StoreSetting
+from .serializers import StoreSettingSerializer
 
 class AdminDashboardSummaryView(APIView):
     permission_classes = [IsAdminUserRole]
@@ -124,3 +126,54 @@ class AdminLowStockAlertsView(APIView):
             for p in low_stock
         ]
         return APIResponse.success(data=data, message="Low stock alerts retrieved.")
+
+class AdminStoreSettingsView(APIView):
+    """
+    Reads and writes the single StoreSetting row backing the Admin Settings tab,
+    and returns a few live store counters alongside it so the screen never has to
+    invent numbers.
+    """
+    permission_classes = [IsAdminUserRole]
+
+    def _payload(self, request, setting):
+        data = StoreSettingSerializer(setting).data
+        data['stats'] = {
+            "total_products": Product.objects.filter(is_active=True).count(),
+            "total_orders": Order.objects.count(),
+            "total_customers": User.objects.filter(role='CUSTOMER').count(),
+            "staff_accounts": User.objects.exclude(role='CUSTOMER').count(),
+            "low_stock_products": Product.objects.filter(
+                is_active=True, stock_quantity__lte=setting.low_stock_threshold
+            ).count(),
+            "pending_orders": Order.objects.filter(status__in=['PENDING', 'CONFIRMED']).count(),
+        }
+        user = request.user
+        profile = getattr(user, 'profile', None)
+        data['administrator'] = {
+            "id": user.id,
+            "email": user.email,
+            "phone": user.phone or '',
+            "role": user.role,
+            "first_name": getattr(profile, 'first_name', '') or '',
+            "last_name": getattr(profile, 'last_name', '') or '',
+            "full_name": getattr(profile, 'full_name', '') or user.email,
+            "is_superuser": user.is_superuser,
+            "date_joined": user.date_joined,
+        }
+        return data
+
+    def get(self, request):
+        setting = StoreSetting.load()
+        return APIResponse.success(data=self._payload(request, setting), message="Store settings retrieved.")
+
+    def put(self, request):
+        return self.patch(request)
+
+    def patch(self, request):
+        setting = StoreSetting.load()
+        serializer = StoreSettingSerializer(setting, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return APIResponse.error(message="Invalid settings payload.", errors=serializer.errors)
+        serializer.save(updated_by=request.user if request.user.is_authenticated else None)
+        setting.refresh_from_db()
+        return APIResponse.success(data=self._payload(request, setting), message="Store settings saved.")

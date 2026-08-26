@@ -97,3 +97,48 @@ class ReturnedItem(models.Model):
 
     def __str__(self):
         return f"{self.return_id} - Order {self.order_number} ({self.status})"
+
+class WarehouseInventory(models.Model):
+    """
+    Bin-level stock ledger for the warehouse portal.
+
+    ``Product.stock_quantity`` is the sellable figure the storefront reads;
+    this model adds the physical detail the warehouse floor needs - where the
+    stock sits and how much of it is already promised to open orders or moving
+    between hubs. ``available_units`` is what an operator can actually pick.
+    """
+    product = models.OneToOneField(
+        'catalog.Product', on_delete=models.CASCADE, related_name='warehouse_inventory'
+    )
+    warehouse_code = models.CharField(max_length=40, default='WH01')
+    bin_location = models.CharField(max_length=30, blank=True, db_index=True)
+    total_units = models.PositiveIntegerField(default=0)
+    reserved_units = models.PositiveIntegerField(default=0)
+    in_transit_units = models.PositiveIntegerField(default=0)
+    reorder_level = models.PositiveIntegerField(default=10)
+    last_counted_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'buyzo_warehouse_inventory'
+        verbose_name_plural = 'Warehouse inventory'
+        ordering = ['bin_location', 'id']
+
+    def __str__(self):
+        return f"{self.product.sku} @ {self.bin_location or 'unassigned'} ({self.total_units} units)"
+
+    @property
+    def available_units(self):
+        return max(0, self.total_units - self.reserved_units)
+
+    @property
+    def is_low_stock(self):
+        return self.available_units <= self.reorder_level
+
+    @property
+    def stock_status(self):
+        if self.available_units == 0:
+            return 'Out of Stock'
+        if self.is_low_stock:
+            return 'Low Stock'
+        return 'In Stock'

@@ -204,6 +204,29 @@ export default function Footer() {
 
 
 
+        {/* Staff Access: discreet entry points to the three internal portals */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/10 pt-4 text-[11px] text-emerald-50/60">
+          <span className="font-semibold uppercase tracking-[0.14em] text-emerald-50/50">
+            Staff Access
+          </span>
+          {[
+            { key: 'admin', label: 'Admin' },
+            { key: 'warehouse', label: 'Warehouse' },
+            { key: 'delivery', label: 'Delivery' }
+          ].map(({ key, label }, index) => (
+            <React.Fragment key={key}>
+              {index > 0 && <span className="text-emerald-50/25">|</span>}
+              <button
+                type="button"
+                onClick={() => navigateTo('login', key)}
+                className="font-medium text-emerald-50/70 transition-colors hover:text-[#25e0cf] hover:underline cursor-pointer"
+              >
+                {label} Portal
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+
         {/* Bottom Bar: Copyright, Social Icons & Payment Methods */}
         <div className="mt-4 flex flex-col gap-4 border-t border-white/15 pt-4 text-xs text-emerald-50/80 md:flex-row md:items-center md:justify-between">
           {/* Copyright with Shield Badge */}
