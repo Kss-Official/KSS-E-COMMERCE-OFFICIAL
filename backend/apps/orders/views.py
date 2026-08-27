@@ -12,7 +12,7 @@ from rest_framework.decorators import action
 from core.response import APIResponse
 from core.permissions import IsAdminUserRole, IsOwnerOrAdmin
 from apps.accounts.models import Address
-from apps.cart.views import get_or_create_cart
+from apps.cart.views import get_or_create_cart, resolve_product
 from apps.cart.models import Cart, CartItem
 from apps.catalog.models import Product, ProductVariant
 from .models import Order, OrderItem, OrderTrackingMilestone
@@ -41,21 +41,16 @@ class CheckoutView(APIView):
             # Process direct items from frontend cart
             calculated_subtotal = Decimal('0.00')
             for p_item in payload_items:
-                p_id = p_item.get('id')
-                p_title = p_item.get('name') or p_item.get('title') or 'Item'
-                p_price = Decimal(str(p_item.get('price') or '0'))
+                p_id = p_item.get('productId') or p_item.get('product_id') or p_item.get('id')
+                p_title = p_item.get('name') or p_item.get('title') or p_item.get('product_title') or 'Item'
+                p_price = Decimal(str(p_item.get('price') or p_item.get('unit_price') or '0'))
                 p_qty = int(p_item.get('quantity') or 1)
-                p_color = p_item.get('selectedColor') or ''
-                p_size = p_item.get('selectedSize') or ''
+                p_color = p_item.get('selectedColor') or p_item.get('selected_color') or ''
+                p_size = p_item.get('selectedSize') or p_item.get('selected_size') or ''
+                p_image = p_item.get('image') or p_item.get('product_image') or ''
 
-                # Match product in DB
-                product = None
-                if p_id and str(p_id).isdigit():
-                    product = Product.objects.filter(id=int(p_id)).first()
-                if not product and p_title:
-                    product = Product.objects.filter(title__icontains=p_title.split()[0]).first()
-                if not product:
-                    product = Product.objects.first()
+                # Match product in DB accurately
+                product = resolve_product(p_id, p_title, p_price)
 
                 line_total = p_price * p_qty
                 calculated_subtotal += line_total
@@ -66,7 +61,8 @@ class CheckoutView(APIView):
                     'quantity': p_qty,
                     'total_price': line_total,
                     'selected_color': p_color,
-                    'selected_size': p_size
+                    'selected_size': p_size,
+                    'product_image': p_image
                 })
             subtotal = calculated_subtotal
         else:
@@ -162,8 +158,8 @@ class CheckoutView(APIView):
             product = item.get('product')
             variant = item.get('variant')
 
-            img_url = ''
-            if product:
+            img_url = item.get('product_image') or ''
+            if not img_url and product:
                 img = product.images.filter(is_primary=True).first() or product.images.first()
                 if img and img.image:
                     img_url = request.build_absolute_uri(img.image.url)
@@ -253,11 +249,11 @@ class CustomerOrderListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user if self.request and self.request.user.is_authenticated else None
         if user and (user.role == 'ADMIN' or user.is_staff or user.is_superuser):
-            qs = Order.objects.all().prefetch_related('items').order_by('-created_at')
+            qs = Order.objects.all().prefetch_related('items', 'milestones').order_by('-created_at')
         elif user:
-            qs = Order.objects.filter(customer=user).prefetch_related('items').order_by('-created_at')
+            qs = Order.objects.filter(customer=user).prefetch_related('items', 'milestones').order_by('-created_at')
         else:
-            qs = Order.objects.all().prefetch_related('items').order_by('-created_at')
+            qs = Order.objects.none()
 
         if not self.request:
             return qs

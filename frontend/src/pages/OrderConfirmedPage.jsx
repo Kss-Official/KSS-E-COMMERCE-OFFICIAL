@@ -84,15 +84,18 @@ function mapOrderRow(order) {
       details: addressLine || 'Delivery Address',
       phone: order.shipping_phone || ''
     },
-    items: (order.items || []).map((item, i) => ({
-      id: item.id || i,
-      name: item.product_title || 'BuyZo Product',
-      variant:
-        [item.selected_color, item.selected_size].filter(Boolean).join(' / ') || 'Standard',
-      quantity: item.quantity || 1,
-      price: formatMoney(item.total_price ?? item.unit_price),
-      image: item.product_image
-    })),
+    items: (order.items || []).map((item, i) => {
+      const title = item.product_title || item.name || 'BuyZo Product';
+      const variant = [item.selected_color, item.selected_size].filter(Boolean).join(' / ') || item.selectedColor || item.variant || 'Standard';
+      return {
+        id: item.id || i,
+        name: title,
+        variant,
+        quantity: item.quantity || 1,
+        price: formatMoney(item.total_price ?? item.unit_price ?? item.price),
+        image: getProductImage(title, item.product_image || item.image)
+      };
+    }),
     timeline:
       milestones.length > 0
         ? milestones.map((m) => ({

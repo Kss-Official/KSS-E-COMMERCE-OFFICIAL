@@ -291,25 +291,45 @@ export default function CheckoutPage() {
 
     const orderData = {
       orderId: newOrderId,
+      id: newOrderId,
+      order_number: newOrderId,
       orderDate: orderDateStr,
       created_at: now.toISOString(),
       estimatedDelivery: estDeliveryStr,
       totalPaid: finalTotal.toLocaleString('en-IN'),
+      total_amount: finalTotal,
+      userId: currentUser?.id || currentUser?.email || 'user',
+      customer_id: currentUser?.id || null,
+      userEmail: currentUser?.email || '',
       paymentMethod: paymentMethod.toUpperCase(),
+      status: 'CONFIRMED',
       address: {
         name: selectedAddr?.name || 'Customer',
         type: selectedAddr?.type || 'HOME',
         details: selectedAddr?.address || 'Bengaluru, Karnataka, India',
         phone: selectedAddr?.phone || ''
       },
-      items: displayItems.map((item, idx) => ({
-        id: item.id || idx + 1,
-        name: item.name || item.title || 'Product',
-        variant: item.selectedColor || item.color || item.variant || 'Standard',
-        quantity: item.quantity || 1,
-        price: (item.price * (item.quantity || 1)).toLocaleString('en-IN'),
-        image: item.image
-      })),
+      items: displayItems.map((item, idx) => {
+        const itemPrice = Number(item.price) || 0;
+        const itemQty = Number(item.quantity) || 1;
+        const itemTitle = item.name || item.title || 'Product';
+        return {
+          id: item.id || idx + 1,
+          productId: item.productId || item.id,
+          name: itemTitle,
+          product_title: itemTitle,
+          variant: item.selectedColor || item.color || item.variant || 'Standard',
+          selectedColor: item.selectedColor || item.color || '',
+          selected_color: item.selectedColor || item.color || '',
+          selectedSize: item.selectedSize || item.size || '',
+          selected_size: item.selectedSize || item.size || '',
+          quantity: itemQty,
+          price: itemPrice,
+          unit_price: itemPrice,
+          total_price: itemPrice * itemQty,
+          image: item.image || ''
+        };
+      }),
       timeline: [
         {
           status: 'Order Confirmed',
@@ -357,24 +377,38 @@ export default function CheckoutPage() {
         street_address: selectedAddr.address,
         payment_method: paymentMethod.toUpperCase(),
         items: displayItems.map((item) => ({
-          id: item.id,
+          id: item.id || item.productId,
+          productId: item.productId || item.id,
           name: item.name || item.title,
-          price: item.price,
-          quantity: item.quantity || 1,
-          selectedColor: item.selectedColor,
-          selectedSize: item.selectedSize
+          price: Number(item.price) || 0,
+          quantity: Number(item.quantity) || 1,
+          selectedColor: item.selectedColor || item.color || '',
+          selectedSize: item.selectedSize || item.size || '',
+          image: item.image || ''
         }))
       };
-      await createCheckoutOrderApi(checkoutPayload);
+      const apiRes = await createCheckoutOrderApi(checkoutPayload);
+      if (apiRes && (apiRes.order_number || apiRes.id)) {
+        orderData.orderId = apiRes.order_number || `ORD-${apiRes.id}`;
+        orderData.id = apiRes.id || orderData.id;
+        orderData.order_number = apiRes.order_number || orderData.orderId;
+        if (apiRes.delivery_otp) orderData.delivery_otp = apiRes.delivery_otp;
+        setPlacedOrderData(orderData);
+      }
     } catch (err) {
       console.warn('Backend order checkout submission:', err);
     }
 
-    // Store in buyzo_placed_orders for Admin and Warehouse portals
+    // Store in buyzo_placed_orders and buyzo_orders for cross-portal and My Orders persistence
     try {
-      const existing = JSON.parse(localStorage.getItem('buyzo_placed_orders') || '[]');
-      existing.unshift(orderData);
-      localStorage.setItem('buyzo_placed_orders', JSON.stringify(existing));
+      const existingPlaced = JSON.parse(localStorage.getItem('buyzo_placed_orders') || '[]');
+      existingPlaced.unshift(orderData);
+      localStorage.setItem('buyzo_placed_orders', JSON.stringify(existingPlaced));
+
+      const existingOrders = JSON.parse(localStorage.getItem('buyzo_orders') || '[]');
+      existingOrders.unshift(orderData);
+      localStorage.setItem('buyzo_orders', JSON.stringify(existingOrders));
+
       localStorage.setItem('buyzo_last_order', JSON.stringify(orderData));
     } catch (e) {}
 

@@ -230,7 +230,7 @@ export default function DealsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* ================= LEFT SIDEBAR (3 COLS) ================= */}
-          <aside className="lg:col-span-3 space-y-5">
+          <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
             
             {/* Top Navigation Menu Card */}
             <div className="bg-white rounded-2xl p-4 shadow-xs border border-gray-100/90">

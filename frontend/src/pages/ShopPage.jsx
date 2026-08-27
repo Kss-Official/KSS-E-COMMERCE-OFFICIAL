@@ -84,7 +84,7 @@ import laptopCategorySvg from '../assets/category/categoryLaptop.svg';
 import electronicsCategorySvg from '../assets/category/categoryElectronics.svg';
 import fashionCategorySvg from '../assets/category/categoryFashion.svg';
 import chairsCategorySvg from '../assets/category/categoryChairs.svg';
-import homeCategorySvg from '../assets/category/CategoryHome & kitchen.svg';
+import homeKitchenPng from '../assets/category/home_kitchen.png';
 import beautyCategorySvg from '../assets/category/categoryBeauty.svg';
 import shoesCategorySvg from '../assets/category/categoryShoes.svg';
 import bagsCategorySvg from '../assets/category/categoryBags & luddages.svg';
@@ -98,8 +98,8 @@ const categoriesList = [
   { id: 'Laptops', name: 'Laptops', icon: laptopCategorySvg },
   { id: 'Electronics', name: 'Electronics', icon: electronicsCategorySvg },
   { id: 'Fashion', name: 'Fashion', icon: fashionCategorySvg },
-  { id: 'Chairs & Furniture', name: 'Chairs & Furniture', icon: chairsCategorySvg },
-  { id: 'Home & Kitchen', name: 'Home & Kitchen', icon: homeCategorySvg },
+  { id: 'Chairs & Furniture', name: 'Furniture', icon: chairsCategorySvg },
+  { id: 'Home & Kitchen', name: 'Home & Kitchen', icon: homeKitchenPng },
   { id: 'Beauty', name: 'Beauty', icon: beautyCategorySvg },
   { id: 'Footwear', name: 'Footwear', icon: shoesCategorySvg },
   { id: 'Bags & Luggage', name: 'Bags & Luggage', icon: bagsCategorySvg },
@@ -911,7 +911,7 @@ export default function ShopPage() {
             const catName = p.category_name || p.category?.name || (typeof p.category === 'string' ? p.category : 'General');
             const subCatName = p.subcategory_name || p.subcategory?.name || (typeof p.subcategory === 'string' ? p.subcategory : '');
             const brandName = p.brand_name || p.brand?.name || (typeof p.brand === 'string' ? p.brand : '');
-            
+
             // Format discount percentage badge string
             let discountStr = '20% OFF';
             if (p.discount && typeof p.discount === 'string') {
@@ -1057,9 +1057,9 @@ export default function ShopPage() {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-6 sm:pt-8">
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          
+
           {/* Left Sidebar - Categories */}
-          <aside className="w-full lg:w-64 bg-white rounded-2xl p-5 shadow-xs border border-gray-100 shrink-0">
+          <aside className="w-full lg:w-64 bg-white rounded-2xl p-5 shadow-xs border border-gray-100 shrink-0 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
               <h2 className="text-base font-extrabold text-gray-900">Categories</h2>
               <button
@@ -1082,11 +1082,10 @@ export default function ShopPage() {
                       setSelectedCategory(cat.id);
                       setShowMobileFilter(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-brand-900 text-white shadow-md'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-brand-800'
-                    }`}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${isSelected
+                      ? 'bg-brand-900 text-white shadow-md'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-brand-800'
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       {cat.icon ? (
@@ -1100,9 +1099,8 @@ export default function ShopPage() {
                     </div>
 
                     <div className="flex items-center space-x-1">
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ${
-                        isSelected ? 'bg-white/20 text-white' : 'text-gray-400 bg-gray-100'
-                      }`}>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ${isSelected ? 'bg-white/20 text-white' : 'text-gray-400 bg-gray-100'
+                        }`}>
                         {count}
                       </span>
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-accent' : 'text-gray-400'}`} />
@@ -1131,18 +1129,16 @@ export default function ShopPage() {
                 <div className="hidden sm:flex items-center space-x-1 border border-gray-200 rounded-xl p-1 bg-gray-50">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                      viewMode === 'grid' ? 'bg-white text-brand-800 shadow-2xs' : 'text-gray-400 hover:text-gray-600'
-                    }`}
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-white text-brand-800 shadow-2xs' : 'text-gray-400 hover:text-gray-600'
+                      }`}
                     title="Grid View"
                   >
                     <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                      viewMode === 'list' ? 'bg-white text-brand-800 shadow-2xs' : 'text-gray-400 hover:text-gray-600'
-                    }`}
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-white text-brand-800 shadow-2xs' : 'text-gray-400 hover:text-gray-600'
+                      }`}
                     title="List View"
                   >
                     <List className="w-4 h-4" />
@@ -1197,11 +1193,10 @@ export default function ShopPage() {
                       {/* Wishlist Icon */}
                       <button
                         onClick={(e) => handleToggleWishlist(product, e)}
-                        className={`absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full transition-all cursor-pointer ${
-                          activeWish
-                            ? 'bg-red-50 text-red-500 shadow-xs'
-                            : 'bg-white/85 text-gray-400 hover:text-red-500 hover:bg-red-50'
-                        }`}
+                        className={`absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full transition-all cursor-pointer ${activeWish
+                          ? 'bg-red-50 text-red-500 shadow-xs'
+                          : 'bg-white/85 text-gray-400 hover:text-red-500 hover:bg-red-50'
+                          }`}
                         title={activeWish ? 'Remove from Wishlist' : 'Add to Wishlist'}
                       >
                         <Heart className={`w-4 h-4 ${activeWish ? 'fill-red-500 text-red-500' : ''}`} />
@@ -1325,11 +1320,10 @@ export default function ShopPage() {
                       <div className="flex items-center space-x-3">
                         <button
                           onClick={(e) => handleToggleWishlist(product, e)}
-                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                            activeWish
-                              ? 'border-red-200 bg-red-50 text-red-500'
-                              : 'border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50'
-                          }`}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${activeWish
+                            ? 'border-red-200 bg-red-50 text-red-500'
+                            : 'border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50'
+                            }`}
                           title={activeWish ? 'Remove from Wishlist' : 'Add to Wishlist'}
                         >
                           <Heart className={`w-4 h-4 ${activeWish ? 'fill-red-500 text-red-500' : ''}`} />

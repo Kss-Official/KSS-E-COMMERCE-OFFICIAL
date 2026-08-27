@@ -59,6 +59,23 @@ export default function OrdersTab() {
 
   useEffect(() => {
     loadOrders();
+
+    const handleRealtime = () => {
+      loadOrders();
+    };
+
+    window.addEventListener('buyzo_order_updated', handleRealtime);
+    window.addEventListener('storage', handleRealtime);
+
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 2500);
+
+    return () => {
+      window.removeEventListener('buyzo_order_updated', handleRealtime);
+      window.removeEventListener('storage', handleRealtime);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleAdvance = async (order) => {

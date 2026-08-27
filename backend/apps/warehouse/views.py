@@ -99,6 +99,45 @@ class OutboundShipmentViewSet(viewsets.ModelViewSet):
     serializer_class = OutboundShipmentSerializer
     permission_classes = [IsWarehouseStaff]
 
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if pk is not None:
+            if str(pk).isdigit():
+                obj = self.get_queryset().filter(id=int(pk)).first()
+                if obj:
+                    return obj
+            # Check string shipment_id and order references
+            obj = self.get_queryset().filter(
+                Q(shipment_id=str(pk)) |
+                Q(shipment_id=f"SHP-{pk}") |
+                Q(sku=str(pk)) |
+                Q(sku=f"ORD-{pk}")
+            ).first()
+            if obj:
+                return obj
+
+            from apps.orders.models import Order
+            clean_num = str(pk).replace('SHP-', '').replace('ORD-', '')
+            linked_order = Order.objects.filter(
+                Q(order_number=clean_num) |
+                Q(order_number=str(pk)) |
+                Q(id=int(clean_num) if clean_num.isdigit() else -1)
+            ).first()
+            if linked_order:
+                obj, _ = OutboundShipment.objects.get_or_create(
+                    shipment_id=f"SHP-{linked_order.order_number}",
+                    defaults={
+                        'destination_hub': linked_order.shipping_city or 'Central Hub',
+                        'item_title': getattr(linked_order.items.first(), 'product_title', f"Order {linked_order.order_number}"),
+                        'sku': linked_order.order_number,
+                        'quantity': sum(i.quantity for i in linked_order.items.all()) or 1,
+                        'status': 'Ready for Pickup',
+                    }
+                )
+                return obj
+
+        return super().get_object()
+
     def perform_create(self, serializer):
         serializer.save(shipment_id=OutboundShipment.generate_shipment_id())
 
@@ -109,7 +148,7 @@ class OutboundShipmentViewSet(viewsets.ModelViewSet):
 
     # NOTE: must NOT be named `dispatch` - that would shadow APIView.dispatch and
     # break every request routed through this viewset.
-    @action(detail=True, methods=['patch'], url_path='dispatch', url_name='dispatch')
+    @action(detail=True, methods=['patch', 'post'], url_path='dispatch', url_name='dispatch')
     def dispatch_shipment(self, request, pk=None):
         shipment = self.get_object()
         shipment.status = 'Dispatched'
@@ -118,7 +157,7 @@ class OutboundShipmentViewSet(viewsets.ModelViewSet):
         _sync_order_from_shipment(shipment, 'OUT_FOR_DELIVERY')
         return APIResponse.success(data=OutboundShipmentSerializer(shipment).data, message="Shipment dispatched.")
 
-    @action(detail=True, methods=['patch'], url_path='pack')
+    @action(detail=True, methods=['patch', 'post'], url_path='pack')
     def pack(self, request, pk=None):
         """Move a shipment from packing to ready-for-pickup."""
         shipment = self.get_object()

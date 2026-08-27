@@ -13,103 +13,230 @@ export default function OrdersPage() {
   const { navigateTo } = useNavigationContext();
   const tabs = ['All Orders', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
   const [activeTab, setActiveTab] = useState('All Orders');
-  const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
+  const [selectedOrderIndex, setSelectedOrderIndex] = useState(null);
   const [ordersList, setOrdersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
   const [actionError, setActionError] = useState(null);
 
-  const loadOrders = async () => {
-    setLoading(true);
-    const { apiOrders = [], localOrders = [] } = await fetchCustomerOrdersApi();
+  const buildTimeline = (rawTimeline, orderStatus = 'CONFIRMED', createdDate = '') => {
+    const norm = String(orderStatus || 'CONFIRMED').toUpperCase();
 
-    const formattedApi = (apiOrders || []).map((o) => {
-      const firstItem = o.items && o.items[0] ? o.items[0] : {};
-      const pName = firstItem.product_title || 'Product Item';
-      const pImg = getProductImage(pName, firstItem.product_image || o.product_image);
-
-      let timeline = [
-        { step: 'Order Placed', time: o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN') : 'Completed', completed: true },
-        { step: 'Confirmed', time: 'Warehouse Confirmed', completed: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes((o.status || '').toUpperCase()) },
-        { step: 'Shipped', time: 'Handed to Courier', completed: ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes((o.status || '').toUpperCase()) },
-        { step: 'Out for Delivery', time: 'En-route to Customer', completed: ['OUT_FOR_DELIVERY', 'DELIVERED'].includes((o.status || '').toUpperCase()) },
-        { step: 'Delivered', time: 'Delivered via OTP', completed: (o.status || '').toUpperCase() === 'DELIVERED' }
-      ];
-
-      if (o.milestones && o.milestones.length > 0) {
-        timeline = o.milestones.map((m) => ({
-          step: m.step_title,
-          time: m.description,
-          completed: m.is_completed
-        }));
+    const isStepCompleted = (stepTitle) => {
+      const s = String(stepTitle || '').toLowerCase();
+      if (s.includes('place') || s.includes('confirm')) return true;
+      if (s.includes('process') || s.includes('pack')) {
+        return ['PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(norm);
       }
-
-      const unitPrice = parseFloat(firstItem.unit_price || (firstItem.total_price && firstItem.quantity ? firstItem.total_price / firstItem.quantity : 0) || o.total_amount || 0);
-
-      return {
-        id: o.order_number || `ORD-${o.id}`,
-        rawId: o.id,
-        order_number: o.order_number,
-        date: o.created_at ? `Placed on ${new Date(o.created_at).toLocaleDateString('en-IN')}` : 'Recent Order',
-        status: o.status || 'CONFIRMED',
-        productName: pName,
-        color: firstItem.selected_color || 'Default Variant',
-        price: unitPrice > 0 ? unitPrice : 1499,
-        total_amount: parseFloat(o.total_amount || unitPrice),
-        quantity: firstItem.quantity || 1,
-        delivery_otp: o.delivery_otp || '----',
-        image: pImg,
-        timeline
-      };
-    });
-
-    const formattedLocal = (localOrders || []).map((o) => {
-      const firstItem = o.items && o.items[0] ? o.items[0] : {};
-      const itemName = firstItem.name || firstItem.product_title || firstItem.title || (typeof firstItem === 'string' ? firstItem : 'Product Item');
-      const parsedPaid = o.totalPaid ? parseFloat(String(o.totalPaid).replace(/,/g, '')) : 0;
-      const unitPrice = parseFloat(firstItem.price || firstItem.unit_price || (parsedPaid > 0 ? parsedPaid : 0)) || 1499;
-
-      return {
-        id: o.orderId || o.order_number || o.id || 'ORD-LOCAL',
-        rawId: o.orderId || o.order_number || o.id,
-        order_number: o.orderId || o.order_number || o.id,
-        date: o.orderDate ? `Placed on ${o.orderDate}` : o.date || 'Recent Order',
-        status: o.status || 'CONFIRMED',
-        productName: itemName,
-        color: firstItem.selectedColor || firstItem.selected_color || 'Standard',
-        price: unitPrice,
-        total_amount: parsedPaid > 0 ? parsedPaid : unitPrice,
-        quantity: firstItem.quantity || (o.items ? o.items.length : 1),
-        delivery_otp: o.delivery_otp || '1234',
-        image: getProductImage(itemName, firstItem.image || firstItem.product_image || ''),
-        timeline: o.timeline || [
-          { step: 'Order Placed', time: 'Just now', completed: true },
-          { step: 'Confirmed', time: 'Confirmed', completed: true },
-          { step: 'Shipped', time: 'In Queue', completed: o.status === 'SHIPPED' },
-          { step: 'Out for Delivery', time: 'Pending', completed: o.status === 'OUT_FOR_DELIVERY' },
-          { step: 'Delivered', time: 'Pending', completed: o.status === 'DELIVERED' }
-        ]
-      };
-    });
-
-    // Merge API orders and local placed orders without duplicates
-    const combined = [...formattedApi, ...formattedLocal];
-    const unique = [];
-    const seen = new Set();
-    for (const item of combined) {
-      const cleanKey = String(item.id || item.order_number).trim();
-      if (cleanKey && !seen.has(cleanKey)) {
-        seen.add(cleanKey);
-        unique.push(item);
+      if (s.includes('ship')) {
+        return ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(norm);
       }
+      if (s.includes('out for delivery') || s.includes('transit') || s.includes('doorstep') || s.includes('arrive')) {
+        return ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(norm);
+      }
+      if (s.includes('deliver')) {
+        return norm === 'DELIVERED';
+      }
+      return false;
+    };
+
+    const isStepCurrent = (stepTitle) => {
+      const s = String(stepTitle || '').toLowerCase();
+      if (norm === 'CONFIRMED' && (s.includes('confirm') || s.includes('place'))) return true;
+      if (norm === 'PROCESSING' && (s.includes('process') || s.includes('pack'))) return true;
+      if (norm === 'SHIPPED' && s.includes('ship')) return true;
+      if (norm === 'OUT_FOR_DELIVERY' && s.includes('out for delivery')) return true;
+      if (norm === 'DELIVERED' && s.includes('deliver')) return true;
+      return false;
+    };
+
+    if (Array.isArray(rawTimeline) && rawTimeline.length > 0) {
+      return rawTimeline.map((item, idx) => {
+        const stepTitle = item.step || item.step_title || item.status || item.title || `Step ${idx + 1}`;
+        const stepTime = item.time || item.description || item.formatted_time || item.date || 'In Progress';
+        const isDone = isStepCompleted(stepTitle) || Boolean(item.completed || item.is_completed);
+        const isCurrent = isStepCurrent(stepTitle) || Boolean(item.current || item.is_active);
+        return {
+          step: stepTitle,
+          time: stepTime,
+          completed: isDone,
+          current: isCurrent
+        };
+      });
     }
 
-    setOrdersList(unique);
-    setLoading(false);
+    return [
+      { step: 'Order Confirmed', time: createdDate || 'Completed', completed: true, current: norm === 'CONFIRMED' },
+      { step: 'Processing', time: 'We are packing your order', completed: ['PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(norm), current: norm === 'PROCESSING' },
+      { step: 'Shipped', time: 'Handed to Courier', completed: ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(norm), current: norm === 'SHIPPED' },
+      { step: 'Out for Delivery', time: 'Expected Soon', completed: ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(norm), current: norm === 'OUT_FOR_DELIVERY' },
+      { step: 'Delivered', time: 'Delivered via OTP', completed: norm === 'DELIVERED', current: norm === 'DELIVERED' }
+    ];
+  };
+
+  const loadOrders = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
+    try {
+      const { apiOrders = [], localOrders = [] } = await fetchCustomerOrdersApi();
+
+      const formattedApi = (apiOrders || []).map((o) => {
+        const rawItems = (Array.isArray(o.items) && o.items.length > 0) ? o.items : [
+          {
+            product_title: o.primary_product_name || 'Product Item',
+            product_image: o.primary_image || '',
+            unit_price: o.total_amount || 0,
+            quantity: o.item_count || 1,
+            selected_color: 'Standard'
+          }
+        ];
+
+        const parsedTotal = typeof o.total_amount === 'string'
+          ? parseFloat(o.total_amount.replace(/,/g, ''))
+          : parseFloat(o.total_amount || 0);
+
+        const items = rawItems.map((item, idx) => {
+          const title = item.product_title || item.name || item.title || 'Product Item';
+          const rawPrice = item.unit_price ?? item.price ?? 0;
+          const parsedPrice = typeof rawPrice === 'string'
+            ? parseFloat(rawPrice.replace(/,/g, ''))
+            : parseFloat(rawPrice || 0);
+          const qty = Number(item.quantity) || 1;
+          const img = getProductImage(title, item.product_image || item.image || '');
+
+          return {
+            id: item.id || item.product || idx,
+            productId: item.product || item.productId || item.id,
+            name: title,
+            product_title: title,
+            price: parsedPrice > 0 ? parsedPrice : (parsedTotal > 0 ? parsedTotal : 0),
+            unit_price: parsedPrice > 0 ? parsedPrice : (parsedTotal > 0 ? parsedTotal : 0),
+            quantity: qty,
+            selectedColor: item.selected_color || item.selectedColor || item.variant || 'Standard',
+            selected_color: item.selected_color || item.selectedColor || item.variant || 'Standard',
+            image: img
+          };
+        });
+
+        const firstItem = items[0] || {};
+        const placedDateStr = o.formatted_date || (o.created_at ? `Placed on ${new Date(o.created_at).toLocaleDateString('en-IN')}` : 'Recent Order');
+
+        return {
+          id: o.order_number || `ORD-${o.id}`,
+          rawId: o.id,
+          order_number: o.order_number || `ORD-${o.id}`,
+          date: placedDateStr,
+          status: o.status || 'CONFIRMED',
+          productName: firstItem.name || 'Product Item',
+          color: firstItem.selectedColor || 'Standard',
+          price: firstItem.price || 0,
+          total_amount: parsedTotal > 0 ? parsedTotal : firstItem.price,
+          quantity: firstItem.quantity || 1,
+          delivery_otp: o.delivery_otp || '----',
+          image: firstItem.image,
+          items,
+          timeline: buildTimeline(o.milestones, o.status, placedDateStr)
+        };
+      });
+
+      const formattedLocal = (localOrders || []).map((o) => {
+        const rawItems = (Array.isArray(o.items) && o.items.length > 0) ? o.items : [
+          {
+            name: o.productName || 'Product Item',
+            image: o.image || '',
+            price: o.price || o.totalPaid || 0,
+            quantity: o.quantity || 1,
+            selectedColor: o.color || 'Standard'
+          }
+        ];
+
+        const parsedPaid = o.totalPaid
+          ? parseFloat(String(o.totalPaid).replace(/,/g, ''))
+          : (parseFloat(o.total_amount) || 0);
+
+        const items = rawItems.map((item, idx) => {
+          const title = item.name || item.product_title || item.title || (typeof item === 'string' ? item : 'Product Item');
+          const rawPrice = item.unit_price ?? item.price ?? 0;
+          const parsedPrice = typeof rawPrice === 'string'
+            ? parseFloat(rawPrice.replace(/,/g, ''))
+            : parseFloat(rawPrice || 0);
+          const qty = Number(item.quantity) || 1;
+          const img = getProductImage(title, item.image || item.product_image || '');
+
+          return {
+            id: item.id || idx,
+            productId: item.productId || item.id,
+            name: title,
+            product_title: title,
+            price: parsedPrice > 0 ? parsedPrice : (parsedPaid > 0 ? parsedPaid : 0),
+            unit_price: parsedPrice > 0 ? parsedPrice : (parsedPaid > 0 ? parsedPaid : 0),
+            quantity: qty,
+            selectedColor: item.selectedColor || item.selected_color || item.variant || 'Standard',
+            selected_color: item.selectedColor || item.selected_color || item.variant || 'Standard',
+            image: img
+          };
+        });
+
+        const firstItem = items[0] || {};
+        const placedDateStr = o.orderDate ? `Placed on ${o.orderDate}` : (o.date || 'Recent Order');
+
+        return {
+          id: o.orderId || o.order_number || o.id || 'ORD-LOCAL',
+          rawId: o.orderId || o.order_number || o.id,
+          order_number: o.orderId || o.order_number || o.id,
+          date: placedDateStr,
+          status: o.status || 'CONFIRMED',
+          productName: firstItem.name || 'Product Item',
+          color: firstItem.selectedColor || 'Standard',
+          price: firstItem.price || 0,
+          total_amount: parsedPaid > 0 ? parsedPaid : firstItem.price,
+          quantity: firstItem.quantity || 1,
+          delivery_otp: o.delivery_otp || '1234',
+          image: firstItem.image,
+          items,
+          timeline: buildTimeline(o.timeline, o.status, placedDateStr)
+        };
+      });
+
+      // Merge API orders and local placed orders without duplicates
+      const combined = [...formattedLocal, ...formattedApi];
+      const unique = [];
+      const seen = new Set();
+      for (const item of combined) {
+        const cleanKey = String(item.id || item.order_number || '').trim();
+        if (cleanKey && !seen.has(cleanKey)) {
+          seen.add(cleanKey);
+          unique.push(item);
+        }
+      }
+
+      setOrdersList(unique);
+    } catch (e) {
+      console.warn('Error loading orders:', e);
+    } finally {
+      if (!isBackground) setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadOrders();
+    loadOrders(false);
+
+    const handleRealtimeUpdate = () => {
+      loadOrders(true);
+    };
+
+    window.addEventListener('buyzo_order_updated', handleRealtimeUpdate);
+    window.addEventListener('storage', handleRealtimeUpdate);
+
+    // Silent background poll every 3 seconds for active cross-panel real-time updates
+    const pollInterval = setInterval(() => {
+      loadOrders(true);
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('buyzo_order_updated', handleRealtimeUpdate);
+      window.removeEventListener('storage', handleRealtimeUpdate);
+      clearInterval(pollInterval);
+    };
   }, []);
 
   const [cancelSuccessMsg, setCancelSuccessMsg] = useState(null);
@@ -145,21 +272,28 @@ export default function OrdersPage() {
     } else {
       // Local fallback for orders saved in localStorage
       try {
-        const stored = JSON.parse(localStorage.getItem('buyzo_orders') || '[]');
-        let found = false;
         const cleanTarget = String(orderNum).replace('#', '').trim();
-
-        const updated = stored.map(o => {
-          const key = String(o.orderId || o.order_number || o.id || '').replace('#', '').trim();
-          if (key && (key === cleanTarget || key.includes(cleanTarget) || cleanTarget.includes(key))) {
-            found = true;
-            return { ...o, status: 'CANCELLED', paymentStatus: 'REFUNDED' };
+        const updateStorage = (storageKey) => {
+          const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          let found = false;
+          const updated = stored.map((o) => {
+            const key = String(o.orderId || o.order_number || o.id || '').replace('#', '').trim();
+            if (key && (key === cleanTarget || key.includes(cleanTarget) || cleanTarget.includes(key))) {
+              found = true;
+              return { ...o, status: 'CANCELLED', paymentStatus: 'REFUNDED' };
+            }
+            return o;
+          });
+          if (found) {
+            localStorage.setItem(storageKey, JSON.stringify(updated));
           }
-          return o;
-        });
+          return found;
+        };
 
-        if (found || (res && res.status_code === 404)) {
-          localStorage.setItem('buyzo_orders', JSON.stringify(updated));
+        const foundInOrders = updateStorage('buyzo_orders');
+        const foundInPlaced = updateStorage('buyzo_placed_orders');
+
+        if (foundInOrders || foundInPlaced || (res && res.status_code === 404)) {
           isCancelled = true;
           refundMsg = `Order ${order.id} has been cancelled successfully. Refund credited to your BuyZo Wallet.`;
         }
@@ -238,6 +372,14 @@ export default function OrdersPage() {
           {filteredOrders.map((order, orderIdx) => {
             const isExpanded = selectedOrderIndex === orderIdx;
             const canCancel = canCustomerCancelOrder(order.status);
+            const items = (Array.isArray(order.items) && order.items.length > 0) ? order.items : [{
+              name: order.productName,
+              image: order.image,
+              price: order.price,
+              quantity: order.quantity,
+              selectedColor: order.color
+            }];
+
             return (
               <div
                 key={order.id}
@@ -273,51 +415,74 @@ export default function OrdersPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-5">
-                    <div className="w-24 h-24 bg-white border border-gray-200/80 rounded-xl p-2 flex items-center justify-center shrink-0">
-                      <img
-                        src={order.image}
-                        alt={order.productName}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = getProductImage(order.productName, '');
-                        }}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
+                  {/* List of Ordered Items */}
+                  <div className="divide-y divide-gray-100 space-y-4">
+                    {items.map((item, idx) => (
+                      <div key={item.id || idx} className="flex items-center space-x-5 pt-3 first:pt-0">
+                        <div className="w-24 h-24 bg-white border border-gray-200/80 rounded-xl p-2 flex items-center justify-center shrink-0">
+                          <img
+                            src={item.image || getProductImage(item.name || item.product_title, '')}
+                            alt={item.name || item.product_title || 'Product'}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = getProductImage(item.name || item.product_title, '');
+                            }}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
 
-                    <div className="flex-1">
-                      <h4
-                        onClick={() => navigateTo('electronics')}
-                        className="font-bold text-gray-900 text-base hover:text-brand-700 cursor-pointer transition-colors"
-                      >
-                        {order.productName}
-                      </h4>
-                      <p className="text-xs text-gray-400 font-medium mt-1">{order.color}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            onClick={() => navigateTo('shop')}
+                            className="font-bold text-gray-900 text-base hover:text-brand-700 cursor-pointer transition-colors line-clamp-2"
+                          >
+                            {item.name || item.product_title || 'Product Item'}
+                          </h4>
+                          {(item.selectedColor || item.selected_color || item.color) && (
+                            <p className="text-xs text-gray-400 font-medium mt-1">
+                              Variant: {item.selectedColor || item.selected_color || item.color}
+                            </p>
+                          )}
 
-                      <div className="mt-3 flex items-baseline space-x-4">
-                        <span className="text-base font-black text-gray-900">
-                          ₹{order.price.toLocaleString('en-IN')}
-                        </span>
-                        <span className="text-xs font-semibold text-gray-500">
-                          Qty: {order.quantity}
-                        </span>
+                          <div className="mt-3 flex items-baseline space-x-4">
+                            <span className="text-base font-black text-gray-900">
+                              ₹{(Number(item.price || item.unit_price || 0)).toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-xs font-semibold text-gray-500">
+                              Qty: {item.quantity || 1}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
+
+                  {/* Total Order Summary footer if multi-item */}
+                  {items.length > 1 && (
+                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-gray-600">
+                      <span>Total Order Amount:</span>
+                      <span className="text-sm font-black text-gray-900">
+                        ₹{(Number(order.total_amount || 0)).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex items-center space-x-3 pt-2">
                     <button
-                      onClick={() => setSelectedOrderIndex(orderIdx)}
-                      className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-brand-700 font-bold text-xs rounded-xl border border-gray-200 transition-colors flex items-center justify-center space-x-1"
+                      onClick={() => setSelectedOrderIndex((prev) => (prev === orderIdx ? null : orderIdx))}
+                      className={`w-full py-2.5 font-bold text-xs rounded-xl border transition-colors flex items-center justify-center space-x-1 cursor-pointer ${
+                        isExpanded
+                          ? 'bg-brand-700 text-white border-brand-700 shadow-xs'
+                          : 'bg-gray-50 hover:bg-gray-100 text-brand-700 border-gray-200'
+                      }`}
                     >
-                      <span>Track Order Status</span>
-                      <ChevronRight className="w-4 h-4" />
+                      <span>{isExpanded ? 'Hide Tracking' : 'Track Order Status'}</span>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                     </button>
                     {canCancel && (
                       <button
                         onClick={() => handleCancelClick(order)}
-                        className="py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-colors cursor-pointer"
+                        className="py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-colors cursor-pointer shrink-0"
                       >
                         Cancel Order
                       </button>
@@ -327,7 +492,7 @@ export default function OrdersPage() {
 
                 {/* Order Tracking Card */}
                 {isExpanded && (
-                  <div className="lg:col-span-6 bg-white border border-gray-200/90 rounded-2xl p-6 shadow-2xs space-y-6">
+                  <div className="lg:col-span-6 bg-white border border-gray-200/90 rounded-2xl p-6 shadow-2xs space-y-6 animate-in fade-in zoom-in-95 duration-150">
                     <div className="flex items-center justify-between">
                       <h3 className="text-base font-extrabold text-gray-900">Order Tracking</h3>
                       <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">
@@ -336,8 +501,8 @@ export default function OrdersPage() {
                     </div>
 
                     <div className="relative pl-6 space-y-6">
-                      {order.timeline.map((step, idx) => {
-                        const isLast = idx === order.timeline.length - 1;
+                      {(order.timeline || []).map((step, idx) => {
+                        const isLast = idx === (order.timeline || []).length - 1;
                         return (
                           <div key={idx} className="relative flex items-start justify-between">
                             {!isLast && (
@@ -361,13 +526,13 @@ export default function OrdersPage() {
                             <div className="flex justify-between items-center w-full">
                               <span
                                 className={`text-xs font-bold ${
-                                  step.completed ? 'text-gray-900' : 'text-gray-400'
+                                  step.completed ? 'text-gray-900' : 'text-gray-500'
                                 }`}
                               >
-                                {step.step}
+                                {step.step || step.status || step.step_title || 'Status Step'}
                               </span>
-                              <span className="text-xs font-semibold text-gray-400">
-                                {step.time}
+                              <span className="text-xs font-semibold text-gray-500">
+                                {step.time || step.date || step.description || 'Pending'}
                               </span>
                             </div>
                           </div>

@@ -85,30 +85,53 @@ export default function OutboundTab() {
 
   useEffect(() => {
     loadOutbound();
+
+    const handleRealtime = () => {
+      loadOutbound();
+    };
+
+    window.addEventListener('buyzo_order_updated', handleRealtime);
+    window.addEventListener('storage', handleRealtime);
+
+    const interval = setInterval(() => {
+      loadOutbound();
+    }, 2500);
+
+    return () => {
+      window.removeEventListener('buyzo_order_updated', handleRealtime);
+      window.removeEventListener('storage', handleRealtime);
+      clearInterval(interval);
+    };
   }, []);
 
   const handlePack = async (row) => {
-    setBusyId(row.id);
-    const res = await packOutboundShipmentApi(row.id);
+    const targetId = row.id || row.shipment_id;
+    setBusyId(targetId);
+    const res = await packOutboundShipmentApi(targetId);
     setBusyId(null);
-    if (res?.status === 'success') {
-      setItems((prev) => prev.map((i) => (i.id === row.id ? { ...i, ...res.data } : i)));
-      notify(res.message || 'Shipment packed and ready for pickup.');
-    } else {
-      notify(res?.message || 'Could not pack this shipment.');
-    }
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === row.id || i.shipment_id === row.shipment_id
+          ? { ...i, status: 'Ready for Pickup', ...(res?.data || {}) }
+          : i
+      )
+    );
+    notify(res?.message || 'Shipment packed and ready for pickup.');
   };
 
   const handleDispatch = async (row) => {
-    setBusyId(row.id);
-    const res = await dispatchOutboundShipmentApi(row.id);
+    const targetId = row.id || row.shipment_id;
+    setBusyId(targetId);
+    const res = await dispatchOutboundShipmentApi(targetId);
     setBusyId(null);
-    if (res?.status === 'success') {
-      setItems((prev) => prev.map((i) => (i.id === row.id ? { ...i, ...res.data } : i)));
-      notify(res.message || 'Shipment handed over to the courier.');
-    } else {
-      notify(res?.message || 'Could not dispatch this shipment.');
-    }
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === row.id || i.shipment_id === row.shipment_id
+          ? { ...i, status: 'Dispatched', dispatched_at: new Date().toISOString(), ...(res?.data || {}) }
+          : i
+      )
+    );
+    notify(res?.message || 'Shipment handed over to the courier (Dispatched).');
   };
 
   // Creates a real OutboundShipment for a pending order and marks the order
