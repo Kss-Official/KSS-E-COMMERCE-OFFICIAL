@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
-import { getCurrentUser, logoutUser, fetchCategories, fetchSearchSuggestions, fetchProducts, fetchUserWalletApi } from '../../services/api';
+import { getCurrentUser, logoutUser, fetchCurrentUserApi, fetchCategories, fetchSearchSuggestions, fetchProducts, fetchUserWalletApi } from '../../services/api';
 import WalletModal from '../WalletModal';
 import { getProductImage } from '../../utils/productAssets';
 import { ROLES, normalizeRole } from '../../utils/roles';
@@ -208,14 +208,14 @@ const searchProductsCatalog = [
     price: 7999,
     originalPrice: 12999,
     image: loungeChairImg,
-    keywords: ['chair', 'furniture', 'lounge', 'armchair', 'home', 'sofa', 'teal']
+    keywords: ['chair', 'furniture', 'teal', 'lounge', 'living']
   },
   {
     id: 'search-11',
-    name: 'Safari Venture Casual Backpack',
+    name: 'Safari Casual Daypack Teal Backpack',
     category: 'Bags & Luggage',
-    price: 1299,
-    originalPrice: 2199,
+    price: 1199,
+    originalPrice: 2499,
     image: tealBackpackImg,
     keywords: ['bag', 'backpack', 'safari', 'travel', 'luggage', 'casual']
   },
@@ -240,7 +240,30 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
-  const userName = currentUser?.name || currentUser?.first_name || currentUser?.email?.split('@')[0] || 'Customer';
+
+  const userFirstName = currentUser?.first_name || currentUser?.profile?.first_name || (currentUser?.name ? currentUser.name.split(' ')[0] : '') || (currentUser?.email ? currentUser.email.split('@')[0] : '');
+  const userName = currentUser?.name || currentUser?.profile?.full_name || [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || currentUser?.email?.split('@')[0] || 'Customer';
+
+  // Listen to auth changes dynamically
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const u = getCurrentUser();
+      setCurrentUser(u);
+    };
+
+    window.addEventListener('buyzo_auth_change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    // Refresh user profile from backend on mount
+    fetchCurrentUserApi().then((fresh) => {
+      if (fresh) setCurrentUser(fresh);
+    }).catch(() => {});
+
+    return () => {
+      window.removeEventListener('buyzo_auth_change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -267,6 +290,7 @@ export default function Header() {
   const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
   const searchRef = useRef(null);
   const categoryDropdownRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -276,6 +300,9 @@ export default function Header() {
       }
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
         setIsCatDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -584,41 +611,48 @@ export default function Header() {
         )}
       </div>
 
-      {/* Right Side Icons & Account - Matched to Image */}
+      {/* Right Side Icons & Account */}
       <div className="flex items-center space-x-3 sm:space-x-8 shrink-0">
         {/* User Account */}
-        <div
-          onClick={() => navigateTo('login')}
-          className="flex items-center space-x-2.5 cursor-pointer group"
-          title="Click to Login"
-        >
-          <div className="p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
-            <User className="w-7 h-7 stroke-[1.8]" />
+        <div ref={userMenuRef} className="relative">
+          <div
+            onClick={() => {
+              if (currentUser) {
+                setIsUserMenuOpen((prev) => !prev);
+              } else {
+                navigateTo('login');
+              }
+            }}
+            className="flex items-center space-x-2.5 cursor-pointer group select-none"
+            title={currentUser ? `Signed in as ${userName}` : 'Click to Login'}
+          >
+            <div className="p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
+              <User className="w-7 h-7 stroke-[1.8]" />
+            </div>
+            {currentUser ? (
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-[12px] text-gray-500 font-normal leading-tight">
+                  Hello, {userFirstName || 'there'}
+                </span>
+                <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
+                  <span className="max-w-[120px] truncate">{userName}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5 transition-transform duration-200 ${
+                      isUserMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-[12px] text-gray-500 font-normal leading-tight">Welcome Guest</span>
+                <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
+                  <span>Login / Account</span>
+                  <ChevronDown className="w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5" />
+                </div>
+              </div>
+            )}
           </div>
-          {currentUser ? (
-            <div className="hidden sm:flex flex-col text-left">
-            <span className="text-[12px] text-gray-500 font-normal leading-tight">Welcome Guest</span>
-            <div className="flex items-center space-x-0.5 text-sm font-bold text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
-              <span>Login / Account</span>
-              <ChevronDown className="w-4 h-4 text-gray-700 stroke-[2.2] ml-0.5" />
-            </div>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => navigateTo('login')}
-                className="px-3.5 py-1.5 border border-[#0d5c46] text-[#0d5c46] hover:bg-emerald-50 rounded-xl font-extrabold text-xs transition-all cursor-pointer shadow-2xs"
-              >
-                Log In
-              </button>
-              <button
-                onClick={() => navigateTo('login', 'signup')}
-                className="px-4 py-1.5 bg-[#0d5c46] hover:bg-[#063328] text-white rounded-xl font-extrabold text-xs transition-all cursor-pointer shadow-xs"
-              >
-                Sign Up
-              </button>
-            </div>
-          )}
 
           {/* User Account Dropdown Menu */}
           {currentUser && isUserMenuOpen && (

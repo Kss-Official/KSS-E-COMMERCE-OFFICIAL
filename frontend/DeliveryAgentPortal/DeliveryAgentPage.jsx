@@ -46,14 +46,14 @@ export default function DeliveryAgentPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50/70 font-sans antialiased text-gray-800">
+    <div className="flex h-screen overflow-hidden bg-gray-50/70 font-sans antialiased text-gray-800">
       {/* Delivery Agent Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onExitPortal={handleExitPortal} />
 
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         <Topbar title={activeTab} onExitPortal={handleExitPortal} setActiveTab={setActiveTab} />
-        <main className="portal-main p-6 md:p-8 flex-1 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className="portal-main p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto">
           {renderActiveTab()}
         </main>
       </div>

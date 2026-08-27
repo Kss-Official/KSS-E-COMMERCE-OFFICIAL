@@ -5,6 +5,7 @@ import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { fetchProducts } from '../services/api';
 import { getProductImage } from '../utils/productAssets';
+import CartButton from '../components/ui/CartButton';
 
 // Import images
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -361,7 +362,7 @@ export default function ElectronicsPage() {
       {/* Main Content Layout: Sidebar + Products */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Left Sidebar */}
-        <aside className="lg:col-span-1 space-y-4">
+        <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
           {/* Categories Card */}
           <div className="bg-cream border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
             <h3 className="text-sm font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
@@ -593,16 +594,10 @@ export default function ElectronicsPage() {
                       </div>
                     </div>
 
-                    {/* Add to Cart Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToCart(product);
-                      }}
-                      className="w-full mt-3 py-2.5 px-4 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] flex items-center justify-center space-x-1.5"
-                    >
-                      <span>Add to Cart</span>
-                    </button>
+                    {/* Interactive Cart Button */}
+                    <div className="mt-3 w-full">
+                      <CartButton product={product} />
+                    </div>
                   </div>
                 </div>
               ))}

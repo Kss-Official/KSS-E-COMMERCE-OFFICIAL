@@ -63,25 +63,26 @@ export default function OrdersPage() {
       };
     });
 
-    const formattedLocal = (localOrders || []).map(o => {
+    const formattedLocal = (localOrders || []).map((o) => {
       const firstItem = o.items && o.items[0] ? o.items[0] : {};
-      const itemName = firstItem.name || 'Product Item';
-      const unitPrice = parseFloat(firstItem.price || firstItem.unit_price || (o.totalPaid && o.totalPaid > 100 ? o.totalPaid : 0)) || (itemName.includes('boAt') ? 1499 : itemName.includes('Denim') || itemName.includes('Jacket') ? 2499 : 1499);
+      const itemName = firstItem.name || firstItem.product_title || firstItem.title || (typeof firstItem === 'string' ? firstItem : 'Product Item');
+      const parsedPaid = o.totalPaid ? parseFloat(String(o.totalPaid).replace(/,/g, '')) : 0;
+      const unitPrice = parseFloat(firstItem.price || firstItem.unit_price || (parsedPaid > 0 ? parsedPaid : 0)) || 1499;
 
       return {
-        id: o.orderId || o.id || 'ORD-LOCAL',
-        rawId: o.orderId || o.id,
-        order_number: o.orderId || o.id,
-        date: o.date || 'Recent Order',
+        id: o.orderId || o.order_number || o.id || 'ORD-LOCAL',
+        rawId: o.orderId || o.order_number || o.id,
+        order_number: o.orderId || o.order_number || o.id,
+        date: o.orderDate ? `Placed on ${o.orderDate}` : o.date || 'Recent Order',
         status: o.status || 'CONFIRMED',
         productName: itemName,
-        color: firstItem.selectedColor || 'Standard',
+        color: firstItem.selectedColor || firstItem.selected_color || 'Standard',
         price: unitPrice,
-        total_amount: parseFloat(o.total || o.totalPaid || unitPrice),
+        total_amount: parsedPaid > 0 ? parsedPaid : unitPrice,
         quantity: firstItem.quantity || (o.items ? o.items.length : 1),
-        delivery_otp: o.delivery_otp || '4590',
-        image: getProductImage(itemName, firstItem.image || ''),
-        timeline: [
+        delivery_otp: o.delivery_otp || '1234',
+        image: getProductImage(itemName, firstItem.image || firstItem.product_image || ''),
+        timeline: o.timeline || [
           { step: 'Order Placed', time: 'Just now', completed: true },
           { step: 'Confirmed', time: 'Confirmed', completed: true },
           { step: 'Shipped', time: 'In Queue', completed: o.status === 'SHIPPED' },

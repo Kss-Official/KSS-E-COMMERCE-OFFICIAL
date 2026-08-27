@@ -7,9 +7,13 @@ export async function fetchTopCategories() {
     { id: 3, name: 'Electronics', slug: 'electronics' },
     { id: 4, name: 'Fashion', slug: 'fashion' },
     { id: 5, name: 'Home & Kitchen', slug: 'home-kitchen' },
-    { id: 6, name: 'Beauty', slug: 'beauty' },
-    { id: 7, name: 'Footwear', slug: 'footwear' },
-    { id: 8, name: 'Bags & Luggage', slug: 'bags-luggage' },
+    { id: 6, name: 'Chairs & Furniture', slug: 'chairs-furniture' },
+    { id: 7, name: 'Sports & Fitness', slug: 'sports-fitness' },
+    { id: 8, name: 'Appliances', slug: 'appliances' },
+    { id: 9, name: 'Books & More', slug: 'books-more' },
+    { id: 10, name: 'Beauty', slug: 'beauty' },
+    { id: 11, name: 'Footwear', slug: 'footwear' },
+    { id: 12, name: 'Bags & Luggage', slug: 'bags-luggage' },
   ];
 }
 

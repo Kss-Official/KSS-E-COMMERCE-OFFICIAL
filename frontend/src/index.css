@@ -21,7 +21,7 @@
   --color-crimson-900: #4a0e17;
   --color-night: #1a1030;
   --color-night-800: #2a1d4a;
-  --color-cream: #faf7f2;
+  --color-cream: #ffffff;
   --color-ink: #1f2937;
 
   --font-display: "Rubik", ui-sans-serif, system-ui, sans-serif;
@@ -79,7 +79,7 @@ body,
 #root {
   width: 100%;
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 img,
@@ -88,7 +88,7 @@ svg {
 }
 
 body {
-  @apply bg-cream text-ink font-sans antialiased;
+  @apply bg-white text-ink font-sans antialiased;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -129,3 +129,27 @@ body {
 .from-night-800 { --tw-gradient-from: var(--color-night-800); }
 .via-night { --tw-gradient-via: var(--color-night); }
 .to-night { --tw-gradient-to: var(--color-night); }
+
+/* Hide scrollbar visually while keeping full scroll functionality */
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes drawCheck {
+  0% { stroke-dashoffset: 50; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes popScale {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}

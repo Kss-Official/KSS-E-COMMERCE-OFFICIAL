@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Warehouse, Bell, Calendar, Store, ChevronDown, AlertTriangle, X } from 'lucide-react';
+import { Warehouse, Bell, Calendar, Store, AlertTriangle, X } from 'lucide-react';
 import { fetchWarehouseSummaryApi, fetchWarehouseAlertsApi } from '../../src/services/api';
+import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
-export default function Topbar({ title, onExitPortal }) {
+export default function Topbar({ title, onExitPortal, setActiveTab }) {
   const [summary, setSummary] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [showAlerts, setShowAlerts] = useState(false);
@@ -24,19 +25,12 @@ export default function Topbar({ title, onExitPortal }) {
   }, []);
 
   const operatorName = summary?.operator_name || 'Warehouse Operator';
-  const initials = operatorName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
 
   return (
     <header className="bg-white border-b border-gray-200 py-3.5 px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
       {/* Title */}
       <div className="flex items-center space-x-3">
-        <div className="p-2 rounded-xl bg-blue-50 text-blue-900">
+        <div className="p-2 rounded-xl bg-[#dbeafe] text-[#1D4ED8]">
           <Warehouse className="w-5 h-5" />
         </div>
         <h1 className="text-xl font-bold text-gray-900 capitalize">
@@ -48,18 +42,17 @@ export default function Topbar({ title, onExitPortal }) {
       <div className="flex items-center space-x-4">
         {/* Date */}
         <div className="hidden sm:flex items-center space-x-2 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-700">
-          <Calendar className="w-3.5 h-3.5 text-blue-800" />
+          <Calendar className="w-3.5 h-3.5 text-[#1D4ED8]" />
           <span>
             {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
         </div>
 
         {/* Return to Store */}
         {onExitPortal && (
           <button
             onClick={onExitPortal}
-            className="hidden sm:flex items-center space-x-1.5 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center space-x-1.5 text-xs font-bold text-[#1D4ED8] bg-[#dbeafe] hover:bg-[#bfdbfe] px-3 py-1.5 rounded-xl border border-[#3B82F6]/30 transition-colors cursor-pointer"
           >
             <Store className="w-3.5 h-3.5" />
             <span>Store View</span>
@@ -121,18 +114,18 @@ export default function Topbar({ title, onExitPortal }) {
           )}
         </div>
 
-        {/* Warehouse Manager Profile */}
-        <div className="flex items-center space-x-3 pl-3 border-l border-gray-200 cursor-pointer">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-700 to-cyan-500 text-white flex items-center justify-center text-xs font-black border border-blue-500 shadow-xs shrink-0">
-            {initials || 'WH'}
-          </div>
-          <div className="hidden md:flex flex-col text-left">
-            <span className="text-xs font-bold text-gray-900 leading-tight">{operatorName}</span>
-            <span className="text-[10px] text-gray-500 font-medium leading-tight">
-              Warehouse Manager &middot; {summary?.warehouse_code || 'WH01'}
-            </span>
-          </div>
-          <ChevronDown className="w-3.5 h-3.5 text-gray-500 hidden md:block" />
+        {/* Warehouse Manager Profile Dropdown */}
+        <div className="pl-3 border-l border-gray-200">
+          <ProfileDropdown
+            user={{
+              name: operatorName,
+              designation: `Warehouse Manager (${summary?.warehouse_code || 'WH01'})`,
+              avatar: summary?.avatar
+            }}
+            setActiveTab={setActiveTab}
+            onLogout={onExitPortal}
+            portalType="warehouse"
+          />
         </div>
       </div>
     </header>

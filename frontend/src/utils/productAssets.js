@@ -22,6 +22,10 @@ import usPoloTshirtImg from '../assets/images/us_polo_tshirt.jpg';
 import womenDressImg from '../assets/images/women_dress.jpg';
 import tealBackpackImg from '../assets/images/teal_backpack.jpg';
 import redmiNote13Img from '../assets/images/redmi_note13.jpg';
+import richDadPoorDadImg from '../assets/images/rich_dad_poor_dad.png';
+import atomicHabitsImg from '../assets/images/atomic_habits.png';
+import bookIkigaiImg from '../assets/images/book_ikigai.jpg';
+import boldfitShakerImg from '../assets/images/boldfit_shaker.jpg';
 
 // Additional Fashion, Beauty, Mobile & Accessories Images
 import fashionChinosImg from '../assets/images/fashion_chinos.jpg';
@@ -63,21 +67,9 @@ import nothingPhone2Img from '../assets/images/nothing_phone_2.jpg';
 import vivoV30ProImg from '../assets/images/vivo_v30_pro.jpg';
 
 export function getProductImage(name = '', existingImage = '') {
-  if (
-    existingImage &&
-    typeof existingImage === 'string' &&
-    existingImage.trim() !== '' &&
-    !existingImage.includes('undefined') &&
-    !existingImage.includes('null') &&
-    existingImage !== 'null' &&
-    (existingImage.startsWith('http') || existingImage.startsWith('data:') || existingImage.startsWith('/'))
-  ) {
-    return existingImage;
-  }
-
   const n = (name || '').toLowerCase();
 
-  // ----------------- MOBILITY & SMARTPHONES -----------------
+  // 1. SMARTPHONES & MOBILITY
   if (n.includes('s24 ultra') || n.includes('s24')) return samsungS24UltraImg;
   if (n.includes('iphone 15 pro') || n.includes('15 pro')) return iphone15ProImg;
   if (n.includes('iphone') || n.includes('apple iphone')) return appleIphone15Img;
@@ -88,95 +80,90 @@ export function getProductImage(name = '', existingImage = '') {
   if (n.includes('vivo v30') || n.includes('vivo')) return vivoV30ProImg;
   if (n.includes('redmi') || n.includes('note 13') || n.includes('realme') || n.includes('smartphone')) return redmiNote13Img;
 
-  // ----------------- COMPUTERS & LAPTOPS -----------------
+  // 2. COMPUTERS & LAPTOPS
   if (n.includes('macbook') || n.includes('apple mac')) return appleMacbookImg;
   if (n.includes('dell') || n.includes('inspiron')) return dellLaptopImg;
   if (n.includes('hp 15s') || n.includes('hp laptop') || (n.includes('hp') && n.includes('laptop'))) return hpLaptopImg;
 
-  // ----------------- AUDIO & WEARABLES -----------------
+  // 3. AUDIO & WEARABLES
   if (n.includes('rockerz') || (n.includes('boat') && (n.includes('headphone') || n.includes('450')))) return boatRockerzImg;
-  if (n.includes('wave call') || n.includes('airdopes') || n.includes('t300') || n.includes('buds')) return boatAirdopesImg;
+  if (n.includes('wave call') || n.includes('airdopes') || n.includes('t300') || n.includes('earbuds')) return boatAirdopesImg;
   if (n.includes('noise') || n.includes('colorfit') || n.includes('smartwatch')) return noiseSmartwatchImg;
   if (n.includes('sony soundbar') || n.includes('ht-s20r')) return sonySoundbarImg;
   if (n.includes('sony') || n.includes('wh-ch510')) return sonyHeadphonesImg;
-  if (n.includes('jbl wave') || n.includes('tws') || n.includes('200')) return jblWaveTwsImg;
+  if (n.includes('jbl wave') || n.includes('tws')) return jblWaveTwsImg;
   if (n.includes('jbl') || n.includes('speaker') || n.includes('flip')) return jblSpeakerImg;
-  if (n.includes('canon') || n.includes('eos')) return cameraCanonImg;
-  if (n.includes('pixel 8 pro') || n.includes('pixel')) return pixel8ProImg;
-  if (n.includes('nothing phone') || n.includes('nothing 2')) return nothingPhone2Img;
-  if (n.includes('vivo v30') || n.includes('v30 pro')) return vivoV30ProImg;
-  if (n.includes('redmi note 13') || n.includes('redmi')) return redmiNote13Img;
-  if (n.includes('iphone 15') || n.includes('iphone')) return appleIphone15Img;
-  if (n.includes('s23') || n.includes('galaxy s23')) return samsungS23Img;
-
-  // ----------------- ELECTRONICS & AUDIO -----------------
-  if (n.includes('rockerz 450') || n.includes('boat rockerz')) return boatRockerzImg;
-  if (n.includes('colorfit pro 5') || n.includes('noise colorfit')) return noiseSmartwatchImg;
-  if (n.includes('wh-ch510') || n.includes('sony headphones')) return sonyHeadphonesImg;
-  if (n.includes('flip essential') || n.includes('jbl flip')) return jblSpeakerImg;
-  if (n.includes('airdopes') || n.includes('boat airdopes')) return boatAirdopesImg;
-  if (n.includes('soundbar') || n.includes('ht-s20r')) return sonySoundbarImg;
-  if (n.includes('wave 200') || n.includes('wave tws')) return jblWaveTwsImg;
-  if (n.includes('wave call 2') || n.includes('smartwatch')) return noiseSmartwatchImg;
-  if (n.includes('buds t300') || n.includes('earbuds')) return boatAirdopesImg;
-  if (n.includes('eos 1500d') || n.includes('canon') || n.includes('dslr')) return cameraCanonImg;
+  if (n.includes('canon') || n.includes('eos') || n.includes('dslr')) return cameraCanonImg;
   if (n.includes('hero 12') || n.includes('gopro')) return goproImg;
 
-  // ----------------- LAPTOPS & COMPUTERS -----------------
-  if (n.includes('macbook') || n.includes('apple macbook')) return appleMacbookImg;
-  if (n.includes('inspiron 15') || n.includes('dell inspiron') || n.includes('dell')) return dellLaptopImg;
-  if (n.includes('hp 15s') || n.includes('hp laptop') || n.includes('hp')) return hpLaptopImg;
+  // 4. BOOKS, STATIONERY & NOTEBOOKS
+  if (n.includes('faber') || n.includes('colour') || n.includes('shade') || n.includes('pencil') || n.includes('crayons') || n.includes('art')) return bookIkigaiImg;
+  if (n.includes('classmate') || n.includes('notebook') || n.includes('spiral') || n.includes('register') || n.includes('paper') || n.includes('atomic habits')) return atomicHabitsImg;
+  if (n.includes('ncert') || n.includes('guide') || n.includes('rich dad') || n.includes('psychology of money') || n.includes('book') || n.includes('edition') || n.includes('housel') || n.includes('clear')) return richDadPoorDadImg;
+  if (n.includes('ikigai')) return bookIkigaiImg;
 
-  // ----------------- BEAUTY & PERSONAL CARE -----------------
-  if (n.includes('niacinamide') || n.includes('clarifying face serum')) return beautyNiacinamideSerumImg;
-  if (n.includes('lipstick') || n.includes('matte liquid velvet')) return beautyMatteLipstickImg;
-  if (n.includes('sunscreen') || n.includes('ultralight sunscreen')) return beautySunscreenGelImg;
-  if (n.includes('argan oil') || n.includes('hair recovery serum')) return beautyArganHairSerumImg;
-  if (n.includes('cc cream') || n.includes('complexion care')) return beautyCcCreamImg;
+  // 5. BEAUTY & PERSONAL CARE
+  if (n.includes('niacinamide') || n.includes('clarifying face serum') || n.includes('serum')) return beautyNiacinamideSerumImg;
+  if (n.includes('lipstick') || n.includes('matte liquid') || n.includes('lip')) return beautyMatteLipstickImg;
+  if (n.includes('sunscreen') || n.includes('gel')) return beautySunscreenGelImg;
+  if (n.includes('argan') || n.includes('hair oil') || n.includes('hair')) return beautyArganHairSerumImg;
+  if (n.includes('cc cream') || n.includes('cream')) return beautyCcCreamImg;
 
-  // ----------------- FASHION & APPAREL -----------------
-  if (n.includes('anarkali') || n.includes('biba')) return bibaKurtaImg;
-  if (n.includes('silk kurti') || n.includes('embellished silk')) return fashionSilkKurtiImg;
+  // 6. FASHION & APPAREL
+  if (n.includes('anarkali') || n.includes('biba') || n.includes('kurta') || n.includes('kurti')) return bibaKurtaImg;
   if (n.includes('dress') || n.includes('a-line') || n.includes('fit & flare') || n.includes('floral')) return womenDressImg;
-  if (n.includes('oxford shirt') || n.includes('casual shirt') || n.includes('roadster')) return roadsterShirtImg;
+  if (n.includes('oxford shirt') || n.includes('casual shirt') || n.includes('roadster') || n.includes('shirt')) return roadsterShirtImg;
   if (n.includes('polo') || n.includes('t-shirt') || n.includes('tshirt')) return usPoloTshirtImg;
-  if (n.includes('chinos') || n.includes('straight fit chinos') || n.includes('pant')) return fashionChinosImg;
-  if (n.includes('jacket') || n.includes('denim jacket') || n.includes('denim')) return fashionDenimJacketImg;
-  if (n.includes('sweatshirt') || n.includes('hoodie') || n.includes('crewneck')) return fashionSweatshirtImg;
+  if (n.includes('chinos') || n.includes('trousers') || n.includes('pant')) return fashionChinosImg;
+  if (n.includes('jacket') || n.includes('denim')) return fashionDenimJacketImg;
+  if (n.includes('sweatshirt') || n.includes('hoodie')) return fashionSweatshirtImg;
 
-  // ----------------- FOOTWEAR -----------------
-  if (n.includes('red tape') || n.includes('streetwear') || n.includes('chunky sole') || n.includes('sneaker')) return fashionStreetSneakersImg;
-  if (n.includes('puma') || n.includes('flyer flex') || n.includes('running') || n.includes('shoes')) return pumaShoesImg;
+  // 7. FOOTWEAR & SHOES
+  if (n.includes('sneaker') || n.includes('streetwear')) return fashionStreetSneakersImg;
+  if (n.includes('puma') || n.includes('flyer flex') || n.includes('running') || n.includes('shoes') || n.includes('shoe')) return pumaShoesImg;
 
-  // ----------------- BAGS & LUGGAGE -----------------
-  if (n.includes('lavie') || n.includes('satchel') || n.includes('handbag') || n.includes('sling')) return lavieHandbagImg;
-  if (n.includes('skybags') || n.includes('backpack') || n.includes('wildcraft') || n.includes('laptop backpack')) return tealBackpackImg;
+  // 8. BAGS & LUGGAGE
+  if (n.includes('lavie') || n.includes('handbag') || n.includes('tote') || n.includes('satchel') || n.includes('purse')) return lavieHandbagImg;
+  if (n.includes('skybags') || n.includes('backpack') || n.includes('wildcraft') || n.includes('luggage') || n.includes('safari')) return tealBackpackImg;
 
-  // ----------------- KITCHEN & COOKWARE -----------------
-  if (n.includes('cooker') || n.includes('pressure cooker') || n.includes('anodized')) return pressureCookerImg;
+  // 9. KITCHEN & HOME APPLIANCES
+  if (n.includes('cookware') || n.includes('induction') || n.includes('casserole') || n.includes('utensil')) return cookwareSetImg;
+  if (n.includes('lamp') || n.includes('pendant') || n.includes('ceiling') || n.includes('light')) return pendantLampImg;
+  if (n.includes('air fryer') || n.includes('fryer')) return airFryerImg;
+  if (n.includes('bedsheet') || n.includes('cotton') || n.includes('pillow')) return cottonBedsheetImg;
+  if (n.includes('cooker') || n.includes('pressure cooker') || n.includes('washing machine') || n.includes('appliance')) return pressureCookerImg;
 
-  // ----------------- LIGHTING & HOME DECOR -----------------
-  if (n.includes('lamp') || n.includes('pendant') || n.includes('ceiling lamp') || n.includes('geometric')) return pendantLampImg;
-
-  // ----------------- FURNITURE & SEATING (100% Unique Per Item) -----------------
-  if (n === 'accent upholstered armchair') return brownLeatherArmchairImg;
-  if (n.includes('modern ergonomic velvet accent armchair')) return emeraldAccentChairImg;
-  if (n.includes('contemporary nordic lounge relaxing recliner chair')) return loungeReclinerImg;
-  if (n.includes('classic velvet ergonomic accent armchair')) return accentChairImg;
-  if (n.includes('modern teal blue lounge chair')) return loungeChairImg;
-  if (n.includes('mid-century modern upholstered armchair')) return midcenturyArmchairImg;
-  if (n.includes('contemporary nordic velvet lounge chair')) return beigeBoucleChairImg;
-  if (n.includes('nordic velvet ergonomic accent armchair')) return accentChairImg;
-
-  if (n.includes('mid-century') || n.includes('mid century')) return midcenturyArmchairImg;
+  // 10. FURNITURE & CHAIRS
   if (n.includes('recliner')) return loungeReclinerImg;
-  if (n.includes('boucle')) return beigeBoucleChairImg;
-  if (n.includes('leather')) return brownLeatherArmchairImg;
-  if (n.includes('emerald') || n.includes('brass')) return emeraldAccentChairImg;
-  if (n.includes('teal blue lounge') || n.includes('lounge chair')) return loungeChairImg;
-  if (n.includes('accent') || n.includes('armchair') || n.includes('chair')) return accentChairImg;
+  if (n.includes('lounge chair') || n.includes('modern lounge')) return loungeChairImg;
+  if (n.includes('accent') || n.includes('armchair') || n.includes('executive') || n.includes('mesh') || n.includes('chair') || n.includes('furniture')) return accentChairImg;
+  if (n.includes('shelf') || n.includes('shelves') || n.includes('wall shelves')) return wallShelvesImg;
 
-  // Category-Based Smart Fallbacks
+  // 11. SPORTS & FITNESS
+  if (n.includes('treadmill') || n.includes('dumbbell') || n.includes('shaker') || n.includes('kore') || n.includes('fitkit') || n.includes('fitness') || n.includes('gym')) return boldfitShakerImg;
+
+  // 12. IF EXISTING IMAGE IS VALID AND NON-GENERIC URL
+  let cleanImage = existingImage;
+  if (cleanImage && typeof cleanImage === 'string') {
+    cleanImage = cleanImage.replace(/\/media\/media\//g, '/media/');
+  }
+
+  if (
+    cleanImage &&
+    typeof cleanImage === 'string' &&
+    cleanImage.trim() !== '' &&
+    !cleanImage.includes('undefined') &&
+    !cleanImage.includes('null') &&
+    cleanImage !== 'null' &&
+    !cleanImage.includes('bestsellers_hero') &&
+    !cleanImage.includes('hk_wall_shelves') &&
+    !cleanImage.includes('wall_shelves') &&
+    (cleanImage.startsWith('http') || cleanImage.startsWith('data:') || (cleanImage.startsWith('/') && !cleanImage.includes('/media/products/')))
+  ) {
+    return cleanImage;
+  }
+
+  // Fallbacks by broad category keywords
   if (n.includes('mobile') || n.includes('phone')) return redmiNote13Img;
   if (n.includes('laptop') || n.includes('pc') || n.includes('computer')) return hpLaptopImg;
   if (n.includes('shoe') || n.includes('footwear')) return pumaShoesImg;

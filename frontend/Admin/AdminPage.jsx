@@ -52,14 +52,14 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50/60 font-sans antialiased text-gray-800">
+    <div className="flex h-screen overflow-hidden bg-gray-50/60 font-sans antialiased text-gray-800">
       {/* Sidebar with BuyZo Logo & Brand Palette */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onExitAdmin={handleExitAdmin} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Topbar title={activeTab} onExitAdmin={handleExitAdmin} />
-        <main className="portal-main p-6 md:p-8 flex-1 overflow-y-auto max-w-7xl w-full mx-auto">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+        <Topbar title={activeTab} onExitAdmin={handleExitAdmin} setActiveTab={setActiveTab} />
+        <main className="portal-main p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto">
           {renderActiveTab()}
         </main>
       </div>

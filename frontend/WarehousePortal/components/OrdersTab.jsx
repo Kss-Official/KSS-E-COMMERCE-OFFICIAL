@@ -79,27 +79,29 @@ export default function OrdersTab() {
     }
   };
 
-  const inWarehouse = ['PENDING', 'CONFIRMED', 'PROCESSING'];
+  const isQueueStatus = (st) =>
+    ['PENDING', 'CONFIRMED', 'PROCESSING', 'ORDER CONFIRMED', 'NEW'].includes(String(st || '').toUpperCase());
+
   const visible = orders
     .filter((o) => {
       if (filter === 'all') return true;
-      if (filter === 'queue') return inWarehouse.includes(o.status);
-      return o.status === filter;
+      if (filter === 'queue') return isQueueStatus(o.status);
+      return String(o.status || '').toUpperCase() === String(filter).toUpperCase();
     })
     .filter((o) => {
       const term = searchTerm.toLowerCase();
       if (!term) return true;
       return (
-        (o.order_number || '').toLowerCase().includes(term) ||
+        (o.order_number || o.id || '').toLowerCase().includes(term) ||
         (o.shipping_name || '').toLowerCase().includes(term) ||
         (o.shipping_city || '').toLowerCase().includes(term)
       );
     });
 
-  const queueCount = orders.filter((o) => inWarehouse.includes(o.status)).length;
-  const shippedCount = orders.filter((o) => o.status === 'SHIPPED').length;
+  const queueCount = orders.filter((o) => isQueueStatus(o.status)).length;
+  const shippedCount = orders.filter((o) => String(o.status).toUpperCase() === 'SHIPPED').length;
   const queueValue = orders
-    .filter((o) => inWarehouse.includes(o.status))
+    .filter((o) => isQueueStatus(o.status))
     .reduce((acc, o) => acc + Number(o.total_amount || 0), 0);
 
   return (

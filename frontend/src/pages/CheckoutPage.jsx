@@ -13,11 +13,72 @@ import {
   Truck,
   X,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  PackageCheck
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { fetchAddressesApi, addAddressApi, createCheckoutOrderApi, getCurrentUser } from '../services/api';
+
+function ConfettiCanvas() {
+  const canvasRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#063328', '#108a57', '#ff5100', '#fbbf24', '#3b82f6', '#ec4899', '#8b5cf6'];
+    const particles = Array.from({ length: 85 }).map(() => ({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 220,
+      y: canvas.height / 2 - 40 + (Math.random() - 0.5) * 100,
+      vx: (Math.random() - 0.5) * 18,
+      vy: (Math.random() - 0.7) * 16 - 4,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      vRot: (Math.random() - 0.5) * 10,
+      opacity: 1
+    }));
+
+    let animId;
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35;
+        p.rotation += p.vRot;
+        p.opacity -= 0.008;
+
+        if (p.opacity > 0) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.6);
+          ctx.restore();
+        }
+      });
+      if (particles.some((p) => p.opacity > 0)) {
+        animId = requestAnimationFrame(render);
+      }
+    };
+    render();
+
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-[100] w-full h-full"
+    />
+  );
+}
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCartContext();
@@ -160,7 +221,45 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle Place Order
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [placementPhase, setPlacementPhase] = useState('processing'); // 'processing' | 'confirmed' | 'confetti'
+  const [placedOrderData, setPlacedOrderData] = useState(null);
+
+  // Synthesize Victory Audio Chime using Web Audio API
+  const playVictoryChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      // Note 1: E5 (659Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.5);
+
+      // Note 2: B5 (987Hz)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(987.77, now + 0.12);
+      gain2.gain.setValueAtTime(0.22, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.85);
+    } catch (e) {}
+  };
+
+  // Handle Place Order with Multi-Phase Animation Sequence
   const handlePlaceOrder = async () => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -245,6 +344,10 @@ export default function CheckoutPage() {
       ]
     };
 
+    setPlacedOrderData(orderData);
+    setIsPlacingOrder(true);
+    setPlacementPhase('processing');
+
     // Attempt backend API checkout call
     try {
       const checkoutPayload = {
@@ -278,7 +381,23 @@ export default function CheckoutPage() {
     if (clearCart) {
       clearCart();
     }
-    navigateTo('order-confirmed', orderData);
+
+    // Phase 2: Confirmed Checkmark + Victory Audio Chime at 1.1s
+    setTimeout(() => {
+      setPlacementPhase('confirmed');
+      playVictoryChime();
+    }, 1100);
+
+    // Phase 3: Confetti Explosion at 1.9s
+    setTimeout(() => {
+      setPlacementPhase('confetti');
+    }, 1900);
+
+    // Phase 4: Navigate to Order Confirmed Page at 3.6s
+    setTimeout(() => {
+      setIsPlacingOrder(false);
+      navigateTo('order-confirmed', orderData);
+    }, 3600);
   };
 
   return (
@@ -824,62 +943,77 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Order Success Confirmation Modal */}
-      {orderPlacedModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl space-y-4 relative">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-brand-800 flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle className="w-10 h-10 text-emerald-600" />
-            </div>
+      {/* Order Success Confirmation Animated Modal */}
+      {isPlacingOrder && (
+        <div className="fixed inset-0 z-[99] flex items-center justify-center bg-black/65 backdrop-blur-md transition-all duration-500 animate-fade-in p-4">
+          {placementPhase === 'confetti' && <ConfettiCanvas />}
 
-            <div className="space-y-1">
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-accent uppercase tracking-wider bg-orange-50 px-2.5 py-1 rounded-full">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Order Placed Successfully</span>
-              </div>
-              <h3 className="text-2xl font-black text-gray-900">Thank You for Shopping!</h3>
-              <p className="text-xs text-gray-600">
-                Your order <span className="font-bold text-gray-900">#{orderId}</span> has been confirmed and will be delivered by {deliveryOption === 'express' ? '21 May, Wed' : '24 May, Sat'}.
-              </p>
-            </div>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border border-emerald-500/30 relative overflow-hidden transform transition-all duration-300 scale-100">
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-emerald-500/15 via-emerald-500/5 to-transparent pointer-events-none" />
 
-            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 text-left text-xs space-y-1.5">
-              <div className="flex justify-between font-semibold">
-                <span className="text-gray-500">Payment Method:</span>
-                <span className="text-gray-900 uppercase font-bold">{paymentMethod}</span>
+            {/* Phase 1: Processing */}
+            {placementPhase === 'processing' && (
+              <div className="py-6 space-y-4">
+                <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-200 animate-ping opacity-75" />
+                  <div className="w-16 h-16 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin" />
+                  <PackageCheck className="w-7 h-7 text-[#063328] absolute" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                    Securing Your Order...
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Verifying items & reserving warehouse stock
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between font-semibold">
-                <span className="text-gray-500">Total Paid:</span>
-                <span className="text-brand-800 font-black text-sm">₹{finalTotal.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between font-semibold">
-                <span className="text-gray-500">Delivery To:</span>
-                <span className="text-gray-900 font-bold truncate max-w-[180px]">
-                  {addresses.find((a) => a.id === selectedAddressId)?.address || 'No address selected'}
-                </span>
-              </div>
-            </div>
+            )}
 
-            <div className="space-y-2 pt-2">
-              <button
-                onClick={() => {
-                  setOrderPlacedModal(false);
-                  navigateTo('orders');
-                }}
-                className="w-full py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs sm:text-sm cursor-pointer shadow-md"
-              >
-                Track Your Order
-              </button>
-              <button
-                onClick={() => {
-                  setOrderPlacedModal(false);
-                  navigateTo('home');
-                }}
-                className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs cursor-pointer"
-              >
-                Continue Shopping
-              </button>
-            </div>
+            {/* Phase 2 & 3: Confirmed & Confetti Explosion */}
+            {(placementPhase === 'confirmed' || placementPhase === 'confetti') && (
+              <div className="py-4 space-y-4" style={{ animation: 'popScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+                {/* Animated SVG Success Checkmark */}
+                <div className="w-20 h-20 mx-auto rounded-full bg-emerald-50 border-2 border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/20 relative">
+                  <div className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping opacity-50" />
+                  <svg className="w-10 h-10 text-emerald-600 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path
+                      d="M20 6L9 17l-5-5"
+                      style={{
+                        strokeDasharray: 50,
+                        strokeDashoffset: 0,
+                        animation: 'drawCheck 0.5s cubic-bezier(0.65, 0, 0.45, 1) forwards'
+                      }}
+                    />
+                  </svg>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="inline-flex items-center space-x-1 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[11px] font-black tracking-widest uppercase mb-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Order Confirmed 🎉</span>
+                  </div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                    Thank You for Shopping!
+                  </h2>
+                  <p className="text-xs text-gray-500 font-semibold">
+                    Order <span className="text-[#063328] font-black">{placedOrderData?.orderId}</span> is confirmed
+                  </p>
+                </div>
+
+                {/* OTP Pill */}
+                <div className="bg-gradient-to-r from-[#063328] to-[#0d5c46] text-white p-3.5 rounded-2xl flex items-center justify-between shadow-md text-left">
+                  <div>
+                    <p className="text-[10px] text-emerald-300 uppercase font-black tracking-wider">Delivery Verification OTP</p>
+                    <p className="text-xs text-white/90 font-semibold">Share code with Delivery Rider</p>
+                  </div>
+                  <span className="text-lg font-black tracking-widest bg-white/20 px-3 py-1 rounded-xl border border-white/30 text-emerald-200">
+                    1234
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

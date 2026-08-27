@@ -1,11 +1,13 @@
 import React from 'react';
-import { Heart, Star, ShoppingCart } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
+import { getProductImage } from '../../utils/productAssets';
 import PriceBlock from './PriceBlock';
+import CartButton from './CartButton';
 
 export default function ProductCard({ product, view = 'grid', badge }) {
-  const { addToCart, toggleWishlist, wishlistItems } = useCartContext();
+  const { toggleWishlist, wishlistItems } = useCartContext();
   const { navigateTo } = useNavigationContext();
   const wished = wishlistItems?.some((item) => item.id === product.id);
   const showBadge = badge ?? (product.isNew ? 'NEW' : null);
@@ -16,12 +18,22 @@ export default function ProductCard({ product, view = 'grid', badge }) {
     toggleWishlist({ ...product, inStock: true, deliveryDate: 'Delivery by 2-3 Days' });
   };
 
+  const imgSrc = getProductImage(product.name || product.title, product.image || product.primary_image);
+
   if (view === 'list') {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 hover:border-brand-700 p-3 shadow-soft hover:shadow-lift transition-all flex flex-col sm:flex-row items-center justify-between gap-4 group">
         <div className="flex items-center gap-3.5 w-full sm:w-auto">
           <div onClick={open} className="w-20 h-20 rounded-xl bg-gray-50 border border-gray-100 p-2 flex items-center justify-center shrink-0 cursor-pointer overflow-hidden">
-            <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
+            <img
+              src={imgSrc}
+              alt={product.name || product.title}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = getProductImage(product.name || product.title, '');
+              }}
+              className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+            />
           </div>
           <div>
             {showBadge && (
@@ -52,13 +64,11 @@ export default function ProductCard({ product, view = 'grid', badge }) {
             >
               <Heart className={`w-4 h-4 ${wished ? 'fill-red-500 text-red-500' : 'stroke-[1.8]'}`} />
             </button>
-            <button
-              onClick={() => addToCart({ ...product, quantity: 1 })}
-              className="bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-              <span>Add to Cart</span>
-            </button>
+
+            {/* Interactive Cart Button */}
+            <div className="w-32 sm:w-36">
+              <CartButton product={product} />
+            </div>
           </div>
         </div>
       </div>
@@ -82,7 +92,15 @@ export default function ProductCard({ product, view = 'grid', badge }) {
         </div>
 
         <div onClick={open} className="w-full h-36 sm:h-40 flex items-center justify-center p-2 cursor-pointer overflow-hidden rounded-xl bg-gray-50/50 mb-2">
-          <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
+          <img
+            src={imgSrc}
+            alt={product.name || product.title}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = getProductImage(product.name || product.title, '');
+            }}
+            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+          />
         </div>
 
         <h4 onClick={open} className="text-xs font-bold text-ink group-hover:text-brand-700 line-clamp-2 cursor-pointer transition-colors leading-snug">
@@ -100,13 +118,10 @@ export default function ProductCard({ product, view = 'grid', badge }) {
         </div>
       </div>
 
-      <button
-        onClick={() => addToCart({ ...product, quantity: 1 })}
-        className="w-full bg-brand-700 hover:bg-brand-800 text-white text-[11px] font-bold py-1.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors mt-2.5 shadow-soft cursor-pointer"
-      >
-        <ShoppingCart className="w-3 h-3" />
-        <span>Add to Cart</span>
-      </button>
+      {/* Interactive Cart Button */}
+      <div className="mt-2.5 w-full">
+        <CartButton product={product} />
+      </div>
     </div>
   );
 }

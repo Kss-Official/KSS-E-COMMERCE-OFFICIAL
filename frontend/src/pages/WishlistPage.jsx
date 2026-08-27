@@ -3,6 +3,7 @@ import { Share2, Trash2, Heart, ShoppingBag, Check } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
+import CartButton from '../components/ui/CartButton';
 import { fetchProductDetail } from '../services/api';
 
 // Standard BuyZo promise: dispatched next day, delivered inside three.
@@ -319,18 +320,15 @@ export default function WishlistPage() {
                         <button
                           onClick={() => removeFromWishlist(item.productId || item.id)}
                           title="Remove from wishlist"
-                          className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors cursor-pointer"
+                          className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors cursor-pointer shrink-0"
                         >
                           <Heart className="w-4 h-4 fill-gray-400 text-gray-400 hover:fill-red-500 hover:text-red-500" />
                         </button>
 
-                        {/* Add to Cart Button */}
-                        <button
-                          onClick={() => handleAddToCart(item)}
-                          className="bg-accent hover:bg-accent-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer"
-                        >
-                          <span>Add to Cart</span>
-                        </button>
+                        {/* Interactive Cart Button */}
+                        <div className="w-32">
+                          <CartButton product={item} />
+                        </div>
                       </div>
                     </td>
                   </tr>

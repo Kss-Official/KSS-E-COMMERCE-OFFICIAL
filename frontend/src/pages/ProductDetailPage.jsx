@@ -81,7 +81,7 @@ const EMPTY_REVIEWS = {
 };
 
 export default function ProductDetailPage() {
-  const { addToCart, toggleWishlist, isWishlisted } = useCartContext();
+  const { addToCart, toggleWishlist, isWishlisted, getItemQuantity } = useCartContext();
   const { selectedProduct, navigateTo } = useNavigationContext();
 
   // The card that was clicked carries only list-level fields. The full row —
@@ -199,11 +199,9 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!isInStock) {
-      notify('This product is currently out of stock.');
       return;
     }
     addToCart({ ...product, quantity });
-    notify(`Added ${quantity} x "${product.name}" to your cart!`);
   };
 
   const handleBuyNow = () => {
@@ -471,10 +469,23 @@ export default function ProductDetailPage() {
             <button
               onClick={handleAddToCart}
               disabled={!isInStock}
-              className="py-3 px-6 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] inline-flex items-center space-x-2 cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed disabled:active:scale-100"
+              className={`py-3 px-6 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] inline-flex items-center space-x-2 cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed disabled:active:scale-100 ${
+                getItemQuantity(product) > 0
+                  ? 'bg-emerald-700 hover:bg-emerald-800 ring-2 ring-emerald-400/40'
+                  : 'bg-brand-700 hover:bg-brand-800'
+              }`}
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
+              {getItemQuantity(product) > 0 ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-200 stroke-[3]" />
+                  <span>Added to Cart ({getItemQuantity(product)})</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
+                </>
+              )}
             </button>
 
             {/* Buy Now Button */}
@@ -856,10 +867,23 @@ export default function ProductDetailPage() {
         <button
           onClick={handleAddToCart}
           disabled={!isInStock}
-          className="bg-accent hover:bg-accent-600 text-white font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 cursor-pointer"
+          className={`font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 cursor-pointer text-white ${
+            getItemQuantity(product) > 0
+              ? 'bg-emerald-700 hover:bg-emerald-800'
+              : 'bg-accent hover:bg-accent-600'
+          }`}
         >
-          <ShoppingCart className="w-4 h-4" />
-          {isInStock ? 'Add to Cart' : 'Out of Stock'}
+          {getItemQuantity(product) > 0 ? (
+            <>
+              <Check className="w-4 h-4 text-emerald-200 stroke-[3]" />
+              <span>Added ({getItemQuantity(product)})</span>
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="w-4 h-4" />
+              <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
+            </>
+          )}
         </button>
       </div>
     </div>

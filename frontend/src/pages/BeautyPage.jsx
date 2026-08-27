@@ -26,6 +26,7 @@ import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { fetchProducts } from '../services/api';
 import { getProductImage } from '../utils/productAssets';
+import CartButton from '../components/ui/CartButton';
 
 // Import assets
 import beautyCategorySvg from '../assets/category/categoryBeauty.svg';
@@ -511,7 +512,7 @@ export default function BeautyPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Filter Sidebar */}
-          <div className="lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-6">
+          <div className="lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-6 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center space-x-2">
                 <SlidersHorizontal className="w-4 h-4 text-accent" />
@@ -566,7 +567,10 @@ export default function BeautyPage() {
                 step="100"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-[#063328] cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #063328 0%, #063328 ${Math.min(100, Math.max(0, ((maxPrice - 200) / (5000 - 200)) * 100))}%, #e2e8f0 ${Math.min(100, Math.max(0, ((maxPrice - 200) / (5000 - 200)) * 100))}%, #e2e8f0 100%)`
+                }}
+                className="w-full accent-[#063328] h-2 rounded-lg appearance-none cursor-pointer transition-all"
               />
               <div className="flex justify-between text-[10px] text-gray-400 font-semibold">
                 <span>₹200</span>
@@ -727,12 +731,9 @@ export default function BeautyPage() {
                             <span className="text-[10px] font-semibold text-emerald-600">Free Delivery</span>
                           </div>
 
-                          <button
-                            onClick={(e) => handleAddToCart(product, e)}
-                            className="p-2.5 bg-brand-800 hover:bg-accent text-white rounded-xl shadow-sm transition-all duration-200 cursor-pointer group-hover:shadow-md transform active:scale-95"
-                          >
-                            <ShoppingBag className="w-4 h-4" />
-                          </button>
+                          <div className="w-32">
+                            <CartButton product={product} />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -787,13 +788,9 @@ export default function BeautyPage() {
                             <span className="text-xs font-bold text-emerald-600">({product.discount})</span>
                           </div>
 
-                          <button
-                            onClick={(e) => handleAddToCart(product, e)}
-                            className="px-5 py-2.5 bg-brand-800 hover:bg-accent text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-2"
-                          >
-                            <ShoppingBag className="w-3.5 h-3.5" />
-                            <span>Add to Cart</span>
-                          </button>
+                          <div className="w-36">
+                            <CartButton product={product} />
+                          </div>
                         </div>
                       </div>
                     </div>

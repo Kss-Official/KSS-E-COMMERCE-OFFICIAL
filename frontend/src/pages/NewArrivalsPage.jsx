@@ -15,6 +15,7 @@ import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
 import { fetchProducts } from '../services/api';
+import CartButton from '../components/ui/CartButton';
 
 // Import product images
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -37,9 +38,19 @@ import rakhiLogoImg from '../assets/images/rakhi_logo.jpg';
 
 const categoriesList = [
   { name: 'All New Arrivals', count: 356 },
+  { name: 'Mobiles', count: 56 },
+  { name: 'Laptops', count: 32 },
+  { name: 'Electronics', count: 78 },
+  { name: 'Fashion', count: 168 },
   { name: 'Men', count: 124 },
   { name: 'Women', count: 168 },
   { name: 'Kids', count: 42 },
+  { name: 'Home & Kitchen', count: 64 },
+  { name: 'Chairs & Furniture', count: 45 },
+  { name: 'Sports & Fitness', count: 38 },
+  { name: 'Appliances', count: 52 },
+  { name: 'Books & More', count: 29 },
+  { name: 'Beauty', count: 54 },
   { name: 'Footwear', count: 85 },
   { name: 'Bags & Accessories', count: 65 },
   { name: 'Watches', count: 28 },
@@ -312,11 +323,25 @@ export default function NewArrivalsPage() {
     }
   };
 
+  const allProductsList = useMemo(() => {
+    return dbProducts.length > 0 ? dbProducts : newArrivalsProducts;
+  }, [dbProducts]);
+
   const filteredProducts = useMemo(() => {
-    let list = [...dbProducts];
+    let list = [...allProductsList];
 
     if (activeCategory !== 'All New Arrivals') {
-      list = list.filter((p) => p.category.toLowerCase() === activeCategory.toLowerCase());
+      list = list.filter((p) => {
+        const cat = (p.category || '').toLowerCase();
+        const active = activeCategory.toLowerCase();
+        if (cat === active) return true;
+        if (active === 'men' && (cat.includes('men') || p.name.toLowerCase().includes('men'))) return true;
+        if (active === 'women' && (cat.includes('women') || p.name.toLowerCase().includes('women'))) return true;
+        if (active === 'fashion' && ['fashion', 'men', 'women', 'kids'].includes(cat)) return true;
+        if (active === 'electronics' && ['electronics', 'mobiles', 'laptops', 'headphones', 'smartwatches'].includes(cat)) return true;
+        if (cat.includes(active) || active.includes(cat)) return true;
+        return false;
+      });
     }
 
     if (selectedSubCategories.length > 0) {
@@ -372,7 +397,7 @@ export default function NewArrivalsPage() {
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 items-start">
 
         {/* LEFT SIDEBAR: Categories & Filters */}
-        <aside className="w-full lg:w-64 xl:w-72 shrink-0 space-y-6">
+        <aside className="w-full lg:w-64 xl:w-72 shrink-0 space-y-6 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
 
           {/* 1. Categories Card */}
           <div className="bg-white rounded-2xl p-5 border border-gray-100/90 shadow-2xs">
@@ -419,7 +444,10 @@ export default function NewArrivalsPage() {
                 step="500"
                 value={priceMax}
                 onChange={(e) => setPriceMax(Number(e.target.value))}
-                className="w-full accent-[#08493d] cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #063328 0%, #063328 ${(priceMax / 10000) * 100}%, #e2e8f0 ${(priceMax / 10000) * 100}%, #e2e8f0 100%)`
+                }}
+                className="w-full accent-[#063328] h-2 rounded-lg appearance-none cursor-pointer transition-all"
               />
               <div className="flex items-center justify-between text-xs text-gray-500 font-semibold pt-1">
                 <span>₹0</span>
@@ -788,14 +816,10 @@ export default function NewArrivalsPage() {
                     </div>
                   </div>
 
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="w-full bg-brand-700 hover:bg-brand-800 text-white text-[11px] font-bold py-1.5 rounded-xl flex items-center justify-center space-x-1.5 transition-colors mt-2.5 shadow-2xs cursor-pointer"
-                  >
-                    <ShoppingCart className="w-3 h-3" />
-                    <span>Add to Cart</span>
-                  </button>
+                  {/* Interactive Cart Button */}
+                  <div className="mt-2.5 w-full">
+                    <CartButton product={product} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -871,13 +895,9 @@ export default function NewArrivalsPage() {
                             }`}
                         />
                       </button>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className="bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
-                      >
-                        <ShoppingCart className="w-3.5 h-3.5" />
-                        <span>Add to Cart</span>
-                      </button>
+                      <div className="w-32 sm:w-36">
+                        <CartButton product={product} />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -93,15 +93,15 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
   const delivered = profile?.stats?.delivered ?? agent?.total_completed ?? 0;
 
   return (
-    <aside className="w-16 lg:w-64 bg-[#063328] text-white flex flex-col justify-between min-h-screen border-r border-emerald-950/40 shadow-xl shrink-0">
+    <aside className="w-16 lg:w-64 bg-[#0B5E3C] text-white flex flex-col justify-between h-screen sticky top-0 border-r border-[#07452c] shadow-xl shrink-0 overflow-y-auto scrollbar-none">
       <div>
         {/* Agent Profile Header Card */}
-        <div className="p-2 lg:p-5 border-b border-emerald-900/50 bg-[#04241c] flex flex-col items-center text-center relative">
+        <div className="p-2 lg:p-5 border-b border-[#108A57]/30 bg-[#07452c] flex flex-col items-center text-center relative">
           {onExitPortal && (
             <button
               onClick={onExitPortal}
               title="Return to Store"
-              className="absolute left-3 top-3 p-1 text-emerald-300 hover:text-white hover:bg-emerald-800/60 rounded-md transition-colors"
+              className="absolute left-3 top-3 p-1 text-emerald-200 hover:text-white hover:bg-[#108A57]/40 rounded-md transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -112,16 +112,16 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
               <img
                 src={profile.avatar}
                 alt={name}
-                className="w-20 h-20 rounded-full object-cover border-4 border-emerald-500 shadow-md"
+                className="w-20 h-20 rounded-full object-cover border-4 border-[#108A57] shadow-md"
               />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-700 to-emerald-400 text-white flex items-center justify-center text-2xl font-black border-4 border-emerald-500 shadow-md">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#0B5E3C] to-[#108A57] text-white flex items-center justify-center text-2xl font-black border-4 border-[#108A57] shadow-md">
                 {initials || 'AG'}
               </div>
             )}
             <span
-              className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#04241c] ${
-                isOnline ? 'bg-emerald-400' : 'bg-gray-400'
+              className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#07452c] ${
+                isOnline ? 'bg-[#108A57]' : 'bg-gray-400'
               }`}
             ></span>
           </div>
@@ -139,11 +139,11 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
             onClick={toggleOnline}
             className={`mt-3 flex items-center justify-center lg:space-x-2 px-2 lg:px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
               isOnline
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/30'
+                ? 'bg-[#108A57]/30 text-emerald-200 border border-[#108A57]/50 hover:bg-[#108A57]/40'
                 : 'bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-700'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-300 animate-pulse' : 'bg-gray-400'}`}></span>
             <span className="hidden lg:inline">{isOnline ? 'Online' : 'Offline'}</span>
           </button>
         </div>
@@ -160,16 +160,16 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center justify-center lg:justify-between px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-[#1b4d3e] text-white shadow-md font-bold transform translate-x-1 border-l-4 border-[#ff5100]'
-                    : 'text-emerald-100/80 hover:bg-emerald-800/40 hover:text-white'
+                    ? 'bg-[#108A57] text-white shadow-md font-bold transform translate-x-1 border-l-4 border-white'
+                    : 'text-emerald-100/90 hover:bg-[#07452c] hover:text-white'
                 }`}
               >
                 <div className="flex items-center space-x-3.5">
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-[#ff5100]' : 'text-emerald-300'}`} />
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-emerald-200'}`} />
                   <span className="hidden lg:inline">{item.label}</span>
                 </div>
                 {badge > 0 && (
-                  <span className="hidden lg:inline bg-[#ff5100] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                  <span className="hidden lg:inline bg-[#108A57] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                     {badge}
                   </span>
                 )}
@@ -181,12 +181,12 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
 
       {/* Motivational Bottom Banner & Logout */}
       <div className="p-3 space-y-3">
-        <div className="hidden lg:block bg-emerald-950/60 border border-emerald-800/50 p-3.5 rounded-2xl text-center shadow-xs">
-          <div className="w-8 h-8 rounded-full bg-emerald-800/60 text-emerald-300 flex items-center justify-center mx-auto mb-2">
-            <Gift className="w-4 h-4 text-emerald-300" />
+        <div className="hidden lg:block bg-[#07452c]/90 border border-[#108A57]/30 p-3.5 rounded-2xl text-center shadow-xs">
+          <div className="w-8 h-8 rounded-full bg-[#108A57]/30 text-emerald-200 flex items-center justify-center mx-auto mb-2">
+            <Gift className="w-4 h-4 text-emerald-200" />
           </div>
           <h4 className="text-xs font-bold text-white">Excellent Job!</h4>
-          <p className="text-[11px] text-emerald-300/80 mt-0.5">
+          <p className="text-[11px] text-emerald-200/90 mt-0.5">
             {Number(agent?.completed_today || 0) > 0
               ? `${agent.completed_today} delivered today. Keep it up!`
               : 'You are doing great. Keep it up!'}

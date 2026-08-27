@@ -132,7 +132,7 @@ function AppContent() {
   const isLoginPage = currentPage === 'login';
 
   return (
-    <div className="min-h-screen bg-cream font-sans text-ink flex flex-col justify-between relative">
+    <div className="min-h-screen bg-white font-sans text-ink flex flex-col justify-between relative">
       {!isLoginPage && <Header />}
       {!isLoginPage && <Navbar />}
       <div className="flex-1">

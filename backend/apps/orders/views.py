@@ -215,43 +215,12 @@ class CheckoutView(APIView):
                 order_index=idx
             )
 
-        # Create Outbound Shipment for Warehouse
+        # Synchronize Order to Warehouse & Delivery Portals
         try:
-            from apps.warehouse.models import OutboundShipment
-            order_items = OrderItem.objects.filter(order=order)
-            first_item = order_items.first()
-            items_count = order_items.count()
-            OutboundShipment.objects.create(
-                shipment_id=OutboundShipment.generate_shipment_id(),
-                destination_hub=f"{order.shipping_city} Hub",
-                item_title=f"{first_item.product_title if first_item else 'Order Item'} ({items_count} items)",
-                sku=first_item.sku if first_item else f'SKU-{order.order_number}',
-                quantity=items_count,
-                courier_partner='BuyZo Express Logistics',
-                status='Ready for Pickup'
-            )
+            from apps.orders._propagate import propagate_order_status
+            propagate_order_status(order)
         except Exception as e:
-            pass
-
-        # Create Delivery Task for Delivery Agent
-        try:
-            from apps.delivery.models import DeliveryTask
-            from apps.accounts.models import User
-            delivery_agent = User.objects.filter(role='DELIVERY_AGENT').first() or User.objects.filter(email='delivery@buyzo.com').first()
-            if delivery_agent:
-                DeliveryTask.objects.create(
-                    task_id=DeliveryTask.generate_task_id(),
-                    agent=delivery_agent,
-                    order=order,
-                    recipient_name=order.shipping_name,
-                    recipient_phone=order.shipping_phone,
-                    delivery_address=f"{order.shipping_address}, {order.shipping_city}, {order.shipping_state} - {order.shipping_pincode}",
-                    cod_amount=order.total_amount if order.payment_method == 'COD' else Decimal('0.00'),
-                    current_stage=1,
-                    status='ASSIGNED'
-                )
-        except Exception as e:
-            pass
+            print(f"[Checkout Error Syncing Warehouse & Delivery]: {e}")
 
         # Clear user database cart if present
         try:

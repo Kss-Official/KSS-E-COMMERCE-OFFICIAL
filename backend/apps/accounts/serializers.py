@@ -15,10 +15,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
+    first_name = serializers.CharField(source='profile.first_name', read_only=True, default='')
+    last_name = serializers.CharField(source='profile.last_name', read_only=True, default='')
+    name = serializers.CharField(source='profile.full_name', read_only=True, default='')
+    full_name = serializers.CharField(source='profile.full_name', read_only=True, default='')
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'phone', 'role', 'is_verified', 'is_active', 'date_joined', 'profile']
+        fields = [
+            'id', 'email', 'phone', 'role', 'is_verified', 'is_active',
+            'date_joined', 'profile', 'first_name', 'last_name', 'name', 'full_name'
+        ]
         read_only_fields = ['id', 'is_verified', 'date_joined']
 
 class AddressSerializer(serializers.ModelSerializer):

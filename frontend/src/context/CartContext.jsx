@@ -147,33 +147,54 @@ export function CartProvider({ children }) {
     return () => window.removeEventListener('buyzo_auth_change', handleAuthChange);
   }, [refreshCart, refreshWishlist]);
 
+  // Helper to match a product with a cart item accurately
+  const isItemMatch = (cartItem, targetProduct) => {
+    if (!cartItem || !targetProduct) return false;
+    const targetIds = [targetProduct.id, targetProduct.productId, targetProduct.product_id, targetProduct.pk]
+      .filter((v) => v !== null && v !== undefined && v !== '')
+      .map(String);
+    const itemIds = [cartItem.id, cartItem.productId, cartItem.product_id, cartItem.product]
+      .filter((v) => v !== null && v !== undefined && v !== '')
+      .map(String);
+    if (targetIds.some((tid) => itemIds.includes(tid))) return true;
+
+    const targetName = String(targetProduct.name || targetProduct.title || '').trim().toLowerCase();
+    const itemName = String(cartItem.name || '').trim().toLowerCase();
+    if (targetName && itemName) {
+      return targetName === itemName || targetName.includes(itemName) || itemName.includes(targetName);
+    }
+    return false;
+  };
+
   // Add Item to Cart
   const addToCart = async (product, options = {}) => {
+    if (!product) return;
     const qty = options.quantity || product.quantity || 1;
     const color = options.selectedColor || product.selectedColor || product.selected_color || '';
     const size = options.selectedSize || product.selectedSize || product.selected_size || '';
 
     // Optimistic Update
     setCartItems((prev) => {
-      const existingIdx = prev.findIndex(
-        (i) => (i.productId === product.id || i.id === product.id || i.name === product.name) &&
-               (!color || i.selectedColor === color)
-      );
+      const existingIdx = prev.findIndex((i) => isItemMatch(i, product) && (!color || i.selectedColor === color));
 
       if (existingIdx > -1) {
         const copy = [...prev];
-        copy[existingIdx].quantity += qty;
-        copy[existingIdx].totalPrice = copy[existingIdx].price * copy[existingIdx].quantity;
+        const updatedQty = Number(copy[existingIdx].quantity || 0) + qty;
+        copy[existingIdx] = {
+          ...copy[existingIdx],
+          quantity: updatedQty,
+          totalPrice: (copy[existingIdx].price || 0) * updatedQty
+        };
         return copy;
       }
 
       const unitPrice = Number(product.price || product.current_price || 0);
-      const origPrice = Number(product.originalPrice || product.original_price || unitPrice * 1.25);
+      const origPrice = Number(product.originalPrice || product.original_price || (unitPrice > 0 ? unitPrice * 1.25 : 0));
       return [
         ...prev,
         {
           id: product.id || `temp-${Date.now()}`,
-          productId: product.id,
+          productId: product.productId || product.id,
           name: product.name || product.title || 'Product',
           image: product.image || product.primary_image || '',
           price: unitPrice,
@@ -189,10 +210,10 @@ export function CartProvider({ children }) {
 
     // Backend Sync
     try {
-      const targetPid = product.productId || product.id;
+      const syncPid = product.productId || product.id;
       const data = await addToCartApi({
-        product_id: targetPid,
-        id: targetPid,
+        product_id: syncPid,
+        id: syncPid,
         name: product.name || product.title,
         price: product.price || product.current_price,
         quantity: qty,
@@ -218,6 +239,7 @@ export function CartProvider({ children }) {
 
   // Update Item Quantity
   const updateQuantity = async (itemIdOrProductId, newQuantity) => {
+    const key = String(itemIdOrProductId);
     if (newQuantity <= 0) {
       removeFromCart(itemIdOrProductId);
       return;
@@ -226,7 +248,7 @@ export function CartProvider({ children }) {
     // Optimistic Update
     setCartItems((prev) =>
       prev.map((item) => {
-        if (item.id === itemIdOrProductId || item.productId === itemIdOrProductId) {
+        if (String(item.id) === key || String(item.productId) === key) {
           return {
             ...item,
             quantity: newQuantity,
@@ -257,8 +279,9 @@ export function CartProvider({ children }) {
 
   // Remove Item from Cart
   const removeFromCart = async (itemIdOrProductId) => {
+    const key = String(itemIdOrProductId);
     // Optimistic Update
-    setCartItems((prev) => prev.filter((i) => i.id !== itemIdOrProductId && i.productId !== itemIdOrProductId));
+    setCartItems((prev) => prev.filter((i) => String(i.id) !== key && String(i.productId) !== key));
 
     // Backend Sync
     try {
@@ -386,6 +409,16 @@ export function CartProvider({ children }) {
     }
   };
 
+  const getItemQuantity = (product) => {
+    if (!product) return 0;
+    const found = cartItems.find((i) => isItemMatch(i, product));
+    return found ? Number(found.quantity) || 0 : 0;
+  };
+
+  const isInCart = (product) => {
+    return getItemQuantity(product) > 0;
+  };
+
   const cartCount = cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0);
   const wishlistCount = wishlistItems.length;
 
@@ -402,6 +435,9 @@ export function CartProvider({ children }) {
         updateQuantity,
         removeFromCart,
         clearCart,
+        getItemQuantity,
+        isInCart,
+        isItemMatch,
         addToWishlist,
         removeFromWishlist,
         toggleWishlist,

@@ -25,27 +25,55 @@ export default function OutboundTab() {
   const loadOutbound = async () => {
     setIsLoading(true);
     try {
-      const [{ apiOutbound }, orders] = await Promise.all([
+      const [{ apiOutbound, localOrders }, orders] = await Promise.all([
         fetchWarehouseOutboundApi(),
         fetchWarehouseOrderQueueApi()
       ]);
-      setItems(Array.isArray(apiOutbound) ? apiOutbound : []);
 
-      // Real customer orders still sitting in the warehouse before dispatch.
+      let combinedItems = Array.isArray(apiOutbound) ? [...apiOutbound] : [];
+
+      // Include local placed orders in outbound list if not already present
+      if (Array.isArray(localOrders)) {
+        localOrders.forEach((lo) => {
+          const idStr = `SHP-${lo.orderId || lo.id}`;
+          if (!combinedItems.some((ci) => ci.shipment_id === idStr || ci.id === lo.orderId)) {
+            const itemsList = lo.items || [];
+            const firstItem = itemsList[0]?.name || itemsList[0]?.title || itemsList[0]?.product_title || 'Order Package';
+            combinedItems.push({
+              id: lo.orderId || lo.id,
+              shipment_id: idStr,
+              destination_hub: `${lo.address?.details?.split(',')[0] || lo.shipping_city || 'Central'} Hub`,
+              item_title: `${firstItem}${itemsList.length > 1 ? ` (+${itemsList.length - 1} items)` : ''}`,
+              sku: lo.orderId || `ORD-${lo.id}`,
+              quantity: itemsList.reduce((acc, i) => acc + (parseInt(i.quantity, 10) || 1), 0),
+              courier_partner: 'BuyZo Express Logistics',
+              status: lo.status === 'SHIPPED' ? 'Dispatched' : 'Ready for Pickup',
+              created_at: lo.orderDate || 'Today'
+            });
+          }
+        });
+      }
+
+      setItems(combinedItems);
+
+      // Real customer orders still sitting in the warehouse pack queue before dispatch.
+      const isQueueStatus = (st) =>
+        ['PENDING', 'CONFIRMED', 'PROCESSING', 'ORDER CONFIRMED', 'NEW'].includes(String(st || '').toUpperCase());
+
       const queue = (Array.isArray(orders) ? orders : [])
-        .filter((o) => ['PENDING', 'CONFIRMED', 'PROCESSING'].includes(o.status))
+        .filter((o) => isQueueStatus(o.status))
         .map((o) => {
-          const items = o.items || [];
-          const firstItem = items[0]?.product_title || 'Order Item';
-          const totalQty = items.reduce((acc, i) => acc + (parseInt(i.quantity, 10) || 1), 0);
+          const itemsList = o.items || [];
+          const firstItem = itemsList[0]?.product_title || itemsList[0]?.name || itemsList[0]?.title || 'Order Item';
+          const totalQty = itemsList.reduce((acc, i) => acc + (parseInt(i.quantity, 10) || 1), 0);
           return {
-            key: o.id,
+            key: o.id || o.order_number,
             orderDbId: o.id,
-            orderNumber: o.order_number,
-            destination: `${o.shipping_city || 'Central'} Hub`,
-            item: `${firstItem}${items.length > 1 ? ` +${items.length - 1} more` : ''}`,
+            orderNumber: o.order_number || o.orderId,
+            destination: `${o.shipping_city || o.address?.details?.split(',')[0] || 'Central'} Hub`,
+            item: `${firstItem}${itemsList.length > 1 ? ` +${itemsList.length - 1} more` : ''}`,
             qty: totalQty,
-            date: o.formatted_date || 'Recent'
+            date: o.formatted_date || o.orderDate || 'Recent'
           };
         });
       setPackQueue(queue);

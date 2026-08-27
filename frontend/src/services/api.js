@@ -613,8 +613,21 @@ export async function fetchCustomerOrdersApi() {
 
   let localOrders = [];
   try {
-    const raw = localStorage.getItem('buyzo_placed_orders');
-    if (raw) localOrders = JSON.parse(raw);
+    const p1 = JSON.parse(localStorage.getItem('buyzo_placed_orders') || '[]');
+    const p2 = JSON.parse(localStorage.getItem('buyzo_orders') || '[]');
+    const rawLast = localStorage.getItem('buyzo_last_order');
+    const p3 = rawLast ? [JSON.parse(rawLast)] : [];
+
+    const combined = [...p1, ...p2, ...p3];
+    const seen = new Set();
+    for (const item of combined) {
+      if (!item) continue;
+      const key = String(item.orderId || item.order_number || item.id || '').trim();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        localOrders.push(item);
+      }
+    }
   } catch (e) {}
 
   return { apiOrders, localOrders };
@@ -764,11 +777,28 @@ export async function fetchWarehouseOutboundApi() {
 export async function fetchWarehouseOrderQueueApi() {
   try {
     const res = await apiRequest('/orders/admin/?no_page=true');
-    if (Array.isArray(res?.data)) return res.data;
-    if (Array.isArray(res?.data?.results)) return res.data.results;
+    if (Array.isArray(res?.data) && res.data.length > 0) return res.data;
+    if (Array.isArray(res?.data?.results) && res.data.results.length > 0) return res.data.results;
   } catch (err) {
     console.warn('Warehouse order queue fetch failed:', err);
   }
+  // Fallback to local storage placed orders so offline/demo customer placed orders also appear in Warehouse Portal!
+  try {
+    const local = JSON.parse(localStorage.getItem('buyzo_placed_orders') || '[]');
+    if (Array.isArray(local) && local.length > 0) {
+      return local.map((o, idx) => ({
+        id: o.orderId || idx + 1,
+        order_number: o.orderId || `ORD-${Date.now().toString().slice(-5)}`,
+        shipping_name: o.address?.name || 'Customer',
+        shipping_city: o.address?.details?.split(',')[0] || 'New Delhi',
+        total_amount: o.totalPaid?.replace(/,/g, '') || 999,
+        payment_method: o.paymentMethod || 'COD',
+        status: o.status || 'CONFIRMED',
+        formatted_date: o.orderDate || 'Today',
+        items: o.items || []
+      }));
+    }
+  } catch (e) {}
   return [];
 }
 

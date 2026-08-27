@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, Calendar, Store } from 'lucide-react';
 import { getCurrentUser } from '../../src/services/api';
+import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
-export default function Topbar({ title, onExitAdmin }) {
+export default function Topbar({ title, onExitAdmin, setActiveTab }) {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -15,8 +16,8 @@ export default function Topbar({ title, onExitAdmin }) {
   const adminName = currentUser
     ? (currentUser.first_name
         ? `${currentUser.first_name} ${currentUser.last_name || ''}`.trim()
-        : (currentUser.name || currentUser.username || (currentUser.email && !currentUser.email.startsWith('admin') ? currentUser.email.split('@')[0] : 'Amit Sharma')))
-    : 'Amit Sharma';
+        : (currentUser.name || currentUser.username || (currentUser.email && !currentUser.email.startsWith('admin') ? currentUser.email.split('@')[0] : 'Arnav Kapoor')))
+    : 'Arnav Kapoor';
 
   let adminDesignation = 'System Administrator';
   if (currentUser?.designation) {
@@ -31,8 +32,6 @@ export default function Topbar({ title, onExitAdmin }) {
     adminDesignation = 'System Administrator';
   }
 
-  const avatarLetter = (adminName.charAt(0) || 'A').toUpperCase();
-
   return (
     <header className="bg-white border-b border-gray-200 py-3.5 px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
       {/* Title / Search */}
@@ -45,7 +44,7 @@ export default function Topbar({ title, onExitAdmin }) {
           <input
             type="text"
             placeholder="Search products, orders, customers..."
-            className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-emerald-600 transition-colors"
+            className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-[#0D9488] transition-colors"
           />
         </div>
       </div>
@@ -62,7 +61,7 @@ export default function Topbar({ title, onExitAdmin }) {
         {onExitAdmin && (
           <button
             onClick={onExitAdmin}
-            className="hidden sm:flex items-center space-x-1.5 text-xs font-bold text-[#1b4d3e] bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center space-x-1.5 text-xs font-bold text-[#0D9488] bg-[#ccfbf1] hover:bg-[#99f6e4] px-3 py-1.5 rounded-lg border border-[#14B8A6]/30 transition-colors cursor-pointer"
           >
             <Store className="w-3.5 h-3.5" />
             <span>Store View</span>
@@ -70,20 +69,26 @@ export default function Topbar({ title, onExitAdmin }) {
         )}
 
         {/* Notifications */}
-        <button className="relative p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+        <button
+          onClick={() => setActiveTab && setActiveTab('dashboard')}
+          className="relative p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+        >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff5100] rounded-full border-2 border-white"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#14B8A6] rounded-full border-2 border-white"></span>
         </button>
 
-        {/* Admin Profile Badge */}
-        <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#063328] to-[#1b4d3e] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-emerald-100">
-            {avatarLetter}
-          </div>
-          <div className="flex flex-col text-left">
-            <span className="text-xs font-extrabold text-gray-900 leading-tight">{adminName}</span>
-            <span className="text-[11px] text-emerald-700 font-bold leading-tight mt-0.5">{adminDesignation}</span>
-          </div>
+        {/* Admin Profile Dropdown */}
+        <div className="pl-3 border-l border-gray-200">
+          <ProfileDropdown
+            user={{
+              name: adminName,
+              designation: adminDesignation,
+              avatar: currentUser?.avatar
+            }}
+            setActiveTab={setActiveTab}
+            onLogout={onExitAdmin}
+            portalType="admin"
+          />
         </div>
       </div>
     </header>

@@ -3,6 +3,7 @@ import { Zap, ShieldCheck, BadgeCheck, Truck, Star, Mail } from 'lucide-react';
 import { useNavigationContext } from '../../context/NavigationContext';
 import { fetchProducts, subscribeToNewsletter } from '../../services/api';
 import { getProductImage } from '../../utils/productAssets';
+import CartButton from '../../components/ui/CartButton';
 import boatRockerzImg from '../../assets/trending_deals/boat_rockerz.png';
 import noiseSmartwatchImg from '../../assets/trending_deals/noise_smartwatch.png';
 import sonyHeadphonesImg from '../../assets/trending_deals/sony_headphones.png';
@@ -19,7 +20,7 @@ const CARD_PALETTES = [
   {
     cardBg: 'radial-gradient(circle at 12% 68%, #efffd6 0%, transparent 35%), linear-gradient(135deg, #ffffff 0%, #fcfff7 100%)',
     badgeColor: '#5bac39',
-    glowColor: '#050801',
+    glowColor: '#86efac',
   },
   {
     cardBg: 'radial-gradient(circle at 36% 76%, #eee8ff 0%, transparent 38%), linear-gradient(135deg, #ffffff 0%, #fdfbff 100%)',
@@ -64,7 +65,7 @@ export function TrendingDealsBand() {
         const originalPrice = Number(p.originalPrice ?? p.base_price ?? price);
         const discountNum = Math.round(
           Number(p.discount_percentage) ||
-            (originalPrice > price ? ((originalPrice - price) / originalPrice) * 100 : 0)
+          (originalPrice > price ? ((originalPrice - price) / originalPrice) * 100 : 0)
         );
         return {
           ...p,
@@ -159,11 +160,10 @@ export function TrendingDealsBand() {
                 <span className="text-xs font-bold text-green-600">{d.discount}</span>
               </div>
 
-              {/* Deal of the Day Button */}
-              <button className="mt-4 w-full flex items-center justify-center gap-1.5 bg-[#fff0f2] hover:bg-[#ffe4e8] text-[#f0445d] rounded-full py-2 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer">
-                <Zap className="w-3 h-3 fill-red-500 text-red-500" />
-                Deal of the Day
-              </button>
+              {/* Interactive Cart Button */}
+              <div className="mt-3.5 w-full">
+                <CartButton product={d} className="py-2 text-xs font-bold rounded-xl" />
+              </div>
             </div>
           </div>
         ))}

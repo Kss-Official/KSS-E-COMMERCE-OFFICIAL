@@ -136,8 +136,12 @@ class ProductListSerializer(serializers.ModelSerializer):
         if img and img.image:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(img.image.url)
-            return f"{getattr(settings, 'BACKEND_HOST_URL', 'http://127.0.0.1:8000')}{img.image.url}"
+                res = request.build_absolute_uri(img.image.url)
+            else:
+                res = f"{getattr(settings, 'BACKEND_HOST_URL', 'http://127.0.0.1:8000')}{img.image.url}"
+            if '/media/media/' in res:
+                res = res.replace('/media/media/', '/media/')
+            return res
         return None
 
     def get_image(self, obj):
@@ -200,8 +204,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         if img and img.image:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(img.image.url)
-            return f"http://127.0.0.1:8000{img.image.url}"
+                res = request.build_absolute_uri(img.image.url)
+            else:
+                res = f"http://127.0.0.1:8000{img.image.url}"
+            if '/media/media/' in res:
+                res = res.replace('/media/media/', '/media/')
+            return res
         return None
 
     def get_galleryThumbnails(self, obj):
