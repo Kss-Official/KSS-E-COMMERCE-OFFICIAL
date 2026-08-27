@@ -58,6 +58,16 @@ import loungeReclinerImg from '../assets/images/lounge_recliner.jpg';
 import midcenturyArmchairImg from '../assets/images/midcentury_armchair.jpg';
 import beigeBoucleChairImg from '../assets/images/beige_boucle_chair.jpg';
 
+// Home & Kitchen Realistic Assets
+import cookwareSetImg from '../assets/images/hk_cookware_set.jpg';
+import airFryerImg from '../assets/images/hk_air_fryer.jpg';
+import cottonBedsheetImg from '../assets/images/hk_cotton_bedsheet.png';
+import wallShelvesImg from '../assets/images/hk_wall_shelves.png';
+import casseroleSetImg from '../assets/images/hk_casserole_set.png';
+import memoryPillowImg from '../assets/images/hk_memory_pillow.jpg';
+import mixerGrinderImg from '../assets/images/hk_mixer_grinder.jpg';
+import ceramicDinnerSetImg from '../assets/images/hk_ceramic_dinner_set.png';
+
 // Flagship Smartphones
 import iphone15ProImg from '../assets/images/iphone_15_pro.jpg';
 import samsungS24UltraImg from '../assets/images/samsung_s24_ultra.jpg';

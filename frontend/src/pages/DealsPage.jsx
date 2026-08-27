@@ -41,8 +41,9 @@ export default function DealsPage() {
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(10000);
-  const [discountSlider, setDiscountSlider] = useState(70);
+  const [priceMax, setPriceMax] = useState(150000);
+  const [discountMin, setDiscountMin] = useState(10);
+  const [discountMax, setDiscountMax] = useState(90);
   const [wishlistActive, setWishlistActive] = useState({});
   const [addedToast, setAddedToast] = useState(null);
 
@@ -149,9 +150,11 @@ export default function DealsPage() {
     setSelectedDiscounts([]);
     setSelectedCategories([]);
     setPriceMin(0);
-    setPriceMax(10000);
-    setDiscountSlider(70);
+    setPriceMax(150000);
+    setDiscountMin(10);
+    setDiscountMax(90);
     setActiveCategory('All');
+    setActiveNav('Deal of the Day');
   };
 
   // Nav menu items
@@ -193,15 +196,21 @@ export default function DealsPage() {
 
   // Filtered products: category tab + sidebar filters all apply.
   const displayedProducts = topDealsProducts.filter((p) => {
-    if (activeCategory !== 'All' && p.category !== activeCategory) return false;
-    if (selectedCategories.length && !selectedCategories.includes(p.category)) return false;
+    if (activeCategory !== 'All' && (p.category || '').toLowerCase() !== activeCategory.toLowerCase()) return false;
+    if (selectedCategories.length && !selectedCategories.some((cat) => (p.category || '').toLowerCase() === cat.toLowerCase())) return false;
     if (selectedDiscounts.length) {
-      const minDiscount = Math.min(
-        ...selectedDiscounts.map((label) => parseInt(label, 10) || 0)
-      );
-      if (p.discountPercent < minDiscount) return false;
+      const thresholds = selectedDiscounts.map((label) => parseInt(label, 10) || 0);
+      const matchesAny = thresholds.some((thresh) => p.discountPercent >= thresh);
+      if (!matchesAny) return false;
     }
-    if (p.price < priceMin || p.price > priceMax) return false;
+    if (p.discountPercent < discountMin || p.discountPercent > discountMax) return false;
+    if (p.price < priceMin || (priceMax > 0 && p.price > priceMax)) return false;
+
+    if (activeNav === 'Top Deals' && p.rating < 4.2 && p.reviews < 100) return false;
+    if (activeNav === 'Flash Deals' && p.discountPercent < 40) return false;
+    if (activeNav === 'Clearance Sale' && p.discountPercent < 50) return false;
+    if (activeNav === 'Weekend Offers' && p.discountPercent < 25) return false;
+
     return true;
   });
 
@@ -313,18 +322,41 @@ export default function DealsPage() {
                       </label>
                     ))}
 
-                    {/* Dual Range Bar */}
-                    <div className="pt-2">
-                      <div className="relative flex items-center my-1.5">
-                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-brand-800 rounded-full w-4/5" />
+                    {/* Interactive Discount Range Bar */}
+                    <div className="pt-2 space-y-2">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={discountMin}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (val <= discountMax) setDiscountMin(val);
+                            }}
+                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#063328]"
+                            title={`Min Discount: ${discountMin}%`}
+                          />
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={discountMax}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (val >= discountMin) setDiscountMax(val);
+                            }}
+                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#063328]"
+                            title={`Max Discount: ${discountMax}%`}
+                          />
                         </div>
-                        <div className="absolute left-0 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
-                        <div className="absolute right-1/5 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
                       </div>
-                      <div className="flex justify-between text-[11px] text-gray-500 font-bold mt-1">
-                        <span>10%</span>
-                        <span>70%+</span>
+                      <div className="flex justify-between text-[11px] text-gray-500 font-bold">
+                        <span>{discountMin}%</span>
+                        <span>{discountMax}%+</span>
                       </div>
                     </div>
                   </div>
@@ -347,23 +379,60 @@ export default function DealsPage() {
 
                 {openSections.price && (
                   <div className="space-y-3 pt-1">
-                    {/* Track */}
-                    <div className="relative flex items-center my-1.5">
-                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-800 rounded-full w-full" />
+                    {/* Interactive Price Range Sliders */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="range"
+                          min="0"
+                          max="150000"
+                          step="500"
+                          value={priceMin}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (val <= priceMax) setPriceMin(val);
+                          }}
+                          className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#063328]"
+                          title={`Min Price: ₹${priceMin}`}
+                        />
+                        <input
+                          type="range"
+                          min="0"
+                          max="150000"
+                          step="500"
+                          value={priceMax}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (val >= priceMin) setPriceMax(val);
+                          }}
+                          className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#063328]"
+                          title={`Max Price: ₹${priceMax}`}
+                        />
                       </div>
-                      <div className="absolute left-0 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
-                      <div className="absolute right-0 w-3.5 h-3.5 bg-brand-800 rounded-full shadow-xs cursor-pointer" />
                     </div>
 
-                    {/* Inputs */}
+                    {/* Editable Number Inputs */}
                     <div className="flex items-center space-x-2">
-                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 font-semibold">
-                        ₹ {priceMin}
+                      <div className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 focus-within:border-brand-800 focus-within:bg-white transition-all">
+                        <span className="text-xs text-gray-500 font-semibold mr-1">₹</span>
+                        <input
+                          type="number"
+                          value={priceMin}
+                          onChange={(e) => setPriceMin(Math.max(0, Number(e.target.value) || 0))}
+                          className="w-full text-xs text-gray-800 font-bold bg-transparent outline-none"
+                          placeholder="Min"
+                        />
                       </div>
                       <span className="text-gray-400 font-bold">-</span>
-                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 font-semibold">
-                        ₹ {priceMax}+
+                      <div className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 focus-within:border-brand-800 focus-within:bg-white transition-all">
+                        <span className="text-xs text-gray-500 font-semibold mr-1">₹</span>
+                        <input
+                          type="number"
+                          value={priceMax}
+                          onChange={(e) => setPriceMax(Number(e.target.value) || 0)}
+                          className="w-full text-xs text-gray-800 font-bold bg-transparent outline-none"
+                          placeholder="Max"
+                        />
                       </div>
                     </div>
                   </div>

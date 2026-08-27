@@ -79,15 +79,18 @@ import beautyCeramideCreamImg from '../assets/images/beauty_ceramide_cream.png';
 import beautyCherryBodywashImg from '../assets/images/beauty_cherry_bodywash.png';
 import beautyRosewaterMistImg from '../assets/images/beauty_rosewater_mist.jpg';
 
-// Category SVGs
 import mobileCategorySvg from '../assets/category/categoryMobile.svg';
 import laptopCategorySvg from '../assets/category/categoryLaptop.svg';
 import electronicsCategorySvg from '../assets/category/categoryElectronics.svg';
 import fashionCategorySvg from '../assets/category/categoryFashion.svg';
+import chairsCategorySvg from '../assets/category/categoryChairs.svg';
 import homeCategorySvg from '../assets/category/CategoryHome & kitchen.svg';
 import beautyCategorySvg from '../assets/category/categoryBeauty.svg';
 import shoesCategorySvg from '../assets/category/categoryShoes.svg';
 import bagsCategorySvg from '../assets/category/categoryBags & luddages.svg';
+import appliancesPng from '../assets/category/appliances.png';
+import sportsFitnessPng from '../assets/category/sports_fitness.png';
+import booksMorePng from '../assets/category/books_more.png';
 
 const categoriesList = [
   { id: 'All', name: 'All Products', icon: null },
@@ -95,10 +98,14 @@ const categoriesList = [
   { id: 'Laptops', name: 'Laptops', icon: laptopCategorySvg },
   { id: 'Electronics', name: 'Electronics', icon: electronicsCategorySvg },
   { id: 'Fashion', name: 'Fashion', icon: fashionCategorySvg },
+  { id: 'Chairs & Furniture', name: 'Chairs & Furniture', icon: chairsCategorySvg },
   { id: 'Home & Kitchen', name: 'Home & Kitchen', icon: homeCategorySvg },
   { id: 'Beauty', name: 'Beauty', icon: beautyCategorySvg },
   { id: 'Footwear', name: 'Footwear', icon: shoesCategorySvg },
-  { id: 'Bags & Luggage', name: 'Bags & Luggage', icon: bagsCategorySvg }
+  { id: 'Bags & Luggage', name: 'Bags & Luggage', icon: bagsCategorySvg },
+  { id: 'Sports & Fitness', name: 'Sports & Fitness', icon: sportsFitnessPng },
+  { id: 'Appliances', name: 'Appliances', icon: appliancesPng },
+  { id: 'Books & More', name: 'Books & More', icon: booksMorePng }
 ];
 
 const allShopProducts = [
@@ -872,16 +879,25 @@ const allShopProducts = [
 ];
 
 export default function ShopPage() {
-  const { navigateTo } = useNavigationContext();
+  const { navigateTo, selectedSubCategory, setSelectedSubCategory } = useNavigationContext();
   const { toggleWishlist, wishlistItems, addToCart } = useCartContext();
 
   const [dbProducts, setDbProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState(
+    typeof selectedSubCategory === 'string' ? selectedSubCategory : 'All'
+  );
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [sortBy, setSortBy] = useState('popularity');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Sync selected sub-category if passed from external navigation
+  useEffect(() => {
+    if (typeof selectedSubCategory === 'string') {
+      setSelectedCategory(selectedSubCategory);
+    }
+  }, [selectedSubCategory]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -889,19 +905,39 @@ export default function ShopPage() {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           const mapped = data.map((p) => {
-            const rawPrice = Number(p.price || p.current_price || 0);
-            const origPrice = Number(p.originalPrice || p.original_price || rawPrice * 1.3);
+            const rawPrice = Number(p.price || p.current_price || p.base_price || 0);
+            const origPrice = Number(p.originalPrice || p.original_price || p.base_price || (rawPrice * 1.3));
             const titleName = p.name || p.title || 'Product';
+            const catName = p.category_name || p.category?.name || (typeof p.category === 'string' ? p.category : 'General');
+            const subCatName = p.subcategory_name || p.subcategory?.name || (typeof p.subcategory === 'string' ? p.subcategory : '');
+            const brandName = p.brand_name || p.brand?.name || (typeof p.brand === 'string' ? p.brand : '');
+            
+            // Format discount percentage badge string
+            let discountStr = '20% OFF';
+            if (p.discount && typeof p.discount === 'string') {
+              discountStr = p.discount.includes('%') ? p.discount : `${p.discount}% OFF`;
+            } else if (p.discount_percentage) {
+              discountStr = `${p.discount_percentage}% OFF`;
+            } else if (origPrice > rawPrice && rawPrice > 0) {
+              const diffPct = Math.round(((origPrice - rawPrice) / origPrice) * 100);
+              if (diffPct > 0) discountStr = `${diffPct}% OFF`;
+            }
+
             return {
               id: p.id,
               name: titleName,
-              category: p.category || p.category_name || 'General',
-              image: getProductImage(titleName, p.image || p.primary_image),
+              category: catName,
+              subcategory: subCatName,
+              brand: brandName,
+              image: getProductImage(titleName, p.primary_image || p.image),
               price: rawPrice,
               originalPrice: Math.round(origPrice),
-              discount: p.discount || p.discount_percentage || '25% OFF',
+              discount: discountStr,
               rating: Number(p.rating || p.average_rating || 4.5),
-              popularity: Number(p.popularity || 90)
+              reviewsCount: Number(p.reviewsCount || p.reviews || p.review_count || 450),
+              popularity: Number(p.popularity || 90),
+              badge: p.badge || (p.is_new_arrival ? 'NEW' : (p.is_featured ? 'TOP PICK' : null)),
+              description: p.description || ''
             };
           });
           setDbProducts(mapped);
@@ -924,7 +960,7 @@ export default function ShopPage() {
 
   const handleToggleWishlist = (product, e) => {
     e.stopPropagation();
-    const wasWished = wishlistItems?.some((item) => item.id === product.id);
+    const wasWished = wishlistItems?.some((item) => item.id === product.id || item.productId === product.id);
     toggleWishlist(product);
     setToastMessage(
       wasWished
@@ -934,37 +970,76 @@ export default function ShopPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const isCategoryMatch = (productCat, targetCat) => {
+    if (!targetCat || targetCat.toLowerCase() === 'all') return true;
+    const p = (productCat || '').toLowerCase().trim();
+    const t = targetCat.toLowerCase().trim();
+    if (p === t) return true;
+
+    // Direct and alias category checks
+    if (t === 'chairs & furniture' || t === 'furniture') {
+      return p.includes('chair') || p.includes('furniture');
+    }
+    if (t === 'home & kitchen') {
+      return p.includes('home') || p.includes('kitchen') || p.includes('appliance');
+    }
+    if (t === 'appliances') {
+      return p.includes('appliance') || p.includes('cooker') || p.includes('grinder') || p.includes('fryer');
+    }
+    if (t === 'sports & fitness') {
+      return p.includes('sport') || p.includes('fitness') || p.includes('gym');
+    }
+    if (t === 'books & more' || t === 'books') {
+      return p.includes('book');
+    }
+    if (t === 'footwear' || t === 'shoes') {
+      return p.includes('shoe') || p.includes('footwear') || p.includes('sneaker');
+    }
+    if (t.includes('bag') || t.includes('luggage')) {
+      return p.includes('bag') || p.includes('luggage') || p.includes('backpack');
+    }
+    if (t === 'electronics') {
+      return p.includes('electronic') || p.includes('headphone') || p.includes('speaker') || p.includes('watch') || p.includes('camera');
+    }
+    if (t === 'fashion') {
+      return p.includes('fashion') || p.includes('shirt') || p.includes('kurti') || p.includes('dress') || p.includes('jacket');
+    }
+
+    return p.includes(t) || t.includes(p);
+  };
+
   // Filter & Sort
   const filteredProducts = useMemo(() => {
-    let result = [...allShopProducts];
+    const pool = dbProducts.length > 0 ? dbProducts : allShopProducts;
+    let result = [...pool];
 
-    if (selectedCategory !== 'All') {
-      result = result.filter(
-        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
+    if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
+      result = result.filter((p) => isCategoryMatch(p.category, selectedCategory));
     }
 
     if (sortBy === 'popularity') {
       result.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
     } else if (sortBy === 'price-low') {
-      result.sort((a, b) => a.price - b.price);
+      result.sort((a, b) => (a.price || 0) - (b.price || 0));
     } else if (sortBy === 'price-high') {
-      result.sort((a, b) => b.price - a.price);
+      result.sort((a, b) => (b.price || 0) - (a.price || 0));
     } else if (sortBy === 'rating') {
-      result.sort((a, b) => b.rating - a.rating);
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
 
     return result;
   }, [dbProducts, selectedCategory, sortBy]);
 
-  const isWishlisted = (id) => {
+  const isWishlisted = (itemOrId) => {
+    const id = typeof itemOrId === 'object' && itemOrId !== null ? itemOrId.id : itemOrId;
     return wishlistItems?.some((item) => item.id === id || item.productId === id);
   };
 
   // Calculate live count for each category
   const getCategoryCount = (catId) => {
-    if (catId === 'All') return allShopProducts.length;
-    return allShopProducts.filter((p) => p.category.toLowerCase() === catId.toLowerCase()).length;
+    const pool = dbProducts.length > 0 ? dbProducts : allShopProducts;
+    if (catId.toLowerCase() === 'all') return pool.length;
+    return pool.filter((p) => isCategoryMatch(p.category, catId)).length;
   };
 
   return (
@@ -997,7 +1072,8 @@ export default function ShopPage() {
 
             <div className="space-y-1.5">
               {categoriesList.map((cat) => {
-                const isSelected = selectedCategory.toLowerCase() === cat.id.toLowerCase();
+                const currentCatStr = (selectedCategory || 'All').toString().toLowerCase();
+                const isSelected = currentCatStr === (cat.id || '').toLowerCase();
                 const count = getCategoryCount(cat.id);
                 return (
                   <button
