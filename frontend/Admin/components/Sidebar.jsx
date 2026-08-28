@@ -81,18 +81,29 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
   }, [activeTab]);
 
   return (
-    <aside className="w-16 lg:w-64 bg-[#0D9488] text-white flex flex-col justify-between h-screen sticky top-0 border-r border-[#097168] shadow-xl shrink-0 overflow-y-auto scrollbar-none">
+    <aside className="w-16 lg:w-64 bg-[#004d47] text-white flex flex-col justify-between h-screen sticky top-0 border-r border-[#003b37] shadow-xl shrink-0 overflow-y-auto scrollbar-none font-sans">
       {/* Brand Header */}
       <div>
-        <div className="p-4 border-b border-[#14B8A6]/30 flex items-center justify-between bg-[#097168]">
-          <div className="flex items-center justify-center lg:justify-start space-x-3">
-            <span className="text-teal-100 font-bold tracking-wide text-lg">Admin</span>
+        <div className="p-4 border-b border-[#006059]/60 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/10 border border-white/15 shadow-xs">
+              <Package className="w-5 h-5 text-white" />
+            </div>
+            <div className="hidden lg:block text-left">
+              <h1 className="text-base font-bold text-white leading-tight tracking-wide">
+                Admin Panel
+              </h1>
+              <div className="flex items-center space-x-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-medium text-emerald-200/90">Online</span>
+              </div>
+            </div>
           </div>
           {onExitAdmin && (
             <button
               onClick={onExitAdmin}
               title="Return to Store"
-              className="p-1 text-teal-200 hover:text-white hover:bg-[#14B8A6]/40 rounded-md transition-colors"
+              className="p-1.5 text-emerald-200/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -100,7 +111,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
         </div>
 
         {/* Navigation Items */}
-        <nav className="p-3 space-y-1.5 mt-2">
+        <nav className="p-3 space-y-1.5 mt-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -109,21 +120,21 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${isActive
-                  ? 'bg-[#14B8A6] text-white shadow-md font-bold transform translate-x-1'
-                  : 'text-teal-100/90 hover:bg-[#097168] hover:text-white'
-                  }`}
+                className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-3 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'bg-[#008277] text-white shadow-lg shadow-[#008277]/25 font-semibold'
+                    : 'text-emerald-100/90 hover:bg-[#005c54] hover:text-white'
+                }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-teal-100'}`} />
-                <span className="hidden lg:inline">{item.label}</span>
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-emerald-200/90'}`} />
+                <span className="hidden lg:inline flex-1 text-left">{item.label}</span>
                 {badge > 0 && (
                   <span
-                    className={`hidden lg:flex ml-auto items-center justify-center min-w-[22px] h-[20px] px-1.5 rounded-full text-[10px] font-black ${isActive
-                      ? 'bg-white/25 text-white'
-                      : item.alert
-                        ? 'bg-[#14B8A6] text-white'
-                        : 'bg-[#097168] text-teal-100'
-                      }`}
+                    className={`hidden lg:flex items-center justify-center min-w-[22px] h-[20px] px-1.5 rounded-full text-[11px] font-bold ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#003833] text-emerald-200'
+                    }`}
                   >
                     {badge > 99 ? '99+' : badge}
                   </span>
@@ -134,38 +145,28 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
         </nav>
       </div>
 
-      {/* Footer Navigation: Settings & Logout */}
-      <div style={{ position: 'relative', background: '#097168' }}>
-        {/* Wave layers at the top */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
-          {/* Layer 1: bright back wave */}
+      {/* Footer Navigation: Settings & Exit Admin */}
+      <div className="p-3 border-t border-[#006059]/60 space-y-1">
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-3 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
+            activeTab === 'settings'
+              ? 'bg-[#008277] text-white shadow-lg shadow-[#008277]/25 font-semibold'
+              : 'text-emerald-100/90 hover:bg-[#005c54] hover:text-white'
+          }`}
+        >
+          <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'text-white' : 'text-emerald-200/90'}`} />
+          <span className="hidden lg:inline">Settings</span>
+        </button>
 
-
-
-        </div>
-
-        {/* Buttons */}
-        <div className="p-3 space-y-0.5">
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${activeTab === 'settings'
-              ? 'bg-[#14B8A6] text-white shadow-md font-bold'
-              : 'text-teal-100/90 hover:bg-[#097168] hover:text-white'
-              }`}
-          >
-            <Settings className="w-5 h-5 text-teal-100" />
-            <span className="hidden lg:inline">Settings</span>
-          </button>
-
-          <button
-            onClick={onExitAdmin}
-            className="w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm text-red-300 hover:bg-red-950/40 hover:text-red-200 transition-all duration-200 cursor-pointer"
-          >
-            <LogOut className="w-5 h-5 text-red-400" />
-            <span className="hidden lg:inline">Exit Admin</span>
-          </button>
-        </div>
+        <button
+          onClick={onExitAdmin}
+          className="w-full flex items-center justify-center lg:justify-start space-x-3.5 px-3 lg:px-4 py-2.5 rounded-xl font-medium text-sm text-[#ff6b6b] hover:bg-[#ff6b6b]/10 hover:text-red-300 transition-all duration-200 cursor-pointer"
+        >
+          <LogOut className="w-5 h-5 text-[#ff6b6b]" />
+          <span className="hidden lg:inline font-semibold">Exit Admin</span>
+        </button>
       </div>
-    </aside >
+    </aside>
   );
 }

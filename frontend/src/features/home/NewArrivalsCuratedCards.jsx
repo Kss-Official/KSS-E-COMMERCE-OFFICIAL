@@ -18,7 +18,9 @@ const CURATED_CARDS = [
     priceColor: '#ff680d',
     buttonColor: '#0d6efd',
     image: rakhiCollectionImg,
-    targetPage: 'fashion'
+    badge: 'NEW',
+    badgeBg: '#0d6efd',
+    targetPage: 'fashion',
   },
   {
     id: 'na-2',
@@ -28,8 +30,9 @@ const CURATED_CARDS = [
     priceColor: '#0d6efd',
     buttonColor: '#0d6efd',
     image: shararaSetsImg,
+    badge: 'NEW',
+    badgeBg: '#0d6efd',
     targetPage: 'fashion',
-
   },
   {
     id: 'na-3',
@@ -39,7 +42,9 @@ const CURATED_CARDS = [
     priceColor: '#ff680d',
     buttonColor: '#ff680d',
     image: ethnicJuttisImg,
-    targetPage: 'fashion'
+    badge: 'TRENDING',
+    badgeBg: '#ff680d',
+    targetPage: 'fashion',
   },
   {
     id: 'na-4',
@@ -49,7 +54,9 @@ const CURATED_CARDS = [
     priceColor: '#0d6efd',
     buttonColor: '#0d6efd',
     image: kidsEthnicSetsImg,
-    targetPage: 'fashion'
+    badge: 'NEW',
+    badgeBg: '#0d6efd',
+    targetPage: 'fashion',
   },
   {
     id: 'na-5',
@@ -59,7 +66,9 @@ const CURATED_CARDS = [
     priceColor: '#ff680d',
     buttonColor: '#0d6efd',
     image: templeJewelleryImg,
-    targetPage: 'fashion'
+    badge: 'NEW',
+    badgeBg: '#0d6efd',
+    targetPage: 'fashion',
   }
 ];
 
@@ -81,7 +90,15 @@ export default function NewArrivalsCuratedCards() {
                 className="bg-white rounded-3xl p-3.5 sm:p-4 shadow-sm hover:shadow-xl border border-gray-100/90 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between group cursor-pointer overflow-hidden"
               >
                 {/* Clean Artwork Container */}
-                <div className="w-full overflow-hidden rounded-2xl bg-gray-50/50 flex items-center justify-center">
+                <div className="w-full overflow-hidden rounded-2xl bg-gray-50/50 flex items-center justify-center relative">
+                  {card.badge && (
+                    <span
+                      className="absolute top-2.5 left-2.5 z-10 text-[9px] sm:text-[10px] font-extrabold tracking-wider text-white uppercase px-2 py-0.5 rounded-md shadow-xs pointer-events-none select-none"
+                      style={{ backgroundColor: card.badgeBg || '#0d6efd' }}
+                    >
+                      {card.badge}
+                    </span>
+                  )}
                   <img
                     src={card.image}
                     alt={card.title}
