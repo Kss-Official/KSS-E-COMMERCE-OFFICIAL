@@ -16,6 +16,7 @@ import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
 import { fetchProducts } from '../services/api';
 import CartButton from '../components/ui/CartButton';
+import NewArrivalsCuratedCards from '../features/home/NewArrivalsCuratedCards';
 
 // Import product images
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -674,6 +675,9 @@ export default function NewArrivalsPage() {
             </div>
 
           </div>
+
+          {/* Curated 5-Card Pedestal Architectural Showcase */}
+          <NewArrivalsCuratedCards />
 
           {/* Controls Bar: Items count + View Switcher + Sort Dropdown */}
           <div id="products-grid" className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
