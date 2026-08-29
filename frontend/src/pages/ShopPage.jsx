@@ -901,7 +901,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetchProducts({ no_page: 'true' })
+    fetchProducts({ no_page: 'true', page_size: 500 })
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           const mapped = data.map((p) => {
@@ -1120,7 +1120,7 @@ export default function ShopPage() {
                   {selectedCategory === 'All' ? 'All Products' : selectedCategory}
                 </h1>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  Showing <span className="text-gray-900 font-bold">{filteredProducts.length}</span> items
+                  Showing <span className="text-gray-900 font-bold">{filteredProducts.length}</span> of <span className="text-gray-900 font-bold">{dbProducts.length || filteredProducts.length}</span> products
                 </p>
               </div>
 

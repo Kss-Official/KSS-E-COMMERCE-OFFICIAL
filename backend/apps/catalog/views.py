@@ -68,7 +68,7 @@ class ProductListView(generics.ListAPIView):
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).select_related('category', 'brand').prefetch_related('images')
+        qs = Product.objects.filter(is_active=True).select_related('category', 'brand', 'subcategory').prefetch_related('images')
         if not self.request:
             return qs
         
@@ -137,8 +137,9 @@ class ProductListView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        # If no_page param is passed, return unpaginated list, otherwise paginate
-        if request.query_params.get('no_page') == 'true' or request.query_params.get('all') == 'true':
+        # Return all products by default unless explicit pagination page parameter is provided
+        page_param = request.query_params.get('page')
+        if not page_param or request.query_params.get('no_page') == 'true' or request.query_params.get('all') == 'true':
             serializer = self.get_serializer(queryset, many=True, context={'request': request})
             return APIResponse.success(data={"results": serializer.data, "count": queryset.count()}, message="Products retrieved successfully.")
         

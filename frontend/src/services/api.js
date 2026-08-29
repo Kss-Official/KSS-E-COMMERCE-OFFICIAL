@@ -106,7 +106,11 @@ export async function fetchCategories() {
 }
 
 export async function fetchProducts(params = {}) {
-  const query = new URLSearchParams(params).toString();
+  const queryParams = { ...params };
+  if (!queryParams.page && !queryParams.page_size && typeof queryParams.no_page === 'undefined') {
+    queryParams.no_page = 'true';
+  }
+  const query = new URLSearchParams(queryParams).toString();
   const res = await apiRequest(`/catalog/products/?${query}`);
   if (Array.isArray(res?.data)) return res.data;
   if (res?.data?.results) return res.data.results;

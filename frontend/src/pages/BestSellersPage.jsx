@@ -303,14 +303,13 @@ export default function BestSellersPage() {
       .then((data) => {
         const rawList = Array.isArray(data) && data.length > 0 ? data : [];
         
-        // Deduplicate database items by normalized title key
+        // Deduplicate database items by ID or full title
         const uniqueItems = [];
         const seen = new Set();
         for (const item of rawList) {
-          const rawTitle = String(item.title || item.name || '').trim().toLowerCase();
-          const titleKey = rawTitle.replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').slice(0, 16);
-          if (titleKey && !seen.has(titleKey)) {
-            seen.add(titleKey);
+          const itemKey = item.id || String(item.title || item.name || '').trim().toLowerCase();
+          if (itemKey && !seen.has(itemKey)) {
+            seen.add(itemKey);
             uniqueItems.push(item);
           }
         }

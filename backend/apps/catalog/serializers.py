@@ -132,7 +132,9 @@ class ProductListSerializer(serializers.ModelSerializer):
         return min(99, 80 + (obj.id * 3) % 20)
 
     def _get_image(self, obj):
-        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        images = list(obj.images.all()) if hasattr(obj, 'images') else []
+        primary = next((i for i in images if i.is_primary), None)
+        img = primary or (images[0] if images else None)
         if img and img.image:
             request = self.context.get('request')
             if request:

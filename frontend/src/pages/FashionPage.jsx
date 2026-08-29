@@ -313,25 +313,26 @@ export default function FashionPage() {
   useEffect(() => {
     fetchProducts({ no_page: 'true' }).then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        const fashionData = data.filter(p => ['Fashion', 'Footwear', 'Bags & Luggage', "Women's Wear", "Men's Wear", 'Ethnic Wear'].includes(p.category));
-        if (fashionData.length > 0) {
-          const uniqueItems = [];
-          const seenImages = new Set();
-          for (const item of fashionData) {
-            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
-            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
-            if (imgName && !seenImages.has(imgName)) {
-              seenImages.add(imgName);
-              uniqueItems.push({
-                ...item,
-                name: item.name || item.title,
-                image: resolvedImg,
-                sizes: item.sizes || ['S', 'M', 'L', 'XL']
-              });
-            }
-          }
-          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialFashionProducts);
-        }
+        const fashionCategories = ['fashion', 'footwear', 'bags', 'luggage', 'women', 'men', 'ethnic', 'clothing', 'shirt', 'kurta', 'dress', 'shoe', 'sneaker'];
+        const fashionData = data.filter(p => {
+          const cat = String(p.category || p.category_name || '').toLowerCase();
+          return fashionCategories.some(c => cat.includes(c));
+        });
+        const itemsToUse = fashionData.length > 0 ? fashionData : data;
+        const mapped = itemsToUse.map((item) => ({
+          ...item,
+          name: item.name || item.title,
+          category: item.category || item.category_name || 'Fashion',
+          brand: item.brand || item.brand_name || 'BuyZo',
+          image: getProductImage(item.name || item.title, item.image || item.primary_image),
+          price: Number(item.price || item.current_price || item.base_price || 0),
+          originalPrice: Number(item.originalPrice || item.original_price || item.base_price || (item.price * 1.3)),
+          rating: Number(item.rating || item.average_rating || 4.5),
+          reviews: Number(item.reviews || item.review_count || 120),
+          popularity: Number(item.popularity || item.review_count || 90),
+          sizes: item.sizes || ['S', 'M', 'L', 'XL']
+        }));
+        setProductsList(mapped);
       }
     });
   }, []);

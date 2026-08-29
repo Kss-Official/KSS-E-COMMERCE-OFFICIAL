@@ -217,24 +217,25 @@ export default function ElectronicsPage() {
   useEffect(() => {
     fetchProducts({ no_page: 'true' }).then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        const elecData = data.filter(p => ['Electronics', 'Mobiles', 'Laptops', 'Headphones', 'Smartwatches', 'Speakers'].includes(p.category));
-        if (elecData.length > 0) {
-          const uniqueItems = [];
-          const seenImages = new Set();
-          for (const item of elecData) {
-            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
-            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
-            if (imgName && !seenImages.has(imgName)) {
-              seenImages.add(imgName);
-              uniqueItems.push({
-                ...item,
-                name: item.name || item.title,
-                image: resolvedImg
-              });
-            }
-          }
-          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialProducts);
-        }
+        const elecCategories = ['electronics', 'mobiles', 'laptops', 'headphones', 'smartwatches', 'speakers', 'cameras', 'accessories'];
+        const elecData = data.filter(p => {
+          const cat = String(p.category || p.category_name || '').toLowerCase();
+          return elecCategories.some(c => cat.includes(c));
+        });
+        const itemsToUse = elecData.length > 0 ? elecData : data;
+        const mapped = itemsToUse.map((item) => ({
+          ...item,
+          name: item.name || item.title,
+          category: item.category || item.category_name || 'Electronics',
+          brand: item.brand || item.brand_name || 'BuyZo',
+          image: getProductImage(item.name || item.title, item.image || item.primary_image),
+          price: Number(item.price || item.current_price || item.base_price || 0),
+          originalPrice: Number(item.originalPrice || item.original_price || item.base_price || (item.price * 1.3)),
+          rating: Number(item.rating || item.average_rating || 4.5),
+          reviews: Number(item.reviews || item.review_count || 120),
+          popularity: Number(item.popularity || item.review_count || 90)
+        }));
+        setProductsList(mapped);
       }
     });
   }, []);
@@ -307,7 +308,7 @@ export default function ElectronicsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Electronics</h1>
           <p className="text-xs text-gray-500 font-medium mt-1">
-            Showing 1-{filteredProducts.length} of 120 products
+            Showing <span className="font-bold text-gray-900">{filteredProducts.length}</span> of <span className="font-bold text-gray-900">{productsList.length}</span> products
           </p>
         </div>
 

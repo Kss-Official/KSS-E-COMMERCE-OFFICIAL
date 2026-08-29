@@ -293,24 +293,25 @@ export default function BeautyPage() {
   useEffect(() => {
     fetchProducts({ no_page: 'true' }).then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        const beautyData = data.filter(p => ['Beauty', 'Skincare', 'Makeup', 'Haircare', 'Fragrance', 'Bath & Body'].includes(p.category));
-        if (beautyData.length > 0) {
-          const uniqueItems = [];
-          const seenImages = new Set();
-          for (const item of beautyData) {
-            const resolvedImg = getProductImage(item.name || item.title, item.image || item.primary_image);
-            const imgName = resolvedImg ? String(resolvedImg).split('/').pop().split('?')[0] : (item.name || item.title);
-            if (imgName && !seenImages.has(imgName)) {
-              seenImages.add(imgName);
-              uniqueItems.push({
-                ...item,
-                name: item.name || item.title,
-                image: resolvedImg
-              });
-            }
-          }
-          setProductsList(uniqueItems.length > 0 ? uniqueItems : initialBeautyProducts);
-        }
+        const beautyCategories = ['beauty', 'skincare', 'makeup', 'haircare', 'fragrance', 'bath', 'body', 'serum', 'cream', 'lipstick', 'perfume', 'wash'];
+        const beautyData = data.filter(p => {
+          const cat = String(p.category || p.category_name || '').toLowerCase();
+          return beautyCategories.some(c => cat.includes(c));
+        });
+        const itemsToUse = beautyData.length > 0 ? beautyData : data;
+        const mapped = itemsToUse.map((item) => ({
+          ...item,
+          name: item.name || item.title,
+          category: item.category || item.category_name || 'Beauty',
+          brand: item.brand || item.brand_name || 'BuyZo',
+          image: getProductImage(item.name || item.title, item.image || item.primary_image),
+          price: Number(item.price || item.current_price || item.base_price || 0),
+          originalPrice: Number(item.originalPrice || item.original_price || item.base_price || (item.price * 1.3)),
+          rating: Number(item.rating || item.average_rating || 4.5),
+          reviews: Number(item.reviews || item.review_count || 120),
+          popularity: Number(item.popularity || item.review_count || 90)
+        }));
+        setProductsList(mapped);
       }
     });
   }, []);

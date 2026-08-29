@@ -682,7 +682,7 @@ export default function NewArrivalsPage() {
           {/* Controls Bar: Items count + View Switcher + Sort Dropdown */}
           <div id="products-grid" className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
             <p className="text-xs sm:text-sm text-gray-500 font-medium">
-              Showing <span className="font-bold text-gray-800">1–{filteredProducts.length}</span> of <span className="font-bold text-gray-800">356</span> products
+              Showing <span className="font-bold text-gray-800">{filteredProducts.length}</span> of <span className="font-bold text-gray-800">{allProductsList.length}</span> products
             </p>
 
             <div className="flex items-center space-x-3">
