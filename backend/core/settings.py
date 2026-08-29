@@ -86,31 +86,42 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 ASGI_APPLICATION = 'core.asgi.application'
 
-# Database Configuration (MySQL with fallback to SQLite for zero-config run)
-db_engine_choice = env('DB_ENGINE', default='sqlite').lower()
-
-if db_engine_choice == 'mysql':
+# Database Configuration (MySQL / Railway DB)
+if env('DATABASE_URL', default=None):
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': env('DB_NAME', default='buyzo_db'),
-            'USER': env('DB_USER', default='root'),
-            'PASSWORD': env('DB_PASSWORD', default='password'),
-            'HOST': env('DB_HOST', default='127.0.0.1'),
-            'PORT': env('DB_PORT', default='3306'),
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        'default': env.db('DATABASE_URL')
+    }
+    if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
+        DATABASES['default'].setdefault('OPTIONS', {})
+        DATABASES['default']['OPTIONS'].update({
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        })
+else:
+    db_engine_choice = env('DB_ENGINE', default='sqlite').lower()
+    
+    if db_engine_choice == 'mysql':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': env('DB_NAME', default='railway'),
+                'USER': env('DB_USER', default='root'),
+                'PASSWORD': env('DB_PASSWORD', default='lZKCRfpRMlYhagVplRXIMSyRBMyIjCxh'),
+                'HOST': env('DB_HOST', default='127.0.0.1'),
+                'PORT': env('DB_PORT', default='3306'),
+                'OPTIONS': {
+                    'charset': 'utf8mb4',
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                }
             }
         }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
         }
-    }
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -167,8 +178,9 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
 
-# CORS Configuration (Configured for all 4 portal origins & local development)
+# CORS Configuration (Configured for Vercel & local development)
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'https://buyzo-main.vercel.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
@@ -178,7 +190,10 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:4173',
     'http://127.0.0.1:4173',
 ])
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',

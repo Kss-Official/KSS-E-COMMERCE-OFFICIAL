@@ -14,7 +14,8 @@ import {
   Settings,
   ChevronLeft,
   Warehouse,
-  PackageCheck
+  PackageCheck,
+  LogOut
 } from 'lucide-react';
 import { fetchWarehouseSummaryApi, fetchWarehouseAlertsApi } from '../../src/services/api';
 
@@ -56,40 +57,35 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
   return (
     <aside className="w-16 lg:w-64 bg-[#1D4ED8] text-white flex flex-col justify-between h-screen sticky top-0 border-r border-[#173eb2] shadow-xl shrink-0 overflow-y-auto scrollbar-none">
       <div>
-        {/* Warehouse Header Card */}
-        <div className="p-2 lg:p-5 border-b border-[#3B82F6]/30 bg-[#173eb2] flex flex-col items-center text-center relative">
+        {/* Brand Header */}
+        <div className="p-4 border-b border-[#3B82F6]/40 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/10 border border-white/15 shadow-xs">
+              <Warehouse className="w-5 h-5 text-white" />
+            </div>
+            <div className="hidden lg:block text-left">
+              <h1 className="text-base font-bold text-white leading-tight tracking-wide">
+                Warehouse Panel
+              </h1>
+              <button
+                onClick={() => setIsOnline(!isOnline)}
+                title="Click to toggle status"
+                className="flex items-center space-x-1.5 mt-0.5 text-xs font-medium text-blue-100/90 hover:text-white cursor-pointer transition-colors"
+              >
+                <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-blue-300 animate-pulse' : 'bg-gray-400'}`} />
+                <span>{warehouseCode} • {isOnline ? 'Online' : 'Offline'}</span>
+              </button>
+            </div>
+          </div>
           {onExitPortal && (
             <button
               onClick={onExitPortal}
               title="Return to Store"
-              className="absolute left-3 top-3 p-1 text-blue-200 hover:text-white hover:bg-[#3B82F6]/40 rounded-md transition-colors"
+              className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-
-          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#60a5fa] flex items-center justify-center text-white mb-2 shadow-md border-2 border-blue-300/40">
-            <Warehouse className="w-9 h-9" />
-          </div>
-
-          <h3 className="hidden lg:block font-extrabold text-white text-base tracking-wide leading-tight">
-            Warehouse - {warehouseCode}
-          </h3>
-          <span className="hidden lg:inline text-[11px] text-blue-100 font-medium">
-            {counts.total_skus ? `${counts.total_skus.toLocaleString('en-IN')} SKUs on floor` : 'Main Warehouse'}
-          </span>
-
-          {/* Interactive Status Toggle Pill */}
-          <button
-            onClick={() => setIsOnline(!isOnline)}
-            className={`mt-2.5 flex items-center justify-center lg:space-x-2 px-2 lg:px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${isOnline
-              ? 'bg-[#3B82F6]/30 text-blue-100 border border-[#3B82F6]/50 hover:bg-[#3B82F6]/40'
-              : 'bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-700'
-              }`}
-          >
-            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-blue-300 animate-pulse' : 'bg-gray-400'}`}></span>
-            <span className="hidden lg:inline">{isOnline ? 'Online' : 'Offline'}</span>
-          </button>
         </div>
 
         {/* Navigation Menu */}
@@ -134,6 +130,16 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
           <Settings className="w-5 h-5 text-blue-200" />
           <span className="hidden lg:inline">Settings</span>
         </button>
+
+        {onExitPortal && (
+          <button
+            onClick={onExitPortal}
+            className="w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm text-[#ff6b6b] hover:bg-[#ff6b6b]/10 hover:text-red-300 transition-all duration-200 cursor-pointer"
+          >
+            <LogOut className="w-5 h-5 text-[#ff6b6b]" />
+            <span className="hidden lg:inline font-semibold">Exit Portal</span>
+          </button>
+        )}
 
         <div className="hidden lg:block bg-[#173eb2]/90 border border-[#3B82F6]/40 p-3.5 rounded-2xl text-center shadow-xs mt-2">
           <div className="w-8 h-8 rounded-full bg-[#3B82F6]/30 text-blue-200 flex items-center justify-center mx-auto mb-1.5">
