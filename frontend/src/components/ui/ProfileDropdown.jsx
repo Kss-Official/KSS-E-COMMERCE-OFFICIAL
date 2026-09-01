@@ -57,7 +57,7 @@ export default function ProfileDropdown({
     if (onLogout) {
       onLogout();
     } else {
-      window.location.hash = '#home';
+      window.location.hash = '#login';
     }
   };
 

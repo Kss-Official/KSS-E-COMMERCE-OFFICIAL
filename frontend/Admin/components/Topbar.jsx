@@ -3,7 +3,7 @@ import { Search, Bell, Calendar, Store, Menu, ShoppingBag, AlertTriangle, Credit
 import { getCurrentUser } from '../../src/services/api';
 import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
-export default function Topbar({ title, onExitAdmin, setActiveTab, onToggleMobileSidebar }) {
+export default function Topbar({ title, onExitAdmin, onLogout, setActiveTab }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef(null);
@@ -269,7 +269,7 @@ export default function Topbar({ title, onExitAdmin, setActiveTab, onToggleMobil
               avatar: currentUser?.avatar
             }}
             setActiveTab={setActiveTab}
-            onLogout={onExitAdmin}
+            onLogout={onLogout}
             portalType="admin"
           />
         </div>

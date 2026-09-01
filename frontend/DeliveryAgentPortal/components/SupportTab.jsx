@@ -55,8 +55,12 @@ export default function SupportTab() {
     }
   };
 
+  const contacts = Array.isArray(support?.contacts) ? support.contacts : [];
+  const faqs = Array.isArray(support?.faqs) ? support.faqs : [];
+  const tickets = Array.isArray(support?.tickets) ? support.tickets : [];
+
   // The emergency contact comes from the backend contact list.
-  const sos = support.contacts.find((c) => /emergency|accident|safety/i.test(c.label)) || null;
+  const sos = contacts.find((c) => /emergency|accident|safety/i.test(c.label)) || null;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -97,11 +101,11 @@ export default function SupportTab() {
 
       {/* Real support desks */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {isLoading && support.contacts.length === 0 &&
+        {isLoading && contacts.length === 0 &&
           [1, 2, 3].map((n) => (
             <div key={n} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs h-24 animate-pulse" />
           ))}
-        {support.contacts.map((contact) => (
+        {contacts.map((contact) => (
           <div key={contact.label} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">{contact.label}</span>
             <h4 className="font-bold text-sm text-gray-900 mt-0.5">{contact.name}</h4>
@@ -190,12 +194,12 @@ export default function SupportTab() {
           )}
         </div>
         <div className="divide-y divide-gray-100">
-          {!isLoading && support.tickets.length === 0 && (
+          {!isLoading && tickets.length === 0 && (
             <p className="px-5 py-8 text-center text-xs font-semibold text-gray-400">
               You have not raised any tickets yet.
             </p>
           )}
-          {support.tickets.map((t) => (
+          {tickets.map((t) => (
             <div key={t.id} className="px-5 py-3.5 flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-gray-900">{t.subject}</p>
@@ -223,7 +227,7 @@ export default function SupportTab() {
           <h3 className="font-bold text-base text-gray-900">Rider FAQs</h3>
         </div>
         <div className="divide-y divide-gray-100">
-          {support.faqs.map((faq, idx) => (
+          {faqs.map((faq, idx) => (
             <div key={faq.question}>
               <button
                 type="button"

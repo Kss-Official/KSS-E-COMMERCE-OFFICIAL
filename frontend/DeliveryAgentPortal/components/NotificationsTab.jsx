@@ -25,6 +25,10 @@ export default function NotificationsTab() {
 
   useEffect(() => {
     loadNotifications();
+    const interval = setInterval(() => {
+      loadNotifications();
+    }, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -41,13 +45,6 @@ export default function NotificationsTab() {
               {unread} needs action
             </span>
           )}
-          <button
-            onClick={loadNotifications}
-            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
 

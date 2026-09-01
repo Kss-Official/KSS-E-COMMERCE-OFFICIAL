@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardTab from './components/DashboardTab';
@@ -6,16 +6,25 @@ import MyDeliveriesTab from './components/MyDeliveriesTab';
 import ActiveDeliveryTab from './components/ActiveDeliveryTab';
 import HistoryTab from './components/HistoryTab';
 import EarningsTab from './components/EarningsTab';
+import CashInHandTab from './components/CashInHandTab';
 import NotificationsTab from './components/NotificationsTab';
 import ProfileTab from './components/ProfileTab';
 import SupportTab from './components/SupportTab';
 import { LayoutDashboard, Truck, Wallet, User, Headphones } from 'lucide-react';
 import { useNavigationContext } from '../src/context/NavigationContext';
+import { getCurrentUser, autoAuthenticateRole, logoutUser } from '../src/services/api';
 
 export default function DeliveryAgentPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const navContext = useNavigationContext();
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'DELIVERY_AGENT') {
+      autoAuthenticateRole('delivery');
+    }
+  }, []);
 
   const handleExitPortal = () => {
     if (navContext?.navigateTo) {
@@ -25,22 +34,40 @@ export default function DeliveryAgentPage() {
     }
   };
 
+  const handleLogout = () => {
+    logoutUser();
+    localStorage.removeItem('buyzo_access_token');
+    localStorage.removeItem('buyzo_current_user');
+    localStorage.setItem('buyzo_current_page', 'login');
+    if (navContext?.navigateTo) {
+      navContext.navigateTo('login');
+    } else {
+      window.location.hash = '#login';
+    }
+  };
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'my-deliveries':
-        return <MyDeliveriesTab />;
+        return <MyDeliveriesTab setActiveTab={setActiveTab} />;
       case 'active-delivery':
-        return <ActiveDeliveryTab />;
+        return <ActiveDeliveryTab setActiveTab={setActiveTab} />;
       case 'history':
-        return <HistoryTab />;
+        return <HistoryTab setActiveTab={setActiveTab} />;
       case 'earnings':
-        return <EarningsTab />;
+        return <EarningsTab setActiveTab={setActiveTab} />;
+      case 'cash-in-hand':
+      case 'cash-tracker':
+      case 'cash_tracker':
+      case 'cash_in_hand':
+      case 'cash':
+        return <CashInHandTab setActiveTab={setActiveTab} />;
       case 'notifications':
-        return <NotificationsTab />;
+        return <NotificationsTab setActiveTab={setActiveTab} />;
       case 'profile':
-        return <ProfileTab />;
+        return <ProfileTab setActiveTab={setActiveTab} />;
       case 'support':
-        return <SupportTab />;
+        return <SupportTab setActiveTab={setActiveTab} />;
       case 'dashboard':
       default:
         return <DashboardTab setActiveTab={setActiveTab} />;

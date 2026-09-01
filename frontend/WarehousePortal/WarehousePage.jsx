@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardTab from './components/DashboardTab';
 import InboundTab from './components/InboundTab';
 import InventoryTab from './components/InventoryTab';
 import OutboundTab from './components/OutboundTab';
+import CashHandoversTab from './components/CashHandoversTab';
 import StockTransfersTab from './components/StockTransfersTab';
 import ReturnsTab from './components/ReturnsTab';
 import OrdersTab from './components/OrdersTab';
@@ -14,11 +15,19 @@ import AlertsTab from './components/AlertsTab';
 import SettingsTab from './components/SettingsTab';
 import { LayoutDashboard, ArrowDownToLine, Boxes, ShoppingBag, Menu } from 'lucide-react';
 import { useNavigationContext } from '../src/context/NavigationContext';
+import { getCurrentUser, autoAuthenticateRole, logoutUser } from '../src/services/api';
 
 export default function WarehousePage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const navContext = useNavigationContext();
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'WAREHOUSE') {
+      autoAuthenticateRole('warehouse');
+    }
+  }, []);
 
   const handleExitPortal = () => {
     if (navContext?.navigateTo) {
@@ -28,28 +37,42 @@ export default function WarehousePage() {
     }
   };
 
+  const handleLogout = () => {
+    logoutUser();
+    localStorage.removeItem('buyzo_access_token');
+    localStorage.removeItem('buyzo_current_user');
+    localStorage.setItem('buyzo_current_page', 'login');
+    if (navContext?.navigateTo) {
+      navContext.navigateTo('login');
+    } else {
+      window.location.hash = '#login';
+    }
+  };
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'inbound':
-        return <InboundTab />;
+        return <InboundTab setActiveTab={setActiveTab} />;
       case 'inventory':
-        return <InventoryTab />;
+        return <InventoryTab setActiveTab={setActiveTab} />;
       case 'outbound':
-        return <OutboundTab />;
+        return <OutboundTab setActiveTab={setActiveTab} />;
+      case 'cash-handovers':
+        return <CashHandoversTab setActiveTab={setActiveTab} />;
       case 'orders':
-        return <OrdersTab />;
+        return <OrdersTab setActiveTab={setActiveTab} />;
       case 'shipments':
-        return <ShipmentsTab />;
+        return <ShipmentsTab setActiveTab={setActiveTab} />;
       case 'transfers':
-        return <StockTransfersTab />;
+        return <StockTransfersTab setActiveTab={setActiveTab} />;
       case 'returns':
-        return <ReturnsTab />;
+        return <ReturnsTab setActiveTab={setActiveTab} />;
       case 'reports':
-        return <ReportsTab />;
+        return <ReportsTab setActiveTab={setActiveTab} />;
       case 'alerts':
-        return <AlertsTab />;
+        return <AlertsTab setActiveTab={setActiveTab} />;
       case 'settings':
-        return <SettingsTab />;
+        return <SettingsTab setActiveTab={setActiveTab} />;
       case 'dashboard':
       default:
         return <DashboardTab setActiveTab={setActiveTab} />;

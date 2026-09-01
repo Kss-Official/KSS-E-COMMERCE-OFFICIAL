@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardTab from './components/DashboardTab';
@@ -14,17 +14,37 @@ import SettingsTab from './components/SettingsTab';
 import AdminSupportTickets from './AdminSupportTickets';
 import { LayoutDashboard, Package, ShoppingBag, Users, Menu } from 'lucide-react';
 import { useNavigationContext } from '../src/context/NavigationContext';
+import { getCurrentUser, autoAuthenticateRole, logoutUser } from '../src/services/api';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const navContext = useNavigationContext();
 
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'ADMIN') {
+      autoAuthenticateRole('admin');
+    }
+  }, []);
+
   const handleExitAdmin = () => {
     if (navContext?.navigateTo) {
       navContext.navigateTo('home');
     } else {
       window.location.hash = '#home';
+    }
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    localStorage.removeItem('buyzo_access_token');
+    localStorage.removeItem('buyzo_current_user');
+    localStorage.setItem('buyzo_current_page', 'login');
+    if (navContext?.navigateTo) {
+      navContext.navigateTo('login');
+    } else {
+      window.location.hash = '#login';
     }
   };
 

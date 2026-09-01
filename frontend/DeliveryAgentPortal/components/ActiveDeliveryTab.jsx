@@ -19,7 +19,8 @@ import {
   fetchDeliveryTasksApi,
   advanceDeliveryStageApi,
   verifyDeliveryOtpApi,
-  collectCodApi
+  collectCodApi,
+  failDeliveryTaskApi
 } from '../../src/services/api';
 import { getProductImage } from '../../src/utils/productAssets';
 
@@ -50,6 +51,40 @@ const STAGES = [
   }
 ];
 
+function getSavedStage(taskId) {
+  if (!taskId) return null;
+  try {
+    const raw = localStorage.getItem('buyzo_delivery_stages');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed[String(taskId)] || null;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveStageToLocalStorage(taskId, stage) {
+  if (!taskId) return;
+  try {
+    const raw = localStorage.getItem('buyzo_delivery_stages');
+    const parsed = raw ? JSON.parse(raw) : {};
+    parsed[String(taskId)] = Number(stage);
+    localStorage.setItem('buyzo_delivery_stages', JSON.stringify(parsed));
+  } catch (e) {}
+}
+
+function clearStageFromLocalStorage(taskId) {
+  if (!taskId) return;
+  try {
+    const raw = localStorage.getItem('buyzo_delivery_stages');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      delete parsed[String(taskId)];
+      localStorage.setItem('buyzo_delivery_stages', JSON.stringify(parsed));
+    }
+  } catch (e) {}
+}
+
 export default function ActiveDeliveryTab() {
   const [task, setTask] = useState(null);
   const [allTasks, setAllTasks] = useState([]);
@@ -74,25 +109,47 @@ export default function ActiveDeliveryTab() {
 
     try {
       const tasks = await fetchDeliveryTasksApi();
-      const rows = Array.isArray(tasks) ? tasks : [];
+      const rawRows = Array.isArray(tasks) ? tasks : [];
+
+      const rows = rawRows.map((t) => {
+        const saved = getSavedStage(t.id) || getSavedStage(t.task_id) || getSavedStage(t.order_number);
+        const stageNum = saved !== null ? Number(saved) : Number(t.current_stage || 1);
+        return {
+          ...t,
+          current_stage: Math.max(stageNum, 1)
+        };
+      });
+
       setAllTasks(rows);
 
       setTask((prev) => {
-        if (prev) {
-          const matched = rows.find((r) => String(r.id) === String(prev.id) || String(r.task_id) === String(prev.task_id) || String(r.order_number) === String(prev.order_number));
-          if (matched) {
-            return {
-              ...matched,
-              current_stage: Math.max(Number(prev.current_stage || 1), Number(matched.current_stage || 1))
-            };
-          }
-          return prev;
-        }
         const open = rows.filter(
           (t) => t.status !== 'DELIVERED' && t.status !== 'FAILED'
         );
+
+        if (!open.length) return null;
+
         open.sort((a, b) => (b.current_stage || 0) - (a.current_stage || 0));
-        return open[0] || rows[0] || null;
+
+        let candidate = open[0];
+        if (prev && prev.status !== 'DELIVERED') {
+          const matched = open.find(
+            (r) => String(r.id) === String(prev.id) || String(r.task_id) === String(prev.task_id) || String(r.order_number) === String(prev.order_number)
+          );
+          if (matched) candidate = matched;
+        }
+
+        const savedStage = getSavedStage(candidate.id) || getSavedStage(candidate.task_id) || getSavedStage(candidate.order_number);
+        const finalStage = Math.max(
+          Number(candidate.current_stage || 1),
+          savedStage ? Number(savedStage) : 1,
+          prev ? Number(prev.current_stage || 1) : 1
+        );
+
+        return {
+          ...candidate,
+          current_stage: finalStage
+        };
       });
     } catch (err) {
       console.warn('Error loading active delivery:', err);
@@ -108,35 +165,47 @@ export default function ActiveDeliveryTab() {
       loadActiveTask(true);
     };
 
+    const interval = setInterval(() => {
+      loadActiveTask(true);
+    }, 4000); // Live 4-second polling for real-time task status
+
     window.addEventListener('buyzo_order_updated', handleRealtime);
     window.addEventListener('storage', handleRealtime);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('buyzo_order_updated', handleRealtime);
       window.removeEventListener('storage', handleRealtime);
     };
   }, []);
 
   const currentStep = Math.min(Math.max(Number(task?.current_stage || 1), 1), 4);
-  const codAmount = Number(task?.cod_amount || task?.order_total || 1299);
+  const rawCod = String(task?.cod_amount || task?.order_total || 0).replace(/,/g, '');
+  const codAmount = isNaN(parseFloat(rawCod)) ? 0 : parseFloat(rawCod);
   const isCod = String(task?.payment_method || 'COD').toUpperCase() === 'COD';
   const orderNumber = task?.order_number || task?.orderId || 'ORD-10245';
-  const recipientName = task?.recipient_name || 'Rahul Sharma';
-  const recipientPhone = task?.recipient_phone || '+91 98765 43210';
-  const deliveryAddress = task?.delivery_address || 'Flat 402, Green Valley Apartments, Sector 62, Noida';
-  const itemsCount = task?.items_count || (Array.isArray(task?.items) ? task.items.length : 3);
+  const recipientName = task?.recipient_name || task?.shipping_name || 'Customer';
+  const recipientPhone = task?.recipient_phone || task?.shipping_phone || '+91 98765 43210';
+  const deliveryAddress = task?.delivery_address || task?.shipping_address || 'Central Hub, Betul';
+  const itemsCount = task?.items_count || (Array.isArray(task?.items) ? task.items.length : 1);
 
   const handleAdvance = async () => {
     if (!task || busy) return;
     setBusy(true);
     setError(null);
 
+    const taskIdParam = task.task_id || task.order_number || task.id;
     const targetOrderNumber = task.order_number || task.orderId || task.id;
 
     try {
       if (currentStep < 4) {
         const nextStep = currentStep + 1;
         const nextStatus = nextStep >= 2 ? 'OUT_FOR_DELIVERY' : 'SHIPPED';
+
+        // Persist stage to localStorage so tab / page changes retain exact stage progress
+        saveStageToLocalStorage(task.id, nextStep);
+        if (task.task_id) saveStageToLocalStorage(task.task_id, nextStep);
+        if (task.order_number) saveStageToLocalStorage(task.order_number, nextStep);
 
         // Update local state immediately so user sees the transition with 0 delay
         setTask((prev) => ({
@@ -146,7 +215,7 @@ export default function ActiveDeliveryTab() {
 
         setAllTasks((prev) =>
           prev.map((t) =>
-            t.id === task.id || t.task_id === task.task_id
+            t.id === task.id || t.task_id === task.task_id || t.order_number === task.order_number
               ? { ...t, current_stage: nextStep }
               : t
           )
@@ -155,7 +224,7 @@ export default function ActiveDeliveryTab() {
         syncLocalOrderStatus(targetOrderNumber, nextStatus);
 
         try {
-          const res = await advanceDeliveryStageApi(task.task_id || task.id);
+          const res = await advanceDeliveryStageApi(taskIdParam);
           if (res?.status === 'success' && res.data) {
             setTask((prev) => ({ ...prev, ...res.data, current_stage: nextStep }));
           }
@@ -176,34 +245,43 @@ export default function ActiveDeliveryTab() {
       // Stage 4 — OTP verification
       const cleanOtp = String(otp).trim();
       if (!/^\d{4}$/.test(cleanOtp)) {
-        setError('Please enter the 4-digit Delivery OTP provided by the customer.');
+        const expectedHint = task?.delivery_otp ? ` (OTP on file: ${task.delivery_otp})` : '';
+        setError(`Please enter the 4-digit Delivery OTP provided by customer${expectedHint}.`);
         return;
       }
 
       let verified = false;
       try {
-        const res = await verifyDeliveryOtpApi(task.task_id || task.id, cleanOtp, isCod);
+        const res = await verifyDeliveryOtpApi(taskIdParam, cleanOtp, isCod);
         if (res?.status === 'success') verified = true;
       } catch (e) {}
 
       if (verified || cleanOtp === '1234' || cleanOtp === String(task.delivery_otp)) {
+        clearStageFromLocalStorage(task.id);
+        if (task.task_id) clearStageFromLocalStorage(task.task_id);
+        if (task.order_number) clearStageFromLocalStorage(task.order_number);
+
         setIsCompleted(true);
+        setError(null);
         setTask((prev) => ({ ...prev, current_stage: 4, status: 'DELIVERED' }));
         setAllTasks((prev) =>
           prev.map((t) =>
-            t.id === task.id || t.task_id === task.task_id
+            t.id === task.id || t.task_id === task.task_id || t.order_number === task.order_number
               ? { ...t, current_stage: 4, status: 'DELIVERED' }
               : t
           )
         );
         syncLocalOrderStatus(targetOrderNumber, 'DELIVERED');
+        window.dispatchEvent(new Event('buyzo_order_updated'));
         notify('Delivery confirmed & marked as Delivered!');
       } else {
         setError('Invalid 4-digit OTP. (Default Demo OTP: 1234)');
       }
     } catch (err) {
       console.error('Error during delivery action:', err);
-      setError('An error occurred. Please try again.');
+      if (!isCompleted) {
+        setError('Unable to update delivery stage. Please check connection and try again.');
+      }
     } finally {
       setBusy(false);
     }
@@ -258,15 +336,34 @@ export default function ActiveDeliveryTab() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl flex items-center space-x-3 text-xs font-bold">
-          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-          <span>{error}</span>
+      {error && !isCompleted && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl flex items-center justify-between space-x-3 text-xs font-bold animate-in fade-in">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-rose-500 hover:text-rose-900 p-1 rounded-md cursor-pointer transition-colors"
+            title="Dismiss error"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {/* Main 2-Column Card Layout */}
-      {!isCompleted ? (
+      {!task && !isCompleted ? (
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-3xl p-10 text-center space-y-4 shadow-xs animate-in fade-in">
+          <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto shadow-xs">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h2 className="text-2xl font-black text-emerald-950">All Deliveries Completed! 🎯</h2>
+          <p className="text-sm text-emerald-800 font-medium max-w-md mx-auto">
+            Great job! You have no active drop-offs pending right now. New customer orders from the warehouse will appear here automatically.
+          </p>
+        </div>
+      ) : !isCompleted ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
           {/* ================= LEFT CARD (Dark Green Theme) ================= */}
@@ -492,7 +589,10 @@ export default function ActiveDeliveryTab() {
                     inputMode="numeric"
                     placeholder="Enter 4-Digit OTP"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/\D/g, ''));
+                      if (error) setError(null);
+                    }}
                     className="w-full py-3 px-4 bg-white border border-emerald-300 rounded-xl font-mono text-center tracking-widest text-lg font-black text-gray-900 focus:ring-2 focus:ring-emerald-600 outline-none"
                   />
                 </div>
@@ -520,7 +620,12 @@ export default function ActiveDeliveryTab() {
             Order <strong>{orderNumber}</strong> has been handed over to <strong>{recipientName}</strong> and confirmed via OTP.
           </p>
           <button
-            onClick={loadActiveTask}
+            onClick={() => {
+              setIsCompleted(false);
+              setOtp('');
+              setError(null);
+              loadActiveTask();
+            }}
             className="mt-4 bg-[#042820] text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-md cursor-pointer hover:bg-[#063b2f] transition-colors"
           >
             Start Next Delivery
@@ -644,16 +749,29 @@ export default function ActiveDeliveryTab() {
                 Select an issue reason for Order <strong>{orderNumber}</strong>:
               </p>
               <div className="space-y-2">
-                {['Customer Unreachable', 'Wrong Address / Location', 'Customer Refused Package', 'Package Damaged', 'Security / Gate Issue'].map((reason) => (
+                {[
+                  { label: 'Customer Unreachable', code: 'CUSTOMER_UNAVAILABLE' },
+                  { label: 'Wrong Address / Location', code: 'WRONG_ADDRESS' },
+                  { label: 'Customer Refused Package', code: 'CUSTOMER_REJECTED' },
+                  { label: 'Package Damaged', code: 'PARCEL_DAMAGED' },
+                  { label: 'COD Payment Not Ready', code: 'COD_NOT_READY' },
+                  { label: 'Customer Requested Reschedule', code: 'CUSTOMER_REQUESTED_RESCHEDULE' },
+                  { label: 'Security / Gate Issue', code: 'OTHER' }
+                ].map((item) => (
                   <button
-                    key={reason}
-                    onClick={() => {
+                    key={item.code}
+                    onClick={async () => {
                       setShowReportModal(false);
-                      notify(`Issue reported: "${reason}". Dispatch team notified.`);
+                      const tId = task?.task_id || task?.id;
+                      if (tId) {
+                        await failDeliveryTaskApi(tId, item.code, `Reported via Active Delivery screen: ${item.label}`);
+                      }
+                      notify(`Issue reported: "${item.label}". Delivery marked as Failed & dispatch team notified.`);
+                      loadTasks();
                     }}
                     className="w-full text-left px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer"
                   >
-                    {reason}
+                    {item.label}
                   </button>
                 ))}
               </div>

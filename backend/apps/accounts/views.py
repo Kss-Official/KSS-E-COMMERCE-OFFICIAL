@@ -276,6 +276,27 @@ class AddressViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
+            recipient = serializer.validated_data.get('recipient_name', '').strip()
+            street = serializer.validated_data.get('street_address', '').strip()
+            postal = serializer.validated_data.get('postal_code', '').strip()
+            is_def = serializer.validated_data.get('is_default', False)
+
+            # Check for existing matching address for this user
+            existing = Address.objects.filter(
+                user=request.user,
+                recipient_name__iexact=recipient,
+                street_address__iexact=street,
+                postal_code__iexact=postal
+            ).first()
+
+            if existing:
+                if is_def:
+                    Address.objects.filter(user=request.user, is_default=True).exclude(pk=existing.pk).update(is_default=False)
+                    existing.is_default = True
+                    existing.save()
+                out_serializer = self.get_serializer(existing)
+                return APIResponse.success(data=out_serializer.data, message="Address selected.", status_code=status.HTTP_200_OK)
+
             self.perform_create(serializer)
             return APIResponse.success(data=serializer.data, message="Address created successfully.", status_code=status.HTTP_201_CREATED)
         return APIResponse.error(message="Could not save address.", errors=serializer.errors)

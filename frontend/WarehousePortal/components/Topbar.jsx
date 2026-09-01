@@ -3,26 +3,37 @@ import { Warehouse, Bell, Calendar, Store, AlertTriangle, X, Menu } from 'lucide
 import { fetchWarehouseSummaryApi, fetchWarehouseAlertsApi } from '../../src/services/api';
 import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
-export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobileSidebar }) {
+export default function Topbar({ title, onExitPortal, onLogout, setActiveTab }) {
   const [summary, setSummary] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [showAlerts, setShowAlerts] = useState(false);
 
+  const loadData = async () => {
+    const [summaryData, alertData] = await Promise.all([
+      fetchWarehouseSummaryApi(),
+      fetchWarehouseAlertsApi()
+    ]);
+    if (summaryData) setSummary(summaryData);
+    if (Array.isArray(alertData?.alerts)) setAlerts(alertData.alerts);
+  };
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [summaryData, alertData] = await Promise.all([
-        fetchWarehouseSummaryApi(),
-        fetchWarehouseAlertsApi()
-      ]);
-      if (cancelled) return;
-      setSummary(summaryData);
-      setAlerts(Array.isArray(alertData?.alerts) ? alertData.alerts : []);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    loadData();
+    const interval = setInterval(loadData, 4000); // 4-second live poll for new customer purchases
+    return () => clearInterval(interval);
   }, []);
+
+  const handleNotificationClick = (alert) => {
+    setShowAlerts(false);
+    if (!setActiveTab) return;
+    if (alert.type === 'New Customer Order') {
+      setActiveTab('shipments');
+    } else if (alert.type === 'Unverified Receipt') {
+      setActiveTab('inbound');
+    } else if (alert.type === 'Out of Stock' || alert.type === 'Low Stock') {
+      setActiveTab('inventory');
+    }
+  };
 
   const operatorName = summary?.operator_name || 'Warehouse Operator';
 
@@ -99,8 +110,12 @@ export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobi
                     No alerts. Stock levels are healthy.
                   </p>
                 )}
-                {alerts.slice(0, 8).map((alert) => (
-                  <div key={alert.id} className="px-4 py-3 flex items-start space-x-2.5">
+                {alerts.slice(0, 10).map((alert) => (
+                  <div
+                    key={alert.id}
+                    onClick={() => handleNotificationClick(alert)}
+                    className="px-4 py-3 flex items-start space-x-2.5 hover:bg-blue-50/50 transition-colors cursor-pointer"
+                  >
                     <AlertTriangle
                       className={`w-4 h-4 mt-0.5 shrink-0 ${
                         alert.severity === 'critical'
@@ -132,7 +147,7 @@ export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobi
               avatar: summary?.avatar
             }}
             setActiveTab={setActiveTab}
-            onLogout={onExitPortal}
+            onLogout={onLogout}
             portalType="warehouse"
           />
         </div>

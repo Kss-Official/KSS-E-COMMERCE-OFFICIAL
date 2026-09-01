@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Bell,
+  Banknote,
   Users,
   Settings,
   ChevronLeft,
@@ -17,13 +18,19 @@ import {
   PackageCheck,
   LogOut
 } from 'lucide-react';
-import { fetchWarehouseSummaryApi, fetchWarehouseAlertsApi } from '../../src/services/api';
+import {
+  fetchWarehouseSummaryApi,
+  fetchWarehouseAlertsApi,
+  fetchWarehouseCashHandoversApi,
+  logoutUser
+} from '../../src/services/api';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'inbound', label: 'Inbound', icon: ArrowDownToLine, badgeKey: 'pending_verification' },
   { id: 'inventory', label: 'Inventory', icon: Boxes, badgeKey: 'low_stock_count' },
   { id: 'outbound', label: 'Outbound', icon: ArrowUpFromLine, badgeKey: 'orders_awaiting_pack' },
+  { id: 'cash-handovers', label: 'Cash Handovers', icon: Banknote, badgeKey: 'pending_cash_handovers' },
   { id: 'orders', label: 'Orders', icon: ShoppingBag },
   { id: 'shipments', label: 'Shipments', icon: Truck, badgeKey: 'pending_dispatch' },
   { id: 'returns', label: 'Returns', icon: RotateCcw, badgeKey: 'pending_returns' },
@@ -32,7 +39,7 @@ const navItems = [
   { id: 'alerts', label: 'Alerts', icon: Bell, badgeKey: 'alerts' },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onCloseMobile }) {
+export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogout }) {
   const [isOnline, setIsOnline] = useState(true);
   const [counts, setCounts] = useState({});
   const [warehouseCode, setWarehouseCode] = useState('WH01');
@@ -41,18 +48,34 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onClose
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [summary, alertData] = await Promise.all([
+      const [summary, alertData, cashHandovers] = await Promise.all([
         fetchWarehouseSummaryApi(),
-        fetchWarehouseAlertsApi()
+        fetchWarehouseAlertsApi(),
+        fetchWarehouseCashHandoversApi()
       ]);
       if (cancelled) return;
-      setCounts({ ...(summary || {}), alerts: alertData?.total || 0 });
+      setCounts({
+        ...(summary || {}),
+        alerts: alertData?.total || 0,
+        pending_cash_handovers: cashHandovers?.pending_count || 0
+      });
       if (summary?.warehouse_code) setWarehouseCode(summary.warehouse_code);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeTab]);
+
+  const handleLogoutClick = () => {
+    logoutUser();
+    if (onLogout) {
+      onLogout();
+    } else if (onExitPortal) {
+      onExitPortal();
+    } else {
+      window.location.hash = '#login';
+    }
+  };
 
   return (
     <aside className="flex w-full md:w-64 bg-[#1D4ED8] text-white flex-col justify-between h-full md:h-screen md:sticky md:top-0 border-r border-[#173eb2] shadow-xl shrink-0 overflow-y-auto scrollbar-none">
@@ -137,15 +160,13 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onClose
           <span className="font-semibold">Settings</span>
         </button>
 
-        {onExitPortal && (
-          <button
-            onClick={onExitPortal}
-            className="w-full flex items-center space-x-3.5 px-3.5 lg:px-4 py-2.5 rounded-xl font-medium text-sm text-[#ff6b6b] hover:bg-[#ff6b6b]/10 hover:text-red-300 transition-all duration-200 cursor-pointer"
-          >
-            <LogOut className="w-5 h-5 text-[#ff6b6b]" />
-            <span className="font-semibold">Exit Portal</span>
-          </button>
-        )}
+        <button
+          onClick={handleLogoutClick}
+          className="w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm text-[#ff6b6b] hover:bg-[#ff6b6b]/10 hover:text-red-300 transition-all duration-200 cursor-pointer"
+        >
+          <LogOut className="w-5 h-5 text-[#ff6b6b]" />
+          <span className="hidden lg:inline font-semibold">Logout</span>
+        </button>
 
         <div className="hidden lg:block bg-[#173eb2]/90 border border-[#3B82F6]/40 p-3.5 rounded-2xl text-center shadow-xs mt-2">
           <div className="w-8 h-8 rounded-full bg-[#3B82F6]/30 text-blue-200 flex items-center justify-center mx-auto mb-1.5">

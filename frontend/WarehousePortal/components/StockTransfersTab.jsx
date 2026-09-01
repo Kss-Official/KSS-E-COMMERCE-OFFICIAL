@@ -118,13 +118,6 @@ export default function StockTransfersTab() {
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={loadTransfers}
-            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-          <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md cursor-pointer"
           >

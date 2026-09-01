@@ -199,7 +199,10 @@ export default function DashboardTab({ setActiveTab }) {
       {/* 5 Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Inventory */}
-        <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/30 p-4.5 rounded-2xl border border-blue-100/90 shadow-xs">
+        <button
+          onClick={() => setActiveTab && setActiveTab('inventory')}
+          className="text-left bg-gradient-to-br from-blue-50/90 to-indigo-50/30 p-4.5 rounded-2xl border border-blue-100/90 shadow-xs hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-0.5"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500">Total Inventory</span>
             <div className="p-2 bg-blue-100 text-blue-700 rounded-xl">
@@ -210,10 +213,13 @@ export default function DashboardTab({ setActiveTab }) {
           <span className="text-[11px] font-bold text-emerald-600 mt-1 block">
             Across {(summary?.total_skus ?? 0).toLocaleString('en-IN')} active SKUs
           </span>
-        </div>
+        </button>
 
         {/* Inbound Today */}
-        <div className="bg-gradient-to-br from-emerald-50/90 to-teal-50/30 p-4.5 rounded-2xl border border-emerald-100/90 shadow-xs">
+        <button
+          onClick={() => setActiveTab && setActiveTab('inbound')}
+          className="text-left bg-gradient-to-br from-emerald-50/90 to-teal-50/30 p-4.5 rounded-2xl border border-emerald-100/90 shadow-xs hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-0.5"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500">Inbound Today</span>
             <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
@@ -224,10 +230,13 @@ export default function DashboardTab({ setActiveTab }) {
           <span className="text-[11px] font-medium text-gray-500 mt-1 block">
             Receipts &middot; {summary?.inbound_units_today ?? 0} units
           </span>
-        </div>
+        </button>
 
         {/* Outbound Today */}
-        <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/30 p-4.5 rounded-2xl border border-amber-100/90 shadow-xs">
+        <button
+          onClick={() => setActiveTab && setActiveTab('outbound')}
+          className="text-left bg-gradient-to-br from-amber-50/90 to-orange-50/30 p-4.5 rounded-2xl border border-amber-100/90 shadow-xs hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-0.5"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500">Outbound Today</span>
             <div className="p-2 bg-amber-100 text-amber-700 rounded-xl">
@@ -236,10 +245,13 @@ export default function DashboardTab({ setActiveTab }) {
           </div>
           <h3 className="text-2xl font-black text-gray-900 mt-2">{summary?.outbound_today ?? 0}</h3>
           <span className="text-[11px] font-medium text-gray-500 mt-1 block">Shipments</span>
-        </div>
+        </button>
 
         {/* Orders Today */}
-        <div className="bg-gradient-to-br from-purple-50/90 to-indigo-50/30 p-4.5 rounded-2xl border border-purple-100/90 shadow-xs">
+        <button
+          onClick={() => setActiveTab && setActiveTab('shipments')}
+          className="text-left bg-gradient-to-br from-purple-50/90 to-indigo-50/30 p-4.5 rounded-2xl border border-purple-100/90 shadow-xs hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-0.5"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500">Pending Dispatch</span>
             <div className="p-2 bg-purple-100 text-purple-700 rounded-xl">
@@ -248,10 +260,13 @@ export default function DashboardTab({ setActiveTab }) {
           </div>
           <h3 className="text-2xl font-black text-gray-900 mt-2">{summary?.pending_dispatch ?? 0}</h3>
           <span className="text-[11px] font-medium text-gray-500 mt-1 block">To be processed</span>
-        </div>
+        </button>
 
         {/* Low Stock Items */}
-        <div className="bg-gradient-to-br from-rose-50/90 to-red-50/30 p-4.5 rounded-2xl border border-rose-100/90 shadow-xs">
+        <button
+          onClick={() => setActiveTab && setActiveTab('alerts')}
+          className="text-left bg-gradient-to-br from-rose-50/90 to-red-50/30 p-4.5 rounded-2xl border border-rose-100/90 shadow-xs hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-0.5"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500">Low Stock Items</span>
             <div className="p-2 bg-rose-100 text-rose-700 rounded-xl">
@@ -262,7 +277,7 @@ export default function DashboardTab({ setActiveTab }) {
           <span className="text-[11px] font-bold text-rose-600 mt-1 block">
             {summary?.out_of_stock_count ?? 0} out of stock
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Grid Row 2: Inventory Overview Donut Chart + Stock Status */}

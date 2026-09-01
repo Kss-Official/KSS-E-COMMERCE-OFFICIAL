@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Truck, Bell, Calendar, Store, Package, CheckCircle2, AlertTriangle, Menu } from 'lucide-react';
-import { fetchDeliveryProfileApi, fetchDeliveryNotificationsApi } from '../../src/services/api';
+import { Truck, Bell, Calendar, Store, Package, CheckCircle2, AlertTriangle, ShieldAlert, Clock, Power, X, ArrowRight } from 'lucide-react';
+import {
+  fetchDeliveryProfileApi,
+  fetchDeliveryNotificationsApi,
+  fetchDeliveryShiftApi,
+  toggleDeliveryShiftApi,
+  triggerDeliverySOSApi
+} from '../../src/services/api';
+import { playNotificationChime } from '../../src/utils/audioAlert';
 import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
 // Same key the Sidebar toggle writes, so both indicators agree.
@@ -18,29 +25,70 @@ export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobi
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [openBell, setOpenBell] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
+  const [shift, setShift] = useState(() => ({
+    shift_status: (typeof window !== 'undefined' && localStorage.getItem('buyzo_rider_shift_status')) || 'OFFLINE',
+    formatted_online_time: '0h 0m'
+  }));
+  const [showSosModal, setShowSosModal] = useState(false);
+  const [sosReason, setSosReason] = useState('ACCIDENT');
+  const [sosNotes, setSosNotes] = useState('');
+  const [sosSubmitting, setSosSubmitting] = useState(false);
+  const [sosNotice, setSosNotice] = useState(null);
+  const [realtimeBanner, setRealtimeBanner] = useState(null);
+
+  const prevUnreadRef = useRef(null);
+  const lastNotifIdRef = useRef(null);
   const bellRef = useRef(null);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const [prof, notes] = await Promise.all([fetchDeliveryProfileApi(), fetchDeliveryNotificationsApi()]);
-      if (!alive) return;
-      setProfile(prof || null);
-      setNotifications(Array.isArray(notes?.notifications) ? notes.notifications.slice(0, 5) : []);
-      setUnread(Number(notes?.unread_count || 0));
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [title]);
+  const loadShiftData = async () => {
+    const s = await fetchDeliveryShiftApi();
+    if (s) setShift(s);
+  };
 
   useEffect(() => {
-    try {
-      setIsOnline(localStorage.getItem(ONLINE_KEY) !== 'false');
-    } catch {
-      setIsOnline(true);
+    const handleShiftUpdated = (e) => {
+      if (e.detail) setShift(e.detail);
+    };
+    window.addEventListener('buyzo_shift_updated', handleShiftUpdated);
+    return () => window.removeEventListener('buyzo_shift_updated', handleShiftUpdated);
+  }, []);
+
+  // Live minute timer ticking when shift is ONLINE
+  useEffect(() => {
+    if (shift.shift_status !== 'ONLINE') return;
+    const interval = setInterval(() => {
+      setShift((prev) => {
+        const total = (prev.total_online_minutes || 0) + 1;
+        const hours = Math.floor(total / 60);
+        const mins = total % 60;
+        return {
+          ...prev,
+          total_online_minutes: total,
+          formatted_online_time: `${hours}h ${mins}m`
+        };
+      });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [shift.shift_status]);
+
+  const loadNotificationsData = async () => {
+    const [prof, notes, sData] = await Promise.all([
+      fetchDeliveryProfileApi(),
+      fetchDeliveryNotificationsApi(),
+      fetchDeliveryShiftApi()
+    ]);
+    if (prof) setProfile(prof);
+    if (Array.isArray(notes?.notifications)) {
+      setNotifications(notes.notifications.slice(0, 5));
+      setUnread(Number(notes?.unread_count || 0));
     }
+    if (sData) setShift(sData);
+  };
+
+  useEffect(() => {
+    loadNotificationsData();
+    const interval = setInterval(loadNotificationsData, 4000); // 4-second live polling for new delivery alerts
+    return () => clearInterval(interval);
   }, [title]);
 
   useEffect(() => {
@@ -51,7 +99,40 @@ export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobi
     return () => document.removeEventListener('mousedown', onClickAway);
   }, []);
 
+  const [shiftToast, setShiftToast] = useState(null);
+
+  const handleToggleShift = async () => {
+    const nextStatus = shift.shift_status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+    setShift((prev) => ({
+      ...prev,
+      shift_status: nextStatus
+    }));
+    setShiftToast(`Shift status updated to: ${nextStatus === 'ONLINE' ? 'ONLINE (On Duty)' : 'OFFLINE (Off Duty)'}`);
+    setTimeout(() => setShiftToast(null), 3000);
+
+    const res = await toggleDeliveryShiftApi(nextStatus);
+    if (res?.status === 'success') {
+      const fresh = await fetchDeliveryShiftApi();
+      if (fresh) setShift(fresh);
+    }
+  };
+
+  const handleTriggerSos = async (e) => {
+    e.preventDefault();
+    setSosSubmitting(true);
+    const res = await triggerDeliverySOSApi(sosReason, sosNotes);
+    setSosSubmitting(false);
+    if (res?.status === 'success') {
+      setSosNotice('EMERGENCY SOS ALERT BROADCASTED! Support team & Hub Control Room notified.');
+      setTimeout(() => {
+        setSosNotice(null);
+        setShowSosModal(false);
+      }, 4000);
+    }
+  };
+
   const name = profile?.full_name || 'Delivery Agent';
+  const isOnline = shift.shift_status === 'ONLINE';
 
   return (
     <header className="bg-white border-b border-gray-200 py-3 sm:py-3.5 px-4 sm:px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
@@ -69,15 +150,50 @@ export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobi
         <div className="p-2 rounded-xl bg-[#e6f5ef] text-[#0B5E3C]">
           <Truck className="w-5 h-5" />
         </div>
-        <h1 className="text-base sm:text-xl font-bold text-gray-900 capitalize truncate">
-          Delivery Agent Portal
-        </h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 capitalize leading-tight">
+            Delivery Agent Portal
+          </h1>
+          <p className="text-[11px] font-semibold text-gray-400">Hub: WH01 Central &middot; Mumbai</p>
+        </div>
       </div>
 
+      {shiftToast && (
+        <div className="hidden md:flex items-center space-x-2 bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl animate-in fade-in shadow-md">
+          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+          <span>{shiftToast}</span>
+        </div>
+      )}
+
       {/* Right Controls */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3 sm:space-x-4">
+        {/* Shift / Duty Toggle Pill Button */}
+        <button
+          onClick={handleToggleShift}
+          className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+            isOnline
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+              : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+          }`}
+          title="Click to toggle Shift On/Off Duty"
+        >
+          <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+          <span>{isOnline ? `Online (${shift.formatted_online_time || '0h 0m'})` : 'Off Duty'}</span>
+          <Power className="w-3.5 h-3.5 ml-1 opacity-70" />
+        </button>
+
+        {/* SOS Emergency Quick Button */}
+        <button
+          onClick={() => setShowSosModal(true)}
+          className="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-md transition-all cursor-pointer transform hover:scale-105 active:scale-95 animate-pulse"
+          title="Trigger Emergency SOS Alert"
+        >
+          <ShieldAlert className="w-4 h-4 fill-white text-rose-600" />
+          <span>SOS</span>
+        </button>
+
         {/* Date Selector */}
-        <div className="hidden sm:flex items-center space-x-2 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-700">
+        <div className="hidden lg:flex items-center space-x-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700">
           <Calendar className="w-3.5 h-3.5 text-[#0B5E3C]" />
           <span>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
         </div>
@@ -164,11 +280,121 @@ export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobi
               avatar: profile?.avatar
             }}
             setActiveTab={setActiveTab}
-            onLogout={onExitPortal}
+            onLogout={onLogout}
             portalType="delivery"
           />
         </div>
       </div>
+
+      {/* Real-Time Incoming Request Alert Toast Banner */}
+      {realtimeBanner && (
+        <div className="fixed top-4 right-4 z-50 max-w-md bg-[#042820] text-white p-4 rounded-2xl shadow-2xl border border-emerald-500/40 animate-bounce flex items-start space-x-3">
+          <div className="p-2.5 bg-emerald-500/20 text-emerald-300 rounded-xl shrink-0">
+            <Bell className="w-5 h-5 animate-pulse text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                ⚡ REAL-TIME REQUEST ALERT
+              </span>
+              <button onClick={() => setRealtimeBanner(null)} className="text-gray-400 hover:text-white p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <h4 className="text-sm font-black text-white mt-1.5 leading-tight">{realtimeBanner.title}</h4>
+            <p className="text-xs text-emerald-100/90 mt-1 line-clamp-2 leading-relaxed">{realtimeBanner.message}</p>
+            <button
+              onClick={() => {
+                if (setActiveTab) setActiveTab('notifications');
+                setRealtimeBanner(null);
+              }}
+              className="mt-2.5 inline-flex items-center space-x-1 text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-gray-950 px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm"
+            >
+              <span>View Request</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency SOS Modal */}
+      {showSosModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 border-2 border-rose-500">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center space-x-2 text-rose-600">
+                <ShieldAlert className="w-7 h-7 fill-rose-600 text-white" />
+                <h3 className="text-xl font-black text-gray-900">EMERGENCY SOS ALERT</h3>
+              </div>
+              <button
+                onClick={() => setShowSosModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {sosNotice ? (
+              <div className="bg-rose-50 border border-rose-200 text-rose-900 p-4 rounded-xl text-center space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-rose-600 mx-auto" />
+                <p className="font-black text-sm">{sosNotice}</p>
+                <p className="text-xs text-rose-700">Central Control Room: 1800 266 2996 | Police: 112</p>
+              </div>
+            ) : (
+              <form onSubmit={handleTriggerSos} className="space-y-4">
+                <div className="bg-rose-50 p-3.5 rounded-xl border border-rose-200 text-rose-900 text-xs font-semibold">
+                  🚨 This sends an immediate high-priority alert with your GPS coordinates to the WH01 Control Room & Safety Desk.
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Emergency Type / Reason
+                  </label>
+                  <select
+                    value={sosReason}
+                    onChange={(e) => setSosReason(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 font-bold text-xs text-gray-900 bg-white"
+                  >
+                    <option value="ACCIDENT">Road Accident / Incident</option>
+                    <option value="VEHICLE_BREAKDOWN">Vehicle Breakdown / Tire Flat</option>
+                    <option value="SECURITY_HAZARD">Safety Concern / Threat</option>
+                    <option value="MEDICAL_EMERGENCY">Medical Emergency</option>
+                    <option value="OTHER">Other Emergency</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-gray-700">Location Notes &amp; Details</label>
+                  <textarea
+                    rows="3"
+                    value={sosNotes}
+                    onChange={(e) => setSosNotes(e.target.value)}
+                    placeholder="Describe situation or landmark (e.g. Near Western Express Highway flyover)..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-xs font-medium focus:ring-2 focus:ring-rose-500"
+                  ></textarea>
+                </div>
+
+                <div className="flex items-center space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSosModal(false)}
+                    className="w-1/2 py-2.5 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sosSubmitting}
+                    className="w-1/2 py-2.5 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center space-x-1"
+                  >
+                    {sosSubmitting ? 'BROADCASTING...' : 'BROADCAST SOS'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

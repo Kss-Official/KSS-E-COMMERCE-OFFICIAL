@@ -32,17 +32,23 @@ export default function OutboundTab() {
 
       let combinedItems = Array.isArray(apiOutbound) ? [...apiOutbound] : [];
 
-      // Include local placed orders in outbound list if not already present
-      if (Array.isArray(localOrders)) {
+      const apiShipmentKeys = new Set(
+        combinedItems.map((ci) => String(ci.sku || ci.shipment_id || ci.id).replace('SHP-', '').replace('ORD-', ''))
+      );
+
+      // Include local placed orders in outbound list only if not already represented in API shipments
+      if (Array.isArray(localOrders) && combinedItems.length === 0) {
         localOrders.forEach((lo) => {
-          const idStr = `SHP-${lo.orderId || lo.id}`;
-          if (!combinedItems.some((ci) => ci.shipment_id === idStr || ci.id === lo.orderId)) {
+          const rawNum = String(lo.orderId || lo.order_number || lo.id || '').replace('ORD-', '');
+          const idStr = `SHP-${rawNum || lo.id}`;
+          if (rawNum && !apiShipmentKeys.has(rawNum)) {
+            apiShipmentKeys.add(rawNum);
             const itemsList = lo.items || [];
             const firstItem = itemsList[0]?.name || itemsList[0]?.title || itemsList[0]?.product_title || 'Order Package';
             combinedItems.push({
               id: lo.orderId || lo.id,
               shipment_id: idStr,
-              destination_hub: `${lo.address?.details?.split(',')[0] || lo.shipping_city || 'Central'} Hub`,
+              destination_hub: `${lo.address?.city || lo.address?.details?.split(',')[0] || lo.shipping_city || 'Central'} Hub`,
               item_title: `${firstItem}${itemsList.length > 1 ? ` (+${itemsList.length - 1} items)` : ''}`,
               sku: lo.orderId || `ORD-${lo.id}`,
               quantity: itemsList.reduce((acc, i) => acc + (parseInt(i.quantity, 10) || 1), 0),
@@ -189,13 +195,6 @@ export default function OutboundTab() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Outbound Packing &amp; Shipments</h2>
           <p className="text-sm text-gray-500 font-medium">Process outgoing customer orders, packing slips, and courier manifest handover.</p>
         </div>
-        <button
-          onClick={loadOutbound}
-          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
       </div>
 
       {/* Live counters */}
