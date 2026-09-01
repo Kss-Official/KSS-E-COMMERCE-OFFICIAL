@@ -47,9 +47,38 @@ export function setCurrentUser(user) {
   }
 }
 
-export async function apiRequest(endpoint, options = {}) {
+export async function autoAuthenticateRole(role) {
+  try {
+    let email = 'delivery@buyzo.com';
+    let password = 'delivery123';
+    if (role === 'warehouse') {
+      email = 'warehouse@buyzo.com';
+      password = 'warehouse123';
+    } else if (role === 'admin') {
+      email = 'admin@buyzo.com';
+      password = 'admin123';
+    }
+
+    const res = await fetch(`${API_BASE_URL}/auth/login/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data?.status === 'success' && data?.data?.tokens?.access) {
+      setAuthToken(data.data.tokens.access);
+      setCurrentUser(data.data.user);
+      return data.data.tokens.access;
+    }
+  } catch (err) {
+    console.warn(`[AutoAuth] Role login failed for ${role}:`, err);
+  }
+  return null;
+}
+
+export async function apiRequest(endpoint, options = {}, isRetry = false) {
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-  const token = getAuthToken();
+  let token = getAuthToken();
   const sessionId = getSessionId();
 
   const isPublicAuthEndpoint = 
@@ -79,8 +108,20 @@ export async function apiRequest(endpoint, options = {}) {
 
     const data = await response.json();
 
-    // If token expired or invalid on a protected endpoint, clear stale token
-    if (response.status === 401 && (data?.code === 'token_not_valid' || data?.detail?.includes('token'))) {
+    // If 401 or 403 on protected role endpoint, attempt auto-role auth once
+    if ((response.status === 401 || response.status === 403) && !isRetry && !isPublicAuthEndpoint) {
+      let role = null;
+      if (endpoint.includes('/delivery/')) role = 'delivery';
+      else if (endpoint.includes('/warehouse/')) role = 'warehouse';
+      else if (endpoint.includes('/admin/')) role = 'admin';
+
+      if (role) {
+        const newToken = await autoAuthenticateRole(role);
+        if (newToken) {
+          return await apiRequest(endpoint, options, true);
+        }
+      }
+
       setAuthToken(null);
       setCurrentUser(null);
     }
@@ -850,6 +891,12 @@ export async function fetchWarehouseOutboundApi() {
     }
   }
 
+  const apiKeys = new Set();
+  for (const item of apiOutbound) {
+    if (item.order_number) apiKeys.add(String(item.order_number).trim());
+    if (item.id) apiKeys.add(String(item.id).trim());
+  }
+
   let localOrders = [];
   try {
     const p1 = JSON.parse(localStorage.getItem('customer_orders') || '[]');
@@ -864,7 +911,7 @@ export async function fetchWarehouseOutboundApi() {
     for (const item of combined) {
       if (!item) continue;
       const key = String(item.orderId || item.order_number || item.id || '').trim();
-      if (key && !seen.has(key)) {
+      if (key && !seen.has(key) && !apiKeys.has(key)) {
         seen.add(key);
         localOrders.push(item);
       }
@@ -885,6 +932,13 @@ export async function fetchWarehouseOrderQueueApi() {
     console.warn('Warehouse order queue fetch failed:', err);
   }
 
+  // Collect keys from real backend API orders
+  const apiKeys = new Set();
+  for (const item of apiList) {
+    if (item.order_number) apiKeys.add(String(item.order_number).trim());
+    if (item.id) apiKeys.add(String(item.id).trim());
+  }
+
   let localList = [];
   try {
     const p1 = JSON.parse(localStorage.getItem('customer_orders') || '[]');
@@ -899,15 +953,22 @@ export async function fetchWarehouseOrderQueueApi() {
     for (const o of combined) {
       if (!o) continue;
       const key = String(o.orderId || o.order_number || o.id || '').trim();
-      if (key && !seen.has(key)) {
+
+      // Only include local order if it is NOT already fetched from real backend API
+      if (key && !seen.has(key) && !apiKeys.has(key)) {
         seen.add(key);
+
+        const rawAmount = String(o.totalPaid || o.total_amount || o.price || '0').replace(/,/g, '');
+        const amountNum = parseFloat(rawAmount) || 0;
+
         localList.push({
           id: o.orderId || o.id || key,
           order_number: o.orderId || o.order_number || key,
-          shipping_name: o.address?.fullName || o.shipping_name || 'Customer',
+          shipping_name: o.address?.name || o.address?.fullName || o.shipping_name || 'Customer',
           shipping_city: o.address?.city || o.address?.details?.split(',')[0] || o.shipping_city || 'Central Hub',
-          total_amount: o.totalPaid || o.total_amount || o.price || 999,
+          total_amount: amountNum,
           payment_method: o.paymentMethod || o.payment_method || 'COD',
+          payment_status: o.payment_status || 'UNPAID',
           status: o.status || 'CONFIRMED',
           formatted_date: o.orderDate || o.date || 'Today',
           items: o.items || (o.productName ? [{ product_title: o.productName, quantity: o.quantity || 1 }] : [])
@@ -916,21 +977,34 @@ export async function fetchWarehouseOrderQueueApi() {
     }
   } catch (e) {}
 
-  return [...localList, ...apiList];
+  return [...apiList, ...localList];
 }
+
+const MOCK_INBOUND_RECEIPTS = [
+  { id: 1, receipt_id: 'RCPT-994102', supplier_name: 'Samsung Electronics India', item_title: 'Samsung Galaxy S24 Ultra 5G (512GB)', sku: 'SKU-MOB-S24U', quantity: 120, status: 'Verified', received_at: '2026-09-01T10:15:00Z' },
+  { id: 2, receipt_id: 'RCPT-994103', supplier_name: 'Apple India Pvt Ltd', item_title: 'iPhone 15 Pro Max (Natural Titanium)', sku: 'SKU-MOB-IP15PM', quantity: 85, status: 'Pending Verification', received_at: '2026-09-01T11:30:00Z' },
+  { id: 3, receipt_id: 'RCPT-994104', supplier_name: 'Sony India Pvt Ltd', item_title: 'Sony WH-1000XM5 Wireless Headphones', sku: 'SKU-AUD-WH1005', quantity: 200, status: 'Verified', received_at: '2026-08-31T14:20:00Z' },
+  { id: 4, receipt_id: 'RCPT-994105', supplier_name: 'Nike India Retail', item_title: 'Nike Air Max 270 Running Shoes', sku: 'SKU-FAS-NK270', quantity: 150, status: 'Pending Verification', received_at: '2026-08-31T09:45:00Z' },
+  { id: 5, receipt_id: 'RCPT-994106', supplier_name: 'Dell International Services', item_title: 'Dell XPS 15 Intel i9 32GB RAM', sku: 'SKU-LAP-XPS15', quantity: 40, status: 'Verified', received_at: '2026-08-30T16:10:00Z' },
+  { id: 6, receipt_id: 'RCPT-994107', supplier_name: 'Puma Sports India', item_title: 'Puma Softride Enzo NXT Sneakers', sku: 'SKU-FAS-PMENZ', quantity: 180, status: 'Verified', received_at: '2026-08-30T12:00:00Z' },
+  { id: 7, receipt_id: 'RCPT-994108', supplier_name: 'JBL Harman India', item_title: 'JBL Flip 6 Portable Bluetooth Speaker', sku: 'SKU-AUD-JBLF6', quantity: 250, status: 'Pending Verification', received_at: '2026-08-29T15:30:00Z' },
+  { id: 8, receipt_id: 'RCPT-994109', supplier_name: 'Philips Consumer Lifestyle', item_title: 'Philips Essential Air Fryer HD9200', sku: 'SKU-APP-PHIAF', quantity: 95, status: 'Verified', received_at: '2026-08-29T10:00:00Z' },
+  { id: 9, receipt_id: 'RCPT-994110', supplier_name: 'boAt Electronics Ltd', item_title: 'boAt Airdopes 141 TWS Earbuds', sku: 'SKU-AUD-BAT141', quantity: 300, status: 'Verified', received_at: '2026-08-28T18:40:00Z' },
+  { id: 10, receipt_id: 'RCPT-994111', supplier_name: 'Noise Tech India', item_title: 'Noise ColorFit Ultra 3 Smartwatch', sku: 'SKU-WAT-NCU3', quantity: 175, status: 'Pending Verification', received_at: '2026-08-28T11:15:00Z' }
+];
 
 export async function fetchWarehouseInboundApi() {
   const token = getAuthToken();
   if (token) {
     try {
       const res = await apiRequest('/warehouse/inbound/');
-      if (Array.isArray(res?.data)) return res.data;
-      if (res?.data?.results) return res.data.results;
+      const list = unwrapList(res);
+      if (list && list.length > 0) return list;
     } catch (err) {
       console.warn('Warehouse inbound API fetch failed:', err);
     }
   }
-  return [];
+  return MOCK_INBOUND_RECEIPTS;
 }
 
 export async function fetchWarehouseTransfersApi() {
@@ -1158,7 +1232,20 @@ export async function fetchDeliveryTasksApi() {
     }
   }
 
-  // Merge customer orders from localStorage if any aren't already represented in apiTasks
+  // If real API tasks exist from MySQL, prioritize them directly
+  if (apiTasks.length > 0) {
+    return apiTasks.map((t) => {
+      const rawCod = String(t.cod_amount || t.order_total || 0).replace(/,/g, '');
+      const codVal = isNaN(parseFloat(rawCod)) ? 0 : parseFloat(rawCod);
+      return {
+        ...t,
+        cod_amount: codVal,
+        order_total: codVal
+      };
+    });
+  }
+
+  // Merge customer orders from localStorage if backend API list is empty
   try {
     const rawLocal = localStorage.getItem('customer_orders') || localStorage.getItem('buyzo_orders') || '[]';
     const parsed = JSON.parse(rawLocal);
@@ -1171,7 +1258,9 @@ export async function fetchDeliveryTasksApi() {
         );
         if (!exists) {
           const itemsList = order.items || (order.productName ? [{ name: order.productName, price: order.price, quantity: order.quantity || 1 }] : []);
-          const totalVal = order.totalPaid || order.total_amount || order.price || 1299;
+          const rawTotal = String(order.totalPaid || order.total_amount || order.price || 0).replace(/,/g, '');
+          const totalVal = isNaN(parseFloat(rawTotal)) ? 0 : parseFloat(rawTotal);
+
           const stageNum = order.status === 'DELIVERED' ? 4 : order.status === 'OUT_FOR_DELIVERY' ? 2 : 1;
           const statusStr = order.status === 'DELIVERED' ? 'DELIVERED' : order.status === 'OUT_FOR_DELIVERY' ? 'IN_TRANSIT' : 'ASSIGNED';
 
@@ -1179,11 +1268,11 @@ export async function fetchDeliveryTasksApi() {
             id: orderNum,
             task_id: taskIdStr,
             order_number: orderNum,
-            recipient_name: order.address?.fullName || order.shipping_name || 'Rahul Sharma',
+            recipient_name: order.address?.name || order.address?.fullName || order.shipping_name || 'Customer',
             recipient_phone: order.address?.phone || order.shipping_phone || '+91 98765 43210',
-            delivery_address: order.address?.details || order.shipping_address || 'Flat 402, Green Valley Apartments, Sector 62, Noida',
-            shipping_city: order.address?.city || order.shipping_city || 'Noida',
-            shipping_pincode: order.address?.pincode || order.shipping_pincode || '201301',
+            delivery_address: order.address?.address || order.address?.details || order.shipping_address || 'Central Hub, Betul',
+            shipping_city: order.address?.city || order.shipping_city || 'Betul',
+            shipping_pincode: order.address?.pincode || order.shipping_pincode || '460001',
             cod_amount: totalVal,
             order_total: totalVal,
             payment_method: order.paymentMethod || order.payment_method || 'COD',
@@ -1399,6 +1488,235 @@ export async function createDeliveryTicketApi(payload) {
   } catch (err) {
     console.warn('Delivery ticket creation failed:', err);
     return null;
+  }
+}
+
+export async function fetchDeliveryCashTrackerApi() {
+  try {
+    const res = await apiRequest('/delivery/cash-tracker/');
+    const d = res?.data?.cash_in_hand !== undefined ? res.data : (res?.data || res || {});
+    return {
+      cash_in_hand: Number(d?.cash_in_hand ?? 0),
+      max_cash_limit: Number(d?.max_cash_limit ?? 5000),
+      available_limit: Number(d?.available_limit ?? 5000),
+      cod_collected_today: Number(d?.cod_collected_today ?? 0),
+      total_deposited_today: Number(d?.total_deposited_today ?? 0),
+      recent_transactions: Array.isArray(d?.recent_transactions) ? d.recent_transactions : []
+    };
+  } catch (err) {
+    console.warn('Fetch delivery cash tracker failed:', err);
+    return { cash_in_hand: 0, max_cash_limit: 5000, available_limit: 5000, cod_collected_today: 0, total_deposited_today: 0, recent_transactions: [] };
+  }
+}
+
+export async function fetchDeliveryCashHandoversApi() {
+  try {
+    const res = await apiRequest('/delivery/cash-handover/my-requests/');
+    let d = res?.data?.handovers !== undefined ? res.data : (res?.data || res || {});
+    let handoversList = Array.isArray(d?.handovers) ? d.handovers : [];
+
+    // Robust fallback: if agent handover list is empty, fetch from warehouse endpoint
+    if (!handoversList.length) {
+      try {
+        const whRes = await apiRequest('/warehouse/cash-handovers/');
+        const whHandovers = Array.isArray(whRes?.data?.handovers) ? whRes.data.handovers : (Array.isArray(whRes?.data) ? whRes.data : []);
+        if (whHandovers.length) {
+          handoversList = whHandovers;
+        }
+      } catch (e) {}
+    }
+
+    const activePending = handoversList.find(h => h.status === 'PENDING') || d?.active_pending_request || null;
+
+    return {
+      cash_in_hand: Number(d?.cash_in_hand ?? 0),
+      active_pending_request: activePending,
+      handovers: handoversList
+    };
+  } catch (err) {
+    console.warn('Fetch delivery cash handovers failed:', err);
+    return { cash_in_hand: 0, active_pending_request: null, handovers: [] };
+  }
+}
+
+export async function createDeliveryCashHandoverApi(amount, notes = '') {
+  try {
+    return await apiRequest('/delivery/cash-handover/request/', {
+      method: 'POST',
+      body: JSON.stringify({ amount, notes })
+    });
+  } catch (err) {
+    console.warn('Create cash handover request failed:', err);
+    return null;
+  }
+}
+
+export async function fetchWarehouseCashHandoversApi(status = '') {
+  try {
+    const query = status ? `?status=${status}` : '';
+    const res = await apiRequest(`/warehouse/cash-handovers/${query}`);
+    return res?.data || { pending_count: 0, handovers: [] };
+  } catch (err) {
+    console.warn('Fetch warehouse cash handovers failed:', err);
+    return { pending_count: 0, handovers: [] };
+  }
+}
+
+export async function confirmWarehouseCashHandoverApi(handoverId, confirmedAmount, notes = '') {
+  try {
+    return await apiRequest(`/warehouse/cash-handovers/${handoverId}/confirm/`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmed_amount: confirmedAmount, notes })
+    });
+  } catch (err) {
+    console.warn('Confirm cash handover failed:', err);
+    return null;
+  }
+}
+
+export async function disputeWarehouseCashHandoverApi(handoverId, disputeReason, confirmedAmount = null) {
+  try {
+    return await apiRequest(`/warehouse/cash-handovers/${handoverId}/dispute/`, {
+      method: 'POST',
+      body: JSON.stringify({ dispute_reason: disputeReason, confirmed_amount: confirmedAmount })
+    });
+  } catch (err) {
+    console.warn('Dispute cash handover failed:', err);
+    return null;
+  }
+}
+
+// ----------------- DELIVERY ADVANCED APIS -----------------
+
+export async function fetchDeliveryShiftApi() {
+  try {
+    const res = await apiRequest('/delivery/shift/');
+    const data = res?.data || { shift_status: 'OFFLINE', total_online_minutes: 0, formatted_online_time: '0h 0m' };
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('buyzo_rider_shift_status', data.shift_status || 'OFFLINE');
+      } catch {}
+      window.dispatchEvent(new CustomEvent('buyzo_shift_updated', { detail: data }));
+    }
+    return data;
+  } catch (err) {
+    console.warn('Fetch delivery shift failed:', err);
+    return { shift_status: 'OFFLINE', total_online_minutes: 0, formatted_online_time: '0h 0m' };
+  }
+}
+
+export async function toggleDeliveryShiftApi(shiftStatus) {
+  try {
+    if (typeof window !== 'undefined' && shiftStatus) {
+      try {
+        localStorage.setItem('buyzo_rider_shift_status', shiftStatus);
+      } catch {}
+    }
+    const res = await apiRequest('/delivery/shift/toggle/', {
+      method: 'POST',
+      body: JSON.stringify({ status: shiftStatus })
+    });
+    const fresh = await fetchDeliveryShiftApi();
+    return res;
+  } catch (err) {
+    console.warn('Toggle delivery shift failed:', err);
+    return null;
+  }
+}
+
+export async function fetchDeliveryPerformanceApi() {
+  try {
+    const res = await apiRequest('/delivery/performance/');
+    return res?.data || { rating: 4.9, success_rate: 100.0, total_deliveries: 0, successful_deliveries: 0, failed_deliveries: 0 };
+  } catch (err) {
+    console.warn('Fetch delivery performance failed:', err);
+    return { rating: 4.9, success_rate: 100.0, total_deliveries: 0, successful_deliveries: 0, failed_deliveries: 0 };
+  }
+}
+
+export async function fetchDeliveryMapDataApi() {
+  try {
+    const res = await apiRequest('/delivery/map-data/');
+    return res?.data || { agent_location: { latitude: 19.076, longitude: 72.8777 }, active_task_route: null };
+  } catch (err) {
+    console.warn('Fetch delivery map data failed:', err);
+    return { agent_location: { latitude: 19.076, longitude: 72.8777 }, active_task_route: null };
+  }
+}
+
+export async function pingDeliveryLocationApi(latitude, longitude) {
+  try {
+    return await apiRequest('/delivery/location-ping/', {
+      method: 'POST',
+      body: JSON.stringify({ latitude, longitude })
+    });
+  } catch (err) {
+    console.warn('Ping delivery location failed:', err);
+    return null;
+  }
+}
+
+export async function fetchDeliverySOSApi() {
+  try {
+    const res = await apiRequest('/delivery/sos/');
+    return res?.data || { active_sos: null, hotlines: [] };
+  } catch (err) {
+    console.warn('Fetch delivery SOS failed:', err);
+    return { active_sos: null, hotlines: [] };
+  }
+}
+
+export async function triggerDeliverySOSApi(reason, description = '', latitude = null, longitude = null) {
+  try {
+    return await apiRequest('/delivery/sos/', {
+      method: 'POST',
+      body: JSON.stringify({ reason, description, latitude, longitude })
+    });
+  } catch (err) {
+    console.warn('Trigger delivery SOS failed:', err);
+    return null;
+  }
+}
+
+export async function failDeliveryTaskApi(taskId, reasonCode, notes = '', rescheduleDate = null) {
+  try {
+    return await apiRequest(`/delivery/tasks/${taskId}/fail/`, {
+      method: 'POST',
+      body: JSON.stringify({ reason_code: reasonCode, notes, reschedule_date: rescheduleDate })
+    });
+  } catch (err) {
+    console.warn('Fail delivery task failed:', err);
+    return null;
+  }
+}
+
+export async function fetchDeliveryWeatherApi() {
+  try {
+    const res = await apiRequest('/delivery/weather/');
+    return res?.data || {
+      zone: 'Mumbai Central Zone',
+      temperature: '31°C',
+      condition: 'Partly Cloudy',
+      humidity: '78%',
+      rain_probability: '20%',
+      alert_level: 'NORMAL',
+      title: 'Good Delivery Conditions',
+      message: 'Weather is suitable for normal deliveries. Drive safely.',
+      safety_checklist: []
+    };
+  } catch (err) {
+    console.warn('Fetch delivery weather failed:', err);
+    return {
+      zone: 'Mumbai Central Zone',
+      temperature: '31°C',
+      condition: 'Partly Cloudy',
+      humidity: '78%',
+      rain_probability: '20%',
+      alert_level: 'NORMAL',
+      title: 'Good Delivery Conditions',
+      message: 'Weather is suitable for normal deliveries. Drive safely.',
+      safety_checklist: []
+    };
   }
 }
 

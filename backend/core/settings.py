@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.QueryTimingMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -91,6 +92,7 @@ if env('DATABASE_URL', default=None):
     DATABASES = {
         'default': env.db('DATABASE_URL')
     }
+    DATABASES['default']['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=600)
     if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
         DATABASES['default'].setdefault('OPTIONS', {})
         DATABASES['default']['OPTIONS'].update({
@@ -120,6 +122,7 @@ else:
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
                 'NAME': BASE_DIR / 'db.sqlite3',
+                'CONN_MAX_AGE': 600,
             }
         }
 

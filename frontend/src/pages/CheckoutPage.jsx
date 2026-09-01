@@ -14,11 +14,13 @@ import {
   X,
   Sparkles,
   ArrowRight,
-  PackageCheck
+  PackageCheck,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
-import { fetchAddressesApi, addAddressApi, createCheckoutOrderApi, getCurrentUser } from '../services/api';
+import { fetchAddressesApi, addAddressApi, updateAddressApi, deleteAddressApi, createCheckoutOrderApi, getCurrentUser } from '../services/api';
 
 function ConfettiCanvas() {
   const canvasRef = React.useRef(null);
@@ -97,17 +99,30 @@ export default function CheckoutPage() {
         setIsLoadingAddresses(true);
         const list = await fetchAddressesApi();
         if (isMounted && Array.isArray(list)) {
-          const formatted = list.map((a) => ({
-            id: a.id,
-            name: a.name || a.recipient_name || 'Customer',
-            type: (a.type || a.address_type || 'HOME').toUpperCase(),
-            address: a.address || a.formatted_address || `${a.street_address || ''}${a.city ? ', ' + a.city : ''}${a.state ? ' ' + a.state : ''}${a.postal_code ? ' ' + a.postal_code : ''}, India`,
-            phone: a.phone || a.phone_number || '',
-            city: a.city || '',
-            state: a.state || '',
-            pincode: a.pincode || a.postal_code || '',
-            isDefault: Boolean(a.isDefault || a.is_default)
-          }));
+          const seen = new Set();
+          const formatted = [];
+          for (const a of list) {
+            const name = a.name || a.recipient_name || 'Customer';
+            const phone = a.phone || a.phone_number || '';
+            const addrStr = a.address || a.formatted_address || a.street_address || '';
+            const key = `${name.toLowerCase().trim()}_${phone.trim()}_${addrStr.toLowerCase().trim()}`;
+
+            if (!seen.has(key)) {
+              seen.add(key);
+              formatted.push({
+                id: a.id,
+                name: name,
+                type: (a.type || a.address_type || 'HOME').toUpperCase(),
+                address: a.address || a.formatted_address || `${a.street_address || ''}${a.city ? ', ' + a.city : ''}${a.state ? ' ' + a.state : ''}${a.postal_code ? ' ' + a.postal_code : ''}, India`,
+                street_address: a.street_address || a.address || '',
+                phone: phone,
+                city: a.city || '',
+                state: a.state || '',
+                pincode: a.pincode || a.postal_code || '',
+                isDefault: Boolean(a.isDefault || a.is_default)
+              });
+            }
+          }
           setAddresses(formatted);
           if (formatted.length > 0) {
             const defaultAddr = formatted.find((a) => a.isDefault) || formatted[0];
@@ -143,6 +158,9 @@ export default function CheckoutPage() {
     pincode: '',
     phone: ''
   });
+
+  const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
 
   const [orderPlacedModal, setOrderPlacedModal] = useState(false);
   const [orderId, setOrderId] = useState('');
@@ -204,6 +222,7 @@ export default function CheckoutPage() {
         name: saved.name || saved.recipient_name || newAddressForm.name,
         type: (saved.type || saved.address_type || newAddressForm.type).toUpperCase(),
         address: saved.address || saved.formatted_address || `${newAddressForm.address}${newAddressForm.city ? ', ' + newAddressForm.city : ''}${newAddressForm.state ? ' ' + newAddressForm.state : ''}${newAddressForm.pincode ? ' ' + newAddressForm.pincode : ''}, India`,
+        street_address: newAddressForm.address,
         phone: saved.phone || saved.phone_number || newAddressForm.phone,
         city: newAddressForm.city,
         state: newAddressForm.state,
@@ -218,6 +237,73 @@ export default function CheckoutPage() {
       setNewAddressForm({ name: '', type: 'HOME', address: '', city: '', state: '', pincode: '', phone: '' });
     } catch (err) {
       console.error('Failed to save address:', err);
+    }
+  };
+
+  // Handle Edit Address Click
+  const handleOpenEditAddress = (e, addr) => {
+    e.stopPropagation();
+    setEditingAddress({
+      id: addr.id,
+      name: addr.name,
+      phone: addr.phone,
+      address: addr.street_address || addr.address,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+      type: addr.type,
+      isDefault: addr.isDefault
+    });
+    setIsEditAddressOpen(true);
+  };
+
+  // Handle Save Edit Address
+  const handleUpdateAddress = async (e) => {
+    e.preventDefault();
+    if (!editingAddress || !editingAddress.name || !editingAddress.address) return;
+
+    try {
+      await updateAddressApi(editingAddress.id, {
+        name: editingAddress.name,
+        phone: editingAddress.phone,
+        address: editingAddress.address,
+        city: editingAddress.city,
+        state: editingAddress.state,
+        pincode: editingAddress.pincode,
+        type: editingAddress.type,
+        isDefault: editingAddress.isDefault
+      });
+
+      const updatedFormatted = {
+        ...editingAddress,
+        address: `${editingAddress.address}${editingAddress.city ? ', ' + editingAddress.city : ''}${editingAddress.state ? ' ' + editingAddress.state : ''}${editingAddress.pincode ? ' ' + editingAddress.pincode : ''}, India`,
+        street_address: editingAddress.address
+      };
+
+      setAddresses((prev) => prev.map((a) => (a.id === editingAddress.id ? updatedFormatted : a)));
+      setIsEditAddressOpen(false);
+      setEditingAddress(null);
+    } catch (err) {
+      console.error('Failed to update address:', err);
+    }
+  };
+
+  // Handle Delete Address
+  const handleDeleteAddress = async (e, addrId) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this address?')) return;
+
+    try {
+      await deleteAddressApi(addrId);
+      setAddresses((prev) => {
+        const filtered = prev.filter((a) => a.id !== addrId);
+        if (selectedAddressId === addrId && filtered.length > 0) {
+          setSelectedAddressId(filtered[0].id);
+        }
+        return filtered;
+      });
+    } catch (err) {
+      console.error('Failed to delete address:', err);
     }
   };
 
@@ -488,32 +574,54 @@ export default function CheckoutPage() {
                   <div
                     key={addr.id}
                     onClick={() => setSelectedAddressId(addr.id)}
-                    className={`rounded-2xl p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between relative border ${
+                    className={`rounded-2xl p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between relative group border ${
                       isSelected
                         ? 'border-2 border-brand-800 bg-emerald-50/15 shadow-xs'
                         : 'border-gray-200/90 hover:border-gray-300 bg-white'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        {/* Custom Radio Icon */}
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? 'border-brand-800' : 'border-gray-400'
-                          }`}
-                        >
-                          {isSelected && <div className="w-2 h-2 rounded-full bg-brand-800" />}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {/* Custom Radio Icon */}
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? 'border-brand-800' : 'border-gray-400'
+                            }`}
+                          >
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-brand-800" />}
+                          </div>
+                          <span className="font-bold text-sm text-gray-900 line-clamp-1">{addr.name}</span>
+                          <span
+                            className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                              addr.type === 'HOME'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {addr.type}
+                          </span>
                         </div>
-                        <span className="font-bold text-sm text-gray-900">{addr.name}</span>
-                        <span
-                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-                            addr.type === 'HOME'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {addr.type}
-                        </span>
+
+                        {/* Edit & Delete Action Buttons */}
+                        <div className="flex items-center space-x-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            title="Edit Address"
+                            onClick={(e) => handleOpenEditAddress(e, addr)}
+                            className="p-1 rounded-md text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            title="Delete Address"
+                            onClick={(e) => handleDeleteAddress(e, addr.id)}
+                            className="p-1 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-xs text-gray-600 leading-relaxed pl-6">{addr.address}</p>
                     </div>
@@ -970,6 +1078,137 @@ export default function CheckoutPage() {
                   className="px-6 py-2.5 rounded-xl bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Save &amp; Deliver Here
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Address Modal */}
+      {isEditAddressOpen && editingAddress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-fade-in">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+              <h3 className="text-base font-bold text-gray-900">Edit Delivery Address</h3>
+              <button
+                onClick={() => {
+                  setIsEditAddressOpen(false);
+                  setEditingAddress(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAddress} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Sharma"
+                  value={editingAddress.name || ''}
+                  onChange={(e) => setEditingAddress({ ...editingAddress, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Mobile Number</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="+91 98765 43210"
+                  value={editingAddress.phone || ''}
+                  onChange={(e) => setEditingAddress({ ...editingAddress, phone: e.target.value })}
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Street Address / Flat / Building</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="House No., Building, Street Area"
+                  value={editingAddress.address || ''}
+                  onChange={(e) => setEditingAddress({ ...editingAddress, address: e.target.value })}
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Bengaluru"
+                    value={editingAddress.city || ''}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Karnataka"
+                    value={editingAddress.state || ''}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, state: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Pincode</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="560033"
+                    value={editingAddress.pincode || ''}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, pincode: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:outline-hidden focus:border-brand-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Address Type</label>
+                <div className="flex space-x-4">
+                  {['HOME', 'WORK', 'OTHER'].map((type) => (
+                    <label key={type} className="flex items-center space-x-1.5 text-xs font-semibold cursor-pointer">
+                      <input
+                        type="radio"
+                        name="editAddressType"
+                        checked={editingAddress.type === type}
+                        onChange={() => setEditingAddress({ ...editingAddress, type })}
+                        className="accent-[#063328]"
+                      />
+                      <span>{type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditAddressOpen(false);
+                    setEditingAddress(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Update Address
                 </button>
               </div>
             </form>

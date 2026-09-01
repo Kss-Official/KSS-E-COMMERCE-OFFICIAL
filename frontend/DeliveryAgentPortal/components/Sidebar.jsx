@@ -5,6 +5,7 @@ import {
   Navigation,
   Clock,
   Wallet,
+  Banknote,
   Bell,
   User,
   HelpCircle,
@@ -17,68 +18,82 @@ import {
   fetchDeliveryDashboardApi,
   fetchDeliveryProfileApi,
   fetchDeliveryTasksApi,
-  fetchDeliveryNotificationsApi
+  fetchDeliveryNotificationsApi,
+  fetchDeliveryCashHandoversApi,
+  fetchDeliveryShiftApi,
+  toggleDeliveryShiftApi
 } from '../../src/services/api';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'my-deliveries', label: 'My Deliveries', icon: PackageCheck, badgeKey: 'open' },
+  { id: 'my-deliveries', label: 'My Deliveries', icon: PackageCheck, badgeKey: 'total' },
   { id: 'active-delivery', label: 'Active Delivery', icon: Navigation, badgeKey: 'transit' },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'earnings', label: 'Earnings', icon: Wallet },
+  { id: 'cash-in-hand', label: 'Cash in Hand', icon: Banknote, badgeKey: 'cashHolding' },
   { id: 'notifications', label: 'Notifications', icon: Bell, badgeKey: 'unread' },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'support', label: 'Support', icon: HelpCircle }
 ];
 
-// The backend has no availability column, so the rider's on/off duty choice is
-// remembered per browser.
-const ONLINE_KEY = 'buyzo_rider_onlne';
-
-export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
+export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogout }) {
   const [isOnline, setIsOnline] = useState(() => {
     try {
-      return localStorage.getItem(ONLINE_KEY) !== 'false';
+      return (localStorage.getItem('buyzo_rider_shift_status') || 'OFFLINE') === 'ONLINE';
     } catch {
-      return true;
+      return false;
     }
   });
   const [agent, setAgent] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [counts, setCounts] = useState({ open: 0, transit: 0, unread: 0 });
+  const [counts, setCounts] = useState({ total: 0, open: 0, transit: 0, unread: 0, cashHolding: '' });
+
+  const loadSidebarData = async () => {
+    const [dash, prof, tasks, notes, handovers, shift] = await Promise.all([
+      fetchDeliveryDashboardApi(),
+      fetchDeliveryProfileApi(),
+      fetchDeliveryTasksApi(),
+      fetchDeliveryNotificationsApi(),
+      fetchDeliveryCashHandoversApi(),
+      fetchDeliveryShiftApi()
+    ]);
+    if (dash) setAgent(dash);
+    if (prof) setProfile(prof);
+    if (shift) setIsOnline(shift.shift_status === 'ONLINE');
+
+    const rows = Array.isArray(tasks) ? tasks : [];
+    const cashVal = Number(handovers?.cash_in_hand || 0);
+
+    setCounts({
+      total: rows.length,
+      open: rows.filter((t) => !['DELIVERED', 'FAILED'].includes(t.status)).length,
+      transit: rows.filter((t) => t.status === 'IN_TRANSIT' || t.status === 'ASSIGNED').length,
+      unread: Number(notes?.unread_count || 0),
+      cashHolding: cashVal > 0 ? `₹${Math.round(cashVal)}` : ''
+    });
+  };
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      const [dash, prof, tasks, notes] = await Promise.all([
-        fetchDeliveryDashboardApi(),
-        fetchDeliveryProfileApi(),
-        fetchDeliveryTasksApi(),
-        fetchDeliveryNotificationsApi()
-      ]);
-      if (!alive) return;
-      setAgent(dash || null);
-      setProfile(prof || null);
-      const rows = Array.isArray(tasks) ? tasks : [];
-      setCounts({
-        open: rows.filter((t) => !['DELIVERED', 'FAILED'].includes(t.status)).length,
-        transit: rows.filter((t) => t.status === 'IN_TRANSIT').length,
-        unread: Number(notes?.unread_count || 0)
-      });
-    })();
+    loadSidebarData();
+    const interval = setInterval(loadSidebarData, 4000); // 4-second live polling for sidebar badge counters
+
+    const handleShiftUpdated = (e) => {
+      if (e.detail?.shift_status) {
+        setIsOnline(e.detail.shift_status === 'ONLINE');
+      }
+    };
+    window.addEventListener('buyzo_shift_updated', handleShiftUpdated);
+
     return () => {
-      alive = false;
+      clearInterval(interval);
+      window.removeEventListener('buyzo_shift_updated', handleShiftUpdated);
     };
   }, [activeTab]);
 
-  const toggleOnline = () => {
-    const next = !isOnline;
-    setIsOnline(next);
-    try {
-      localStorage.setItem(ONLINE_KEY, String(next));
-    } catch {
-      /* storage unavailable — the toggle still works for this session */
-    }
+  const toggleOnline = async () => {
+    const nextStatus = isOnline ? 'OFFLINE' : 'ONLINE';
+    setIsOnline(!isOnline);
+    await toggleDeliveryShiftApi(nextStatus);
   };
 
   const name = profile?.full_name || agent?.agent_name || 'Delivery Agent';
@@ -151,7 +166,8 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-            const badge = item.badgeKey ? counts[item.badgeKey] : 0;
+            const badgeVal = item.badgeKey ? counts[item.badgeKey] : null;
+            const showBadge = badgeVal !== null && badgeVal !== undefined && badgeVal !== '' && badgeVal !== 0;
             return (
               <button
                 key={item.id}
@@ -165,9 +181,9 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
                   <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-emerald-200'}`} />
                   <span className="hidden lg:inline">{item.label}</span>
                 </div>
-                {badge > 0 && (
-                  <span className="hidden lg:inline bg-[#108A57] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                    {badge}
+                {showBadge && (
+                  <span className="hidden lg:inline bg-[#108A57] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs">
+                    {badgeVal}
                   </span>
                 )}
               </button>
@@ -191,7 +207,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal }) {
         </div>
 
         <button
-          onClick={onExitPortal}
+          onClick={onLogout || onExitPortal}
           className="w-full flex items-center justify-center lg:justify-start space-x-3.5 px-2 lg:px-4 py-2 rounded-xl font-medium text-sm text-red-300 hover:bg-red-950/40 hover:text-red-200 transition-all cursor-pointer"
         >
           <LogOut className="w-5 h-5 text-red-400" />

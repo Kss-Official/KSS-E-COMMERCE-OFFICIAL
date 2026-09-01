@@ -60,9 +60,13 @@ function AppContent() {
       const user = fresh || cached;
       if (!user?.role || !isStaffRole(user.role)) return;
 
-      const portalPage = fresh?.home_page || homePageForRole(user.role);
-      if (portalPage !== currentPage) {
-        navigateTo(portalPage);
+      const savedPage = localStorage.getItem('buyzo_current_page');
+      const targetPage = ['delivery-agent', 'warehouse', 'admin'].includes(currentPage)
+        ? currentPage
+        : savedPage || fresh?.home_page || homePageForRole(user.role);
+
+      if (targetPage && targetPage !== currentPage) {
+        navigateTo(targetPage);
       }
     })();
 

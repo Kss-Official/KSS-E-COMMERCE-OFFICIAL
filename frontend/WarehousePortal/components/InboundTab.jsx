@@ -71,14 +71,22 @@ export default function InboundTab() {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
   const filtered = items.filter((i) => {
+    const matchesFilter =
+      statusFilter === 'ALL' ||
+      (statusFilter === 'PENDING' && i.status !== 'Verified') ||
+      (statusFilter === 'VERIFIED' && i.status === 'Verified');
+
     const term = searchTerm.toLowerCase();
-    return (
+    const matchesSearch =
       (i.receipt_id || '').toLowerCase().includes(term) ||
       (i.supplier_name || '').toLowerCase().includes(term) ||
       (i.item_title || '').toLowerCase().includes(term) ||
-      (i.sku || '').toLowerCase().includes(term)
-    );
+      (i.sku || '').toLowerCase().includes(term);
+
+    return matchesFilter && matchesSearch;
   });
 
   const pendingCount = items.filter((i) => i.status !== 'Verified').length;
@@ -100,13 +108,6 @@ export default function InboundTab() {
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={loadInbound}
-            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-          <button
             onClick={() => setIsModalOpen(true)}
             className="bg-[#ff5100] hover:bg-[#e64900] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center space-x-2 cursor-pointer"
           >
@@ -116,29 +117,46 @@ export default function InboundTab() {
         </div>
       </div>
 
-      {/* Live counters */}
+      {/* Live interactive counter buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+        <button
+          onClick={() => setStatusFilter('ALL')}
+          className={`text-left p-4 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+            statusFilter === 'ALL' ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
             <ArrowDownToLine className="w-4 h-4 text-blue-600" />
             <span>Total Receipts</span>
           </div>
           <p className="text-2xl font-black text-gray-900 mt-1">{items.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('VERIFIED')}
+          className={`text-left p-4 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+            statusFilter === 'VERIFIED' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20' : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>Units Received</span>
           </div>
           <p className="text-2xl font-black text-gray-900 mt-1">{unitsReceived.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('PENDING')}
+          className={`text-left p-4 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+            statusFilter === 'PENDING' ? 'bg-amber-50/80 border-amber-300 ring-2 ring-amber-500/20' : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4 text-amber-600" />
             <span>Awaiting Verification</span>
           </div>
           <p className="text-2xl font-black text-amber-600 mt-1">{pendingCount}</p>
-        </div>
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">

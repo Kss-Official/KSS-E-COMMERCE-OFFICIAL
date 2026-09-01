@@ -135,13 +135,6 @@ export default function OrdersTab() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Customer Order Fulfilment</h2>
           <p className="text-sm text-gray-500 font-medium">Every live customer order the warehouse is holding, picking or shipping.</p>
         </div>
-        <button
-          onClick={loadOrders}
-          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
       </div>
 
       {/* Live counters */}
@@ -240,8 +233,11 @@ export default function OrdersTab() {
                 const items = order.items || [];
                 const units = items.reduce((acc, i) => acc + (parseInt(i.quantity, 10) || 1), 0);
                 const next = NEXT_STAGE[order.status];
+                const rawAmount = String(order.total_amount || 0).replace(/,/g, '');
+                const amountVal = isNaN(parseFloat(rawAmount)) ? 0 : parseFloat(rawAmount);
+
                 return (
-                  <tr key={order.id} className="hover:bg-blue-50/20 transition-colors">
+                  <tr key={order.id || order.order_number} className="hover:bg-blue-50/20 transition-colors">
                     <td className="py-4 px-6 font-mono font-bold text-gray-900">
                       {order.order_number}
                       <span className="block text-[11px] font-sans font-semibold text-gray-400 mt-0.5">
@@ -257,14 +253,14 @@ export default function OrdersTab() {
                     </td>
                     <td className="py-4 px-6 text-xs text-gray-700 font-semibold">
                       <span className="line-clamp-1">
-                        {items[0]?.product_title || 'Order item'}
+                        {items[0]?.product_title || items[0]?.name || 'Order item'}
                       </span>
                       <span className="block text-[11px] text-gray-400 mt-0.5">
                         {items.length} line(s) &middot; {units} unit(s)
                       </span>
                     </td>
                     <td className="py-4 px-6 font-extrabold text-gray-900">
-                      ₹{Number(order.total_amount || 0).toLocaleString('en-IN')}
+                      ₹{amountVal.toLocaleString('en-IN')}
                     </td>
                     <td className="py-4 px-6 text-xs text-gray-500 font-medium">{order.formatted_date}</td>
                     <td className="py-4 px-6">

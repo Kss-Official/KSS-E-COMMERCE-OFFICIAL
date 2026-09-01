@@ -59,6 +59,9 @@ def propagate_order_status(order):
 
     # ---- Delivery side --------------------------------------------------
     delivery_stage = {
+        'PENDING': ('ASSIGNED', 1),
+        'CONFIRMED': ('ASSIGNED', 1),
+        'PROCESSING': ('ASSIGNED', 1),
         'SHIPPED': ('ASSIGNED', 1),
         'OUT_FOR_DELIVERY': ('IN_TRANSIT', 2),
         'DELIVERED': ('DELIVERED', 4),
@@ -70,7 +73,7 @@ def propagate_order_status(order):
         task_status, task_stage = delivery_stage
         task = getattr(order, 'delivery_task', None)
 
-        if task is None and status_value in ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED']:
+        if task is None and status_value in ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED']:
             # Hand the order to the rider carrying the fewest open jobs.
             agent = (
                 User.objects
@@ -84,6 +87,9 @@ def propagate_order_status(order):
                 .order_by('open_tasks', 'id')
                 .first()
             )
+            if not agent:
+                agent = User.objects.filter(is_active=True).first()
+
             if agent:
                 task = DeliveryTask.objects.create(
                     task_id=DeliveryTask.generate_task_id(),

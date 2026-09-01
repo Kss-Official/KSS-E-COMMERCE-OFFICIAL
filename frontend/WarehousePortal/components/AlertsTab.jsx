@@ -69,13 +69,6 @@ export default function AlertsTab() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Warehouse Alerts &amp; System Notifications</h2>
           <p className="text-sm text-gray-500 font-medium">Critical low stock alerts, bin capacity warnings, and pending PO receipts.</p>
         </div>
-        <button
-          onClick={loadAlerts}
-          className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
       </div>
 
       {/* Severity filter pills with live counts */}

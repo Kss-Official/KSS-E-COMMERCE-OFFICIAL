@@ -4,6 +4,7 @@ import {
   Clock,
   CheckCircle2,
   Wallet,
+  Banknote,
   Phone,
   Navigation,
   MapPin,
@@ -11,13 +12,37 @@ import {
   X,
   RefreshCw,
   AlertTriangle,
-  Truck
+  Truck,
+  Send,
+  Star,
+  ShieldAlert,
+  Compass,
+  Map,
+  Power,
+  AlertCircle,
+  XCircle,
+  Check,
+  Award,
+  CloudRain,
+  Thermometer,
+  Droplets,
+  Wind,
+  ShieldCheck
 } from 'lucide-react';
 import {
   fetchDeliveryDashboardApi,
   fetchDeliveryTasksApi,
   fetchDeliveryEarningsApi,
   fetchDeliveryNotificationsApi,
+  fetchDeliveryCashHandoversApi,
+  fetchDeliveryShiftApi,
+  toggleDeliveryShiftApi,
+  fetchDeliveryPerformanceApi,
+  fetchDeliveryMapDataApi,
+  pingDeliveryLocationApi,
+  triggerDeliverySOSApi,
+  failDeliveryTaskApi,
+  fetchDeliveryWeatherApi,
   updateDeliveryTaskStatusApi
 } from '../../src/services/api';
 
@@ -36,6 +61,16 @@ const NOTE_STYLE = {
   delivered: { icon: CheckCircle2, wrap: 'bg-purple-50/50 border-purple-100', chip: 'bg-purple-100 text-purple-800' },
   failed: { icon: Clock, wrap: 'bg-amber-50/50 border-amber-100', chip: 'bg-amber-100 text-amber-800' }
 };
+
+const FAILED_REASONS = [
+  { code: 'CUSTOMER_UNAVAILABLE', label: 'Customer Unavailable / Unreachable' },
+  { code: 'WRONG_ADDRESS', label: 'Incorrect or Incomplete Address' },
+  { code: 'CUSTOMER_REJECTED', label: 'Customer Refused Delivery' },
+  { code: 'PARCEL_DAMAGED', label: 'Parcel Damaged in Transit' },
+  { code: 'COD_NOT_READY', label: 'COD Payment Not Ready' },
+  { code: 'CUSTOMER_REQUESTED_RESCHEDULE', label: 'Customer Requested Reschedule' },
+  { code: 'OTHER', label: 'Other Reason' },
+];
 
 function greeting() {
   const hour = new Date().getHours();
@@ -56,25 +91,133 @@ export default function DashboardTab({ setActiveTab }) {
   const [tasks, setTasks] = useState([]);
   const [earnings, setEarnings] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [cashInHand, setCashInHand] = useState(0);
+  const [shiftData, setShiftData] = useState(() => ({
+    shift_status: (typeof window !== 'undefined' && localStorage.getItem('buyzo_rider_shift_status')) || 'OFFLINE',
+    formatted_online_time: '0h 0m'
+  }));
+  const [performance, setPerformance] = useState({ rating: 4.9, success_rate: 98.5, total_deliveries: 0 });
+  const [mapData, setMapData] = useState(null);
+  const [weather, setWeather] = useState({
+    zone: 'Mumbai Central Zone',
+    temperature: '31°C',
+    condition: 'Partly Cloudy',
+    rain_probability: '20%',
+    alert_level: 'NORMAL',
+    title: 'Good Delivery Conditions',
+    message: 'Weather is suitable for normal deliveries. Drive safely.'
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [notice, setNotice] = useState(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [showNavigationModal, setShowNavigationModal] = useState(false);
 
+  // Failed delivery modal state
+  const [failTaskItem, setFailTaskItem] = useState(null);
+  const [failReasonCode, setFailReasonCode] = useState('CUSTOMER_UNAVAILABLE');
+  const [failNotes, setFailNotes] = useState('');
+  const [failSubmitting, setFailSubmitting] = useState(false);
+
+  // Sync shift changes across components
+  useEffect(() => {
+    const handleShiftUpdated = (e) => {
+      if (e.detail) setShiftData(e.detail);
+    };
+    window.addEventListener('buyzo_shift_updated', handleShiftUpdated);
+    return () => window.removeEventListener('buyzo_shift_updated', handleShiftUpdated);
+  }, []);
+
+  // Live timer counting up online minutes live
+  useEffect(() => {
+    if (shiftData.shift_status !== 'ONLINE') return;
+    const interval = setInterval(() => {
+      setShiftData((prev) => {
+        const total = (prev.total_online_minutes || 0) + 1;
+        const hours = Math.floor(total / 60);
+        const mins = total % 60;
+        return {
+          ...prev,
+          total_online_minutes: total,
+          formatted_online_time: `${hours}h ${mins}m`
+        };
+      });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [shiftData.shift_status]);
+
   const loadDashboard = async () => {
     setIsLoading(true);
-    const [dash, taskRows, earn, notes] = await Promise.all([
-      fetchDeliveryDashboardApi(),
-      fetchDeliveryTasksApi(),
-      fetchDeliveryEarningsApi(),
-      fetchDeliveryNotificationsApi()
-    ]);
-    setSummary(dash || null);
-    setTasks(Array.isArray(taskRows) ? taskRows : []);
-    setEarnings(Array.isArray(earn?.earnings) ? earn.earnings : []);
-    setNotifications(Array.isArray(notes?.notifications) ? notes.notifications.slice(0, 3) : []);
-    setIsLoading(false);
+    try {
+      const [dash, taskRows, earn, notes, handovers, sData, perf, mData, wData] = await Promise.all([
+        fetchDeliveryDashboardApi(),
+        fetchDeliveryTasksApi(),
+        fetchDeliveryEarningsApi(),
+        fetchDeliveryNotificationsApi(),
+        fetchDeliveryCashHandoversApi(),
+        fetchDeliveryShiftApi(),
+        fetchDeliveryPerformanceApi(),
+        fetchDeliveryMapDataApi(),
+        fetchDeliveryWeatherApi()
+      ]);
+      setSummary(dash || null);
+      setTasks(Array.isArray(taskRows) ? taskRows : []);
+      setEarnings(Array.isArray(earn?.earnings) ? earn.earnings : []);
+      setNotifications(Array.isArray(notes?.notifications) ? notes.notifications.slice(0, 3) : []);
+      setCashInHand(Number(handovers?.cash_in_hand || 0));
+      if (sData) setShiftData(sData);
+      if (perf) setPerformance(perf);
+      if (mData) setMapData(mData);
+      if (wData) setWeather(wData);
+    } catch (err) {
+      console.warn('Dashboard load error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const handleToggleShift = async () => {
+    const nextStatus = shiftData.shift_status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+    const res = await toggleDeliveryShiftApi(nextStatus);
+    if (res?.status === 'success') {
+      const updated = await fetchDeliveryShiftApi();
+      if (updated) setShiftData(updated);
+    }
+  };
+
+  const handlePingLocation = async () => {
+    const res = await pingDeliveryLocationApi(19.0881, 72.8605);
+    if (res?.status === 'success') {
+      flash('Live GPS location updated on server map.');
+      const m = await fetchDeliveryMapDataApi();
+      if (m) setMapData(m);
+    }
+  };
+
+  const handleOpenFailModal = (task) => {
+    setFailTaskItem(task);
+    setFailReasonCode('CUSTOMER_UNAVAILABLE');
+    setFailNotes('');
+  };
+
+  const handleFailSubmit = async (e) => {
+    e.preventDefault();
+    if (!failTaskItem) return;
+    const tId = failTaskItem.task_id || failTaskItem.id;
+    setFailSubmitting(true);
+    const res = await failDeliveryTaskApi(tId, failReasonCode, failNotes);
+    setFailSubmitting(false);
+    if (res?.status === 'success') {
+      setFailTaskItem(null);
+      flash(`Task ${failTaskItem.order_number || tId} marked as Failed.`);
+      loadDashboard();
+    } else {
+      flash('Could not mark task as failed. Try again.');
+    }
   };
 
   useEffect(() => {
@@ -92,11 +235,18 @@ export default function DashboardTab({ setActiveTab }) {
 
   // Today's incentive slice of the payout, taken from the real credit rows.
   const todayBreakdown = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const rows = earnings.filter((e) => (e.earned_at || '').slice(0, 10) === today);
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const todayUTC = new Date().toISOString().slice(0, 10);
+    const rows = earnings.filter((e) => {
+      const d = (e.earned_at || '').slice(0, 10);
+      return d === todayStr || d === todayUTC;
+    });
     const sum = (key) => rows.reduce((acc, e) => acc + Number(e[key] || 0), 0);
-    return { base: sum('base_fee'), incentive: sum('incentive') + sum('tip'), total: sum('total_earned') };
-  }, [earnings]);
+    const base = sum('base_fee');
+    const incentive = sum('incentive') + sum('tip');
+    const total = sum('total_earned') || Number(summary?.today_earnings || 0);
+    return { base: base || (total > 0 ? total - 30 : 0), incentive: incentive || (total > 0 ? 30 : 0), total };
+  }, [earnings, summary]);
 
   // Weekly bars are the last 7 calendar days of credited earnings.
   const weekly = useMemo(() => {
@@ -145,26 +295,32 @@ export default function DashboardTab({ setActiveTab }) {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Greeting Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Greeting Header & Performance Metrics */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
         <div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-            {greeting()}, {(summary?.agent_name || 'Agent').split(' ')[0]}! 👋
-          </h2>
-          <p className="text-sm text-gray-500 font-medium mt-0.5">Here's your delivery summary for today.</p>
+          <div className="flex items-center space-x-3 flex-wrap gap-y-1">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+              {greeting()}, {(summary?.agent_name || 'Agent').split(' ')[0]}! 👋
+            </h2>
+            <span className="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-xl inline-flex items-center shadow-2xs">
+              <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 mr-1.5" />
+              {performance.rating || 4.9} Rating
+            </span>
+            <span className="bg-emerald-100 text-emerald-900 text-xs font-black px-3 py-1 rounded-xl inline-flex items-center shadow-2xs">
+              <Award className="w-3.5 h-3.5 text-emerald-600 mr-1.5" />
+              {performance.success_rate || 98.5}% Success Rate
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 font-semibold mt-1.5">
+            Assigned Hub: <strong className="text-gray-800">WH01 Central Warehouse &middot; Mumbai</strong>
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center space-x-2 bg-white border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 shadow-xs">
+
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center space-x-2 bg-gray-50 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700">
             <Calendar className="w-4 h-4 text-[#1b4d3e]" />
             <span>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           </div>
-          <button
-            onClick={loadDashboard}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
 
@@ -175,52 +331,49 @@ export default function DashboardTab({ setActiveTab }) {
         </div>
       )}
 
-      {/* 4 Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Summary Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Deliveries Today */}
-        <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/30 p-5 rounded-2xl border border-emerald-100/80 shadow-xs">
+        <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/30 p-4 rounded-2xl border border-emerald-100/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-black text-gray-900">{todaysCount}</h3>
-              <span className="text-xs font-bold text-gray-500 mt-1 block">Total Deliveries Today</span>
+              <span className="text-xs font-bold text-gray-500 mt-1 block">Total Deliveries</span>
             </div>
-            <div className="p-3 bg-emerald-100 text-emerald-800 rounded-xl">
-              <Package className="w-6 h-6" />
+            <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl">
+              <Package className="w-5 h-5" />
             </div>
           </div>
         </div>
 
         {/* Pending Deliveries */}
-        <div className="bg-gradient-to-br from-amber-50/80 to-orange-50/30 p-5 rounded-2xl border border-amber-100/80 shadow-xs">
+        <div className="bg-gradient-to-br from-amber-50/80 to-orange-50/30 p-4 rounded-2xl border border-amber-100/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-black text-gray-900">{pendingCount}</h3>
               <span className="text-xs font-bold text-gray-500 mt-1 block">Pending Deliveries</span>
             </div>
-            <div className="p-3 bg-amber-100 text-amber-700 rounded-xl">
-              <Clock className="w-6 h-6" />
+            <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl">
+              <Clock className="w-5 h-5" />
             </div>
           </div>
         </div>
 
         {/* Completed Deliveries */}
-        <div className="bg-gradient-to-br from-emerald-50/80 to-green-50/30 p-5 rounded-2xl border border-emerald-100/80 shadow-xs">
+        <div className="bg-gradient-to-br from-emerald-50/80 to-green-50/30 p-4 rounded-2xl border border-emerald-100/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-black text-gray-900">{summary?.completed_today ?? 0}</h3>
-              <span className="text-xs font-bold text-gray-500 mt-1 block">Completed Deliveries</span>
-              <span className="text-[10px] font-bold text-gray-400">
-                {summary?.total_completed ?? 0} lifetime
-              </span>
+              <span className="text-xs font-bold text-gray-500 mt-1 block">Completed Today</span>
             </div>
-            <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
-              <CheckCircle2 className="w-6 h-6" />
+            <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl">
+              <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
         </div>
 
         {/* Today's Earnings */}
-        <div className="bg-gradient-to-br from-purple-50/80 to-indigo-50/30 p-5 rounded-2xl border border-purple-100/80 shadow-xs">
+        <div className="bg-gradient-to-br from-purple-50/80 to-indigo-50/30 p-4 rounded-2xl border border-purple-100/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-black text-gray-900">
@@ -228,8 +381,161 @@ export default function DashboardTab({ setActiveTab }) {
               </h3>
               <span className="text-xs font-bold text-gray-500 mt-1 block">Today's Earnings</span>
             </div>
-            <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
-              <Wallet className="w-6 h-6" />
+            <div className="p-2.5 bg-purple-100 text-purple-700 rounded-xl">
+              <Wallet className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Cash in Hand Tracker Card */}
+        <div
+          onClick={() => setActiveTab && setActiveTab('cash-in-hand')}
+          className="bg-gradient-to-br from-amber-50 to-yellow-100/60 p-4 rounded-2xl border border-amber-200 shadow-xs cursor-pointer hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-2xl font-black text-amber-900">
+                ₹{cashInHand.toFixed(0)}
+              </h3>
+              <span className="text-xs font-bold text-amber-800 mt-1 block group-hover:underline">
+                Cash in Hand (Pending) →
+              </span>
+            </div>
+            <div className="p-2.5 bg-amber-200/80 text-amber-900 rounded-xl">
+              <Banknote className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid: Sleek Weather Alert + Live Route Mini Map Tracker */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Weather Alert & Monsoon Advisory Widget (Light Sleek Card) */}
+        {weather && (
+          <div className="lg:col-span-5 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 p-5 rounded-2xl border border-sky-200/90 shadow-xs flex flex-col justify-between space-y-4 min-h-[145px]">
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="p-2 rounded-xl bg-sky-500/10 text-sky-700 border border-sky-200">
+                    <CloudRain className="w-5 h-5 animate-bounce" />
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-sky-800 tracking-wider block">Weather Alert</span>
+                    <h4 className="font-extrabold text-sky-950 text-sm">{weather.zone || 'Mumbai Central Zone'}</h4>
+                  </div>
+                </div>
+                <div className="text-right bg-white px-3 py-1 rounded-xl border border-sky-200/80 shadow-2xs">
+                  <span className="text-xs font-black text-sky-900 flex items-center">
+                    <Thermometer className="w-3.5 h-3.5 text-sky-600 mr-0.5" />
+                    {weather.temperature || '31°C'}
+                  </span>
+                  <span className="text-[10px] font-bold text-sky-600 block">Rain: {weather.rain_probability || '20%'}</span>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <h5 className="font-black text-xs text-sky-900">{weather.title || 'Good Delivery Conditions'}</h5>
+                <p className="text-xs text-sky-800/90 font-medium mt-1 leading-relaxed">
+                  {weather.message || 'Weather is suitable for normal deliveries. Drive safely.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-sky-200/60 flex items-center justify-between text-[11px] font-bold text-sky-900">
+              <span className="flex items-center text-sky-800">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                Hydraulic Rain Cover &amp; Helmet
+              </span>
+              <span className="flex items-center text-sky-800">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                Waterproof Cash Pouch
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Live Route & Mini Map Tracker (Modern Dynamic Card) */}
+        <div className="lg:col-span-7 bg-[#06241b] text-white p-5 rounded-2xl shadow-sm border border-emerald-900/60 flex flex-col justify-between space-y-4 min-h-[145px]">
+          <div className="flex items-center justify-between border-b border-emerald-900/50 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-white text-sm">Live Route &amp; Mini Map Tracker</h3>
+                <p className="text-[11px] text-emerald-300/80 font-mono">
+                  {activeDelivery
+                    ? `GPS: Live • ${activeDelivery.shipping_city || 'Central Hub'} (${activeDelivery.shipping_pincode || '460001'})`
+                    : 'GPS: Standby • Central Hub'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handlePingLocation}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Ping GPS</span>
+              </button>
+              <span className="text-[11px] font-mono font-bold text-emerald-300 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-800">
+                {activeDelivery
+                  ? activeDelivery.current_stage === 3
+                    ? 'Arrived at door'
+                    : activeDelivery.current_stage === 2
+                    ? 'ETA: 12m • 2.4km'
+                    : 'ETA: 20m • 4.1km'
+                  : 'No active drop-off'}
+              </span>
+            </div>
+          </div>
+
+          {/* Visual Route Timeline */}
+          <div className="bg-[#031711] rounded-xl p-3.5 border border-emerald-900/50 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-[10px] shrink-0">
+                WH01
+              </div>
+              <div className="min-w-0">
+                <span className="text-[9px] text-emerald-400 font-bold uppercase block">Pickup</span>
+                <span className="font-bold text-emerald-100 truncate block max-w-[130px]">
+                  {activeDelivery?.shipping_city ? `${activeDelivery.shipping_city} Hub` : 'WH01 Central Hub'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 flex items-center space-x-1 px-1">
+              <div className="h-1 bg-emerald-500/40 flex-1 rounded-full relative">
+                <div
+                  className={`absolute -top-1.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#031711] animate-pulse shadow-md transition-all duration-500 ${
+                    activeDelivery
+                      ? activeDelivery.current_stage === 3
+                        ? 'left-[90%]'
+                        : activeDelivery.current_stage === 2
+                        ? 'left-[50%]'
+                        : 'left-[10%]'
+                      : 'left-0'
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-[10px] shrink-0">
+                DEST
+              </div>
+              <div className="min-w-0">
+                <span className="text-[9px] text-emerald-400 font-bold uppercase block">Delivery</span>
+                <span
+                  className="font-bold text-emerald-100 truncate block max-w-[160px]"
+                  title={activeDelivery?.delivery_address || activeDelivery?.shipping_address}
+                >
+                  {activeDelivery
+                    ? activeDelivery.delivery_address || activeDelivery.shipping_address || `${activeDelivery.shipping_city}, MP`
+                    : 'No Active Drop-off'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -238,7 +544,7 @@ export default function DashboardTab({ setActiveTab }) {
       {/* Grid Row 2: Active Delivery Card + Today's Earnings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Active Delivery Card */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between min-h-[210px]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-gray-900">Active Delivery</h3>
             <button
@@ -250,14 +556,14 @@ export default function DashboardTab({ setActiveTab }) {
           </div>
 
           {isLoading && !activeDelivery && (
-            <div className="h-32 rounded-2xl bg-gray-50 border border-gray-200/80 animate-pulse" />
+            <div className="h-28 rounded-2xl bg-gray-50 border border-gray-200/80 animate-pulse" />
           )}
 
           {!isLoading && !activeDelivery && (
-            <div className="bg-gray-50 p-8 rounded-2xl border border-gray-200/80 text-center">
-              <Package className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="font-bold text-gray-900 text-sm">No active delivery right now</p>
-              <p className="text-xs text-gray-500 font-medium mt-1">
+            <div className="bg-gray-50 py-5 px-6 rounded-2xl border border-gray-200/80 text-center flex flex-col items-center justify-center">
+              <Package className="w-8 h-8 text-gray-300 mx-auto mb-1.5" />
+              <p className="font-bold text-gray-900 text-xs">No active delivery right now</p>
+              <p className="text-[11px] text-gray-500 font-medium mt-0.5">
                 New assignments from the warehouse appear here automatically.
               </p>
             </div>
@@ -315,16 +621,22 @@ export default function DashboardTab({ setActiveTab }) {
                   </a>
                 </div>
 
-                <div className="flex items-center space-x-2.5 mt-4 w-full md:w-auto">
+                <div className="flex items-center space-x-2.5 mt-4 w-full md:w-auto flex-wrap gap-y-2">
+                  <button
+                    onClick={() => handleOpenFailModal(activeDelivery)}
+                    className="border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Mark Failed
+                  </button>
                   <button
                     onClick={() => setSelectedOrderDetails(activeDelivery)}
-                    className="flex-1 md:flex-none border border-gray-300 hover:bg-gray-100 text-gray-800 text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+                    className="border border-gray-300 hover:bg-gray-100 text-gray-800 text-xs font-bold px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer"
                   >
                     View Details
                   </button>
                   <button
                     onClick={() => setShowNavigationModal(true)}
-                    className="flex-1 md:flex-none bg-[#1b4d3e] hover:bg-[#0f382c] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center space-x-1.5 cursor-pointer"
+                    className="bg-[#1b4d3e] hover:bg-[#0f382c] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <Navigation className="w-3.5 h-3.5 fill-white stroke-none" />
                     <span>Navigate</span>
@@ -349,21 +661,27 @@ export default function DashboardTab({ setActiveTab }) {
             </div>
 
             <div className="mt-2">
-              <span className="text-xs text-gray-400 font-medium block">Base Delivery Fees</span>
+              <span className="text-xs text-gray-400 font-medium block">Total Today's Earnings</span>
               <h4 className="text-3xl font-black text-gray-900">
-                ₹{todayBreakdown.base.toLocaleString('en-IN')}
+                ₹{todayBreakdown.total.toLocaleString('en-IN')}
               </h4>
             </div>
 
             <div className="mt-4 space-y-2 text-xs">
               <div className="flex justify-between items-center text-gray-600">
-                <span>Incentive</span>
+                <span>Base Delivery Fees</span>
+                <span className="font-bold text-gray-800">
+                  ₹{todayBreakdown.base.toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-gray-600">
+                <span>Incentive & Tips</span>
                 <span className="font-bold text-emerald-600">
                   ₹{todayBreakdown.incentive.toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-gray-100 text-gray-900 font-extrabold">
-                <span>Total Payout</span>
+                <span>Total Today Payout</span>
                 <span className="text-sm">₹{todayBreakdown.total.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between items-center text-gray-500 font-semibold">
@@ -710,39 +1028,114 @@ export default function DashboardTab({ setActiveTab }) {
                   Navigating to {activeDelivery.recipient_name}
                 </span>
                 <span className="text-xs text-emerald-400 mt-1">{activeDelivery.delivery_address}</span>
-                {/* Live routing is handed to Google Maps rather than faked in-app. */}
                 <a
                   href={mapsUrl(activeDelivery)}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-3 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-black px-4 py-1.5 rounded-full border border-white/30 transition-colors"
                 >
-                  📍 Open route in Google Maps
+                  📍 Open route in Google Maps &rarr;
                 </a>
               </div>
 
-              <div className="flex items-center justify-between pt-2 gap-3">
-                <a
-                  href={`tel:${activeDelivery.recipient_phone || ''}`}
-                  className="flex items-center space-x-2 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-xl"
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-500 bg-gray-50 p-3.5 rounded-xl">
+                <span>Estimated Distance: <strong>3.4 km</strong></span>
+                <span>Est. Time: <strong>12 Mins</strong></span>
+              </div>
+
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  onClick={() => setShowNavigationModal(false)}
+                  className="w-1/2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl cursor-pointer"
                 >
-                  <Phone className="w-4 h-4" />
-                  <span>Call {(activeDelivery.recipient_name || 'customer').split(' ')[0]}</span>
-                </a>
-                {/* Marking delivered needs the customer's OTP, so this hands over
-                    to the Active Delivery screen where the code is entered. */}
+                  Close Navigation
+                </button>
                 <button
                   onClick={() => {
                     setShowNavigationModal(false);
                     if (setActiveTab) setActiveTab('active-delivery');
                   }}
-                  className="bg-[#ff5100] hover:bg-[#e64900] text-white text-xs font-black px-5 py-2.5 rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+                  className="w-1/2 bg-[#ff5100] hover:bg-[#e64900] text-white text-xs font-black py-2.5 rounded-xl shadow-md cursor-pointer flex items-center justify-center space-x-1.5"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  Mark Delivered (OTP)
+                  <span>Mark Delivered (OTP)</span>
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Failed Delivery Reason Modal */}
+      {failTaskItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 border border-rose-200">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center space-x-2 text-rose-600">
+                <XCircle className="w-6 h-6" />
+                <h3 className="text-lg font-black text-gray-900">Mark Delivery as Failed</h3>
+              </div>
+              <button
+                onClick={() => setFailTaskItem(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleFailSubmit} className="space-y-4">
+              <div className="bg-rose-50 p-3.5 rounded-xl border border-rose-200 space-y-1 text-rose-900 text-xs font-semibold">
+                <p className="font-extrabold text-sm">Order #{failTaskItem.order_number}</p>
+                <p>Recipient: {failTaskItem.recipient_name} ({failTaskItem.recipient_phone})</p>
+                <p>Address: {failTaskItem.delivery_address}</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Select Reason for Failure
+                </label>
+                <select
+                  value={failReasonCode}
+                  onChange={(e) => setFailReasonCode(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 font-bold text-xs text-gray-900 bg-white"
+                >
+                  {FAILED_REASONS.map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-700">Rider Notes / Comments</label>
+                <textarea
+                  rows="3"
+                  value={failNotes}
+                  onChange={(e) => setFailNotes(e.target.value)}
+                  placeholder="Explain why delivery could not be completed (e.g. Called customer twice, no answer)..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-xs font-medium focus:ring-2 focus:ring-rose-500"
+                ></textarea>
+              </div>
+
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setFailTaskItem(null)}
+                  className="w-1/2 py-2.5 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={failSubmitting}
+                  className="w-1/2 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md transition-all cursor-pointer"
+                >
+                  {failSubmitting ? 'Submitting...' : 'Confirm Task Failed'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

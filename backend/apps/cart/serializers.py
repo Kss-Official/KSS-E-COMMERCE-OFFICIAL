@@ -10,8 +10,8 @@ class CartItemSerializer(serializers.ModelSerializer):
     # Direct frontend aliases
     name = serializers.CharField(source='product.title', read_only=True)
     image = serializers.SerializerMethodField()
-    price = serializers.DecimalField(source='unit_price', max_digits=10, decimal_places=2, read_only=True)
-    originalPrice = serializers.DecimalField(source='product.original_price', max_digits=10, decimal_places=2, read_only=True)
+    price = serializers.SerializerMethodField()
+    originalPrice = serializers.SerializerMethodField()
     discount = serializers.CharField(source='product.discount_percentage_display', read_only=True)
     selectedColor = serializers.CharField(source='selected_color', read_only=True)
     selectedSize = serializers.CharField(source='selected_size', read_only=True)
@@ -25,13 +25,29 @@ class CartItemSerializer(serializers.ModelSerializer):
             'unit_price', 'total_price', 'name', 'image', 'price', 'originalPrice', 'discount'
         ]
 
+    def get_price(self, obj):
+        try:
+            val = obj.unit_price
+            return round(float(val), 2) if val is not None else 0.00
+        except Exception:
+            return 0.00
+
+    def get_originalPrice(self, obj):
+        try:
+            val = getattr(obj.product, 'original_price', None) or getattr(obj.product, 'base_price', None)
+            return round(float(val), 2) if val is not None else 0.00
+        except Exception:
+            return 0.00
+
     def get_image(self, obj):
         request = self.context.get('request')
-        primary_img = obj.product.images.filter(is_primary=True).first() or obj.product.images.first()
-        if primary_img and primary_img.image:
-            if request:
-                return request.build_absolute_uri(primary_img.image.url)
-            return primary_img.image.url
+        primary_img = getattr(obj.product, 'images', None)
+        if primary_img:
+            img_obj = primary_img.filter(is_primary=True).first() or primary_img.first()
+            if img_obj and img_obj.image:
+                if request:
+                    return request.build_absolute_uri(img_obj.image.url)
+                return img_obj.image.url
         return None
 
 class CartSerializer(serializers.ModelSerializer):

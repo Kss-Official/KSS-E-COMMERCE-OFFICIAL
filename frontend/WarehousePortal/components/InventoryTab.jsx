@@ -26,16 +26,18 @@ export default function InventoryTab() {
 
   const loadInventory = useCallback(async () => {
     setIsLoading(true);
-    const rows = await fetchWarehouseInventoryApi(onlyLow ? { status: 'low' } : {});
+    const rows = await fetchWarehouseInventoryApi();
     setStockList(Array.isArray(rows) ? rows : []);
     setIsLoading(false);
-  }, [onlyLow]);
+  }, []);
 
   useEffect(() => {
     loadInventory();
   }, [loadInventory]);
 
   const filtered = stockList.filter((s) => {
+    if (onlyLow && !s.is_low_stock && (Number(s.total || 0) > Number(s.reorder_level || 10))) return false;
+
     const term = searchTerm.toLowerCase();
     return (
       (s.sku || '').toLowerCase().includes(term) ||
@@ -110,38 +112,48 @@ export default function InventoryTab() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Warehouse Inventory &amp; Bin Locations</h2>
           <p className="text-sm text-gray-500 font-medium">Track total units, reserved stock, bin numbers (Bin A-102, B-304), and transit levels.</p>
         </div>
-        <button
-          onClick={loadInventory}
-          className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
       </div>
 
-      {/* Live counters */}
+      {/* Live interactive counter buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+        <button
+          onClick={() => setOnlyLow(false)}
+          className={`text-left p-4 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+            !onlyLow ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
             <Boxes className="w-4 h-4 text-blue-600" />
             <span>Total SKUs</span>
           </div>
           <p className="text-2xl font-black text-gray-900 mt-1">{stockList.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+        </button>
+
+        <button
+          onClick={() => setOnlyLow(false)}
+          className={`text-left p-4 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+            !onlyLow ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20' : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
             <Boxes className="w-4 h-4 text-emerald-600" />
             <span>Units on Floor</span>
           </div>
           <p className="text-2xl font-black text-gray-900 mt-1">{totalUnits.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+        </button>
+
+        <button
+          onClick={() => setOnlyLow(true)}
+          className={`text-left p-4 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+            onlyLow ? 'bg-rose-50/80 border-rose-300 ring-2 ring-rose-500/20' : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
             <AlertTriangle className="w-4 h-4 text-rose-600" />
             <span>Below Reorder Level</span>
           </div>
           <p className="text-2xl font-black text-rose-600 mt-1">{lowCount}</p>
-        </div>
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center gap-3">

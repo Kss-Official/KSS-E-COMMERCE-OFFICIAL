@@ -9,15 +9,25 @@ from .models import Cart, CartItem, Wishlist, WishlistItem
 from .serializers import CartSerializer, WishlistSerializer
 
 def get_or_create_cart(request):
-    if request.user.is_authenticated:
+    if hasattr(request, 'user') and request.user and request.user.is_authenticated:
         cart, _ = Cart.objects.get_or_create(user=request.user)
         return cart
+
+    headers = getattr(request, 'headers', {})
+    session_key = headers.get('X-Session-ID') or headers.get('x-session-id')
     
-    session_key = request.headers.get('X-Session-ID') or request.session.session_key
     if not session_key:
-        if not request.session.exists(request.session.session_key):
-            request.session.create()
-        session_key = request.session.session_key or str(uuid.uuid4())
+        session = getattr(request, 'session', None)
+        if session:
+            try:
+                if not session.exists(session.session_key):
+                    session.create()
+                session_key = session.session_key
+            except Exception:
+                session_key = None
+
+    if not session_key:
+        session_key = 'guest_sess_' + str(uuid.uuid4())
 
     cart, _ = Cart.objects.get_or_create(session_key=session_key)
     return cart

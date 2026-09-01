@@ -63,6 +63,21 @@ class InboundReceiptViewSet(viewsets.ModelViewSet):
     serializer_class = InboundReceiptSerializer
     permission_classes = [IsWarehouseStaff]
 
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if pk is not None:
+            if str(pk).isdigit():
+                obj = self.get_queryset().filter(id=int(pk)).first()
+                if obj:
+                    return obj
+            obj = self.get_queryset().filter(
+                Q(receipt_id=str(pk)) |
+                Q(receipt_id=f"RCPT-{pk}")
+            ).first()
+            if obj:
+                return obj
+        return super().get_object()
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -171,6 +186,21 @@ class StockTransferViewSet(viewsets.ModelViewSet):
     serializer_class = StockTransferSerializer
     permission_classes = [IsWarehouseStaff]
 
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if pk is not None:
+            if str(pk).isdigit():
+                obj = self.get_queryset().filter(id=int(pk)).first()
+                if obj:
+                    return obj
+            obj = self.get_queryset().filter(
+                Q(transfer_id=str(pk)) |
+                Q(transfer_id=f"TRF-{pk}")
+            ).first()
+            if obj:
+                return obj
+        return super().get_object()
+
     def perform_create(self, serializer):
         serializer.save(transfer_id=f"TRF-{timezone.now().strftime('%Y%m%d%H%M%S')}")
 
@@ -198,6 +228,21 @@ class ReturnedItemViewSet(viewsets.ModelViewSet):
     queryset = ReturnedItem.objects.all().order_by('-inspected_at')
     serializer_class = ReturnedItemSerializer
     permission_classes = [IsWarehouseStaff]
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if pk is not None:
+            if str(pk).isdigit():
+                obj = self.get_queryset().filter(id=int(pk)).first()
+                if obj:
+                    return obj
+            obj = self.get_queryset().filter(
+                Q(return_id=str(pk)) |
+                Q(return_id=f"RET-{pk}")
+            ).first()
+            if obj:
+                return obj
+        return super().get_object()
 
     def perform_create(self, serializer):
         serializer.save(return_id=f"RET-{timezone.now().strftime('%Y%m%d%H%M%S')}")
@@ -277,6 +322,22 @@ class WarehouseInventoryViewSet(viewsets.ModelViewSet):
     serializer_class = WarehouseInventorySerializer
     permission_classes = [IsWarehouseStaff]
 
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if pk is not None:
+            if str(pk).isdigit():
+                obj = self.get_queryset().filter(id=int(pk)).first()
+                if obj:
+                    return obj
+            obj = self.get_queryset().filter(
+                Q(product__sku=str(pk)) |
+                Q(product__sku__iexact=str(pk)) |
+                Q(bin_location__iexact=str(pk))
+            ).first()
+            if obj:
+                return obj
+        return super().get_object()
+
     def get_queryset(self):
         qs = (WarehouseInventory.objects
               .select_related('product', 'product__category')
@@ -294,9 +355,17 @@ class WarehouseInventoryViewSet(viewsets.ModelViewSet):
         return qs.order_by('bin_location', 'product__title')
 
     def list(self, request, *args, **kwargs):
-        # Backfill first so a freshly seeded catalogue shows up immediately.
-        for product in Product.objects.filter(is_active=True, warehouse_inventory__isnull=True):
-            _sync_inventory_row(product)
+        # Backfill first using a single bulk_create query
+        unlinked = list(Product.objects.filter(is_active=True, warehouse_inventory__isnull=True))
+        if unlinked:
+            WarehouseInventory.objects.bulk_create([
+                WarehouseInventory(
+                    product=p,
+                    total_units=p.stock_quantity,
+                    reorder_level=p.low_stock_threshold,
+                    bin_location='',
+                ) for p in unlinked
+            ], ignore_conflicts=True)
 
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -437,11 +506,28 @@ class WarehouseDashboardSummaryView(APIView):
 
 
 class WarehouseAlertsView(APIView):
-    """Low-stock, out-of-stock, unverified-inbound and stuck-transfer alerts."""
+    """Low-stock, out-of-stock, unverified-inbound, stuck-transfer, and new customer order alerts."""
     permission_classes = [IsWarehouseStaff]
 
     def get(self, request):
         alerts = []
+
+        # 1. New Customer Purchase Orders awaiting packing & dispatch
+        for shipment in OutboundShipment.objects.filter(
+                status__in=['Packing In Progress', 'Ready for Pickup']).order_by('-created_at')[:25]:
+            alerts.append({
+                'id': f'order-{shipment.id}',
+                'severity': 'warning',
+                'type': 'New Customer Order',
+                'title': f'Customer Order: {shipment.item_title}',
+                'sku': shipment.sku,
+                'category': '',
+                'message': f'New order {shipment.shipment_id} ({shipment.quantity} units) received for {shipment.destination_hub} — needs packing.',
+                'current_stock': shipment.quantity,
+                'threshold': 0,
+                'suggested_reorder': 0,
+            })
+
         low = (Product.objects
                .filter(is_active=True, stock_quantity__lte=F('low_stock_threshold'))
                .select_related('category').order_by('stock_quantity')[:40])
@@ -523,14 +609,30 @@ class WarehouseReportsView(APIView):
         transfers = StockTransfer.objects.filter(created_at__gte=since)
         returns = ReturnedItem.objects.filter(inspected_at__gte=since)
 
+        inbound_rows = list(inbound.values_list('received_at', 'quantity'))
+        outbound_rows = list(outbound.values_list('created_at', 'quantity'))
+
+        inbound_by_day = {}
+        for dt, qty in inbound_rows:
+            if dt:
+                d_str = dt.date().isoformat()
+                inbound_by_day[d_str] = inbound_by_day.get(d_str, 0) + (qty or 0)
+
+        outbound_by_day = {}
+        for dt, qty in outbound_rows:
+            if dt:
+                d_str = dt.date().isoformat()
+                outbound_by_day[d_str] = outbound_by_day.get(d_str, 0) + (qty or 0)
+
         daily = []
         for offset in range(min(days, 14) - 1, -1, -1):
             day = (timezone.now() - timedelta(days=offset)).date()
+            d_str = day.isoformat()
             daily.append({
-                'date': day.isoformat(),
+                'date': d_str,
                 'label': day.strftime('%d %b'),
-                'inbound_units': inbound.filter(received_at__date=day).aggregate(q=Sum('quantity'))['q'] or 0,
-                'outbound_units': outbound.filter(created_at__date=day).aggregate(q=Sum('quantity'))['q'] or 0,
+                'inbound_units': inbound_by_day.get(d_str, 0),
+                'outbound_units': outbound_by_day.get(d_str, 0),
             })
 
         by_category = [
@@ -573,3 +675,141 @@ class WarehouseReportsView(APIView):
             },
             message="Warehouse reports retrieved.",
         )
+
+
+class WarehouseCashHandoverListView(APIView):
+    """
+    GET /api/warehouse/cash-handovers/
+    Lists agent cash handover requests for warehouse staff verification.
+    """
+    permission_classes = [IsWarehouseStaff]
+
+    def get(self, request):
+        from apps.delivery.models import DeliveryCashHandover
+        from apps.delivery.serializers import DeliveryCashHandoverSerializer
+
+        qs = DeliveryCashHandover.objects.all().select_related('agent', 'agent__profile', 'warehouse_staff').order_by('-created_at')
+        status_param = request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param.upper())
+
+        pending_count = DeliveryCashHandover.objects.filter(status='PENDING').count()
+        serializer = DeliveryCashHandoverSerializer(qs, many=True)
+
+        return APIResponse.success(
+            data={
+                'pending_count': pending_count,
+                'handovers': serializer.data,
+            },
+            message="Warehouse cash handovers retrieved."
+        )
+
+
+class WarehouseCashHandoverConfirmView(APIView):
+    """
+    POST /api/warehouse/cash-handovers/<handover_id>/confirm/
+    Confirm physical receipt of cash handover from delivery agent.
+    """
+    permission_classes = [IsWarehouseStaff]
+
+    def post(self, request, handover_id):
+        from decimal import Decimal
+        import random
+        from apps.delivery.models import DeliveryCashHandover, DeliveryAgentShift, DeliveryCashTransaction
+        from apps.delivery.serializers import DeliveryCashHandoverSerializer
+
+        handover = DeliveryCashHandover.objects.filter(
+            Q(handover_id=handover_id) | Q(id=int(handover_id) if str(handover_id).isdigit() else -1)
+        ).first()
+
+        if not handover:
+            return APIResponse.error(message="Cash handover request not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        if handover.status == 'CONFIRMED':
+            return APIResponse.error(message="This cash handover request has already been confirmed.")
+
+        confirmed_raw = request.data.get('confirmed_amount', handover.requested_amount)
+        try:
+            confirmed_amount = Decimal(str(confirmed_raw))
+        except Exception:
+            return APIResponse.error(message="Invalid confirmed amount.")
+
+        if confirmed_amount <= Decimal('0.00'):
+            return APIResponse.error(message="Confirmed amount must be greater than zero.")
+
+        notes = request.data.get('notes', '')
+
+        handover.status = 'CONFIRMED'
+        handover.confirmed_amount = confirmed_amount
+        handover.warehouse_staff = request.user
+        handover.notes = notes or handover.notes
+        handover.confirmed_at = timezone.now()
+        handover.save()
+
+        # Update Agent Shift Cash In Hand balance
+        agent = handover.agent
+        shift, _ = DeliveryAgentShift.objects.get_or_create(agent=agent)
+        before = Decimal(str(shift.cash_in_hand))
+        after = max(Decimal('0.00'), before - confirmed_amount)
+        shift.cash_in_hand = after
+        shift.save(update_fields=['cash_in_hand'])
+
+        # Log Cash Transaction
+        tx_id = f"CTX-{random.randint(10000, 99999)}"
+        DeliveryCashTransaction.objects.create(
+            transaction_id=tx_id,
+            agent=agent,
+            transaction_type='DEPOSIT',
+            amount=confirmed_amount,
+            cash_in_hand_before=before,
+            cash_in_hand_after=after,
+            notes=f"Cash handover {handover.handover_id} confirmed by warehouse staff {request.user.email}",
+        )
+
+        return APIResponse.success(
+            data=DeliveryCashHandoverSerializer(handover).data,
+            message=f"Cash handover {handover.handover_id} for ₹{confirmed_amount} confirmed successfully!"
+        )
+
+
+class WarehouseCashHandoverDisputeView(APIView):
+    """
+    POST /api/warehouse/cash-handovers/<handover_id>/dispute/
+    Flag discrepancy or dispute for a cash handover request.
+    """
+    permission_classes = [IsWarehouseStaff]
+
+    def post(self, request, handover_id):
+        from decimal import Decimal
+        from apps.delivery.models import DeliveryCashHandover
+        from apps.delivery.serializers import DeliveryCashHandoverSerializer
+
+        handover = DeliveryCashHandover.objects.filter(
+            Q(handover_id=handover_id) | Q(id=int(handover_id) if str(handover_id).isdigit() else -1)
+        ).first()
+
+        if not handover:
+            return APIResponse.error(message="Cash handover request not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        dispute_reason = request.data.get('dispute_reason', '').strip()
+        if not dispute_reason:
+            return APIResponse.error(message="A dispute reason is required to flag an amount discrepancy.")
+
+        confirmed_raw = request.data.get('confirmed_amount')
+        if confirmed_raw is not None:
+            try:
+                handover.confirmed_amount = Decimal(str(confirmed_raw))
+            except Exception:
+                pass
+
+        handover.status = 'DISPUTED'
+        handover.dispute_reason = dispute_reason
+        handover.warehouse_staff = request.user
+        handover.confirmed_at = timezone.now()
+        handover.save()
+
+        return APIResponse.success(
+            data=DeliveryCashHandoverSerializer(handover).data,
+            message=f"Cash handover {handover.handover_id} flagged as DISPUTED."
+        )
+

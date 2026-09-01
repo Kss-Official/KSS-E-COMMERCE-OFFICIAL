@@ -80,13 +80,6 @@ export default function ReturnsTab() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Customer Returns &amp; Restocking</h2>
           <p className="text-sm text-gray-500 font-medium">Inspect returned products, record reason for return, and restock clean inventory.</p>
         </div>
-        <button
-          onClick={loadReturns}
-          className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
       </div>
 
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">

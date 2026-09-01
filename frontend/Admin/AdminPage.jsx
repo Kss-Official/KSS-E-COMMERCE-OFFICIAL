@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardTab from './components/DashboardTab';
@@ -12,16 +12,36 @@ import CouponsTab from './components/CouponsTab';
 import ReportsTab from './components/ReportsTab';
 import SettingsTab from './components/SettingsTab';
 import { useNavigationContext } from '../src/context/NavigationContext';
+import { getCurrentUser, autoAuthenticateRole, logoutUser } from '../src/services/api';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const navContext = useNavigationContext();
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'ADMIN') {
+      autoAuthenticateRole('admin');
+    }
+  }, []);
 
   const handleExitAdmin = () => {
     if (navContext?.navigateTo) {
       navContext.navigateTo('home');
     } else {
       window.location.hash = '#home';
+    }
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    localStorage.removeItem('buyzo_access_token');
+    localStorage.removeItem('buyzo_current_user');
+    localStorage.setItem('buyzo_current_page', 'login');
+    if (navContext?.navigateTo) {
+      navContext.navigateTo('login');
+    } else {
+      window.location.hash = '#login';
     }
   };
 
@@ -54,11 +74,11 @@ export default function AdminPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50/60 font-sans antialiased text-gray-800">
       {/* Sidebar with BuyZo Logo & Brand Palette */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onExitAdmin={handleExitAdmin} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onExitAdmin={handleExitAdmin} onLogout={handleLogout} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        <Topbar title={activeTab} onExitAdmin={handleExitAdmin} setActiveTab={setActiveTab} />
+        <Topbar title={activeTab} onExitAdmin={handleExitAdmin} onLogout={handleLogout} setActiveTab={setActiveTab} />
         <main className="portal-main p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto">
           {renderActiveTab()}
         </main>

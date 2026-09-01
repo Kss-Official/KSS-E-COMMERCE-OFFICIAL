@@ -3,7 +3,7 @@ import { Search, Bell, Calendar, Store } from 'lucide-react';
 import { getCurrentUser } from '../../src/services/api';
 import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
-export default function Topbar({ title, onExitAdmin, setActiveTab }) {
+export default function Topbar({ title, onExitAdmin, onLogout, setActiveTab }) {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function Topbar({ title, onExitAdmin, setActiveTab }) {
               avatar: currentUser?.avatar
             }}
             setActiveTab={setActiveTab}
-            onLogout={onExitAdmin}
+            onLogout={onLogout}
             portalType="admin"
           />
         </div>

@@ -37,7 +37,7 @@ const navItems = [
 
 const LOW_STOCK_THRESHOLD = 10;
 
-export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
+export default function Sidebar({ activeTab, setActiveTab, onExitAdmin, onLogout }) {
   const [counts, setCounts] = useState({});
 
   // Refreshed whenever the operator switches tabs, so the pills track the writes
@@ -160,11 +160,11 @@ export default function Sidebar({ activeTab, setActiveTab, onExitAdmin }) {
         </button>
 
         <button
-          onClick={onExitAdmin}
+          onClick={onLogout || onExitAdmin}
           className="w-full flex items-center justify-center lg:justify-start space-x-3.5 px-3 lg:px-4 py-2.5 rounded-xl font-medium text-sm text-[#ff6b6b] hover:bg-[#ff6b6b]/10 hover:text-red-300 transition-all duration-200 cursor-pointer"
         >
           <LogOut className="w-5 h-5 text-[#ff6b6b]" />
-          <span className="hidden lg:inline font-semibold">Exit Admin</span>
+          <span className="hidden lg:inline font-semibold">Logout</span>
         </button>
       </div>
     </aside>
