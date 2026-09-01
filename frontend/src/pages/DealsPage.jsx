@@ -227,10 +227,30 @@ export default function DealsPage() {
       )}
 
       <div className="max-w-[1400px] mx-auto">
+        {/* Mobile Horizontal Deals Navigation Bar (< 1024px) */}
+        <div className="lg:hidden w-full overflow-x-auto no-scrollbar flex items-center space-x-2 py-2 mb-3">
+          {sidebarNavItems.map((item) => {
+            const isActive = activeNav === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveNav(item.id)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                  isActive
+                    ? 'bg-brand-800 text-white border-brand-800 shadow-2xs'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* ================= LEFT SIDEBAR (3 COLS) ================= */}
-          <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
+          {/* ================= LEFT SIDEBAR (Desktop Only) ================= */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-5 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
             
             {/* Top Navigation Menu Card */}
             <div className="bg-white rounded-2xl p-4 shadow-xs border border-gray-100/90">

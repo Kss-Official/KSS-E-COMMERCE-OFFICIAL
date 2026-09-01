@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Warehouse, Bell, Calendar, Store, AlertTriangle, X } from 'lucide-react';
+import { Warehouse, Bell, Calendar, Store, AlertTriangle, X, Menu } from 'lucide-react';
 import { fetchWarehouseSummaryApi, fetchWarehouseAlertsApi } from '../../src/services/api';
 import ProfileDropdown from '../../src/components/ui/ProfileDropdown';
 
@@ -38,13 +38,22 @@ export default function Topbar({ title, onExitPortal, onLogout, setActiveTab }) 
   const operatorName = summary?.operator_name || 'Warehouse Operator';
 
   return (
-    <header className="bg-white border-b border-gray-200 py-3.5 px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
-      {/* Title */}
-      <div className="flex items-center space-x-3">
+    <header className="bg-white border-b border-gray-200 py-3 sm:py-3.5 px-4 sm:px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
+      {/* Title + Mobile Hamburger Button */}
+      <div className="flex items-center space-x-2.5 sm:space-x-3">
+        {onToggleMobileSidebar && (
+          <button
+            onClick={onToggleMobileSidebar}
+            className="md:hidden p-1.5 rounded-xl bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#1D4ED8] transition-colors cursor-pointer"
+            title="Open Navigation Menu"
+          >
+            <Menu className="w-5.5 h-5.5 stroke-[2.2]" />
+          </button>
+        )}
         <div className="p-2 rounded-xl bg-[#dbeafe] text-[#1D4ED8]">
           <Warehouse className="w-5 h-5" />
         </div>
-        <h1 className="text-xl font-bold text-gray-900 capitalize">
+        <h1 className="text-base sm:text-xl font-bold text-gray-900 capitalize truncate">
           Warehouse Portal
         </h1>
       </div>

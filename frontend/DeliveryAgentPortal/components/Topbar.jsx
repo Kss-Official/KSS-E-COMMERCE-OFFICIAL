@@ -20,7 +20,7 @@ const NOTE_ICON = {
   failed: AlertTriangle
 };
 
-export default function Topbar({ title, onExitPortal, onLogout, setActiveTab }) {
+export default function Topbar({ title, onExitPortal, setActiveTab, onToggleMobileSidebar }) {
   const [profile, setProfile] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
@@ -135,9 +135,18 @@ export default function Topbar({ title, onExitPortal, onLogout, setActiveTab }) 
   const isOnline = shift.shift_status === 'ONLINE';
 
   return (
-    <header className="bg-white border-b border-gray-200 py-3.5 px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
-      {/* Title */}
-      <div className="flex items-center space-x-3">
+    <header className="bg-white border-b border-gray-200 py-3 sm:py-3.5 px-4 sm:px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
+      {/* Title + Mobile Hamburger Menu */}
+      <div className="flex items-center space-x-2.5 sm:space-x-3">
+        {onToggleMobileSidebar && (
+          <button
+            onClick={onToggleMobileSidebar}
+            className="md:hidden p-1.5 rounded-xl bg-gray-100 hover:bg-emerald-50 text-gray-700 hover:text-[#0B5E3C] transition-colors cursor-pointer"
+            title="Open Navigation Menu"
+          >
+            <Menu className="w-5.5 h-5.5 stroke-[2.2]" />
+          </button>
+        )}
         <div className="p-2 rounded-xl bg-[#e6f5ef] text-[#0B5E3C]">
           <Truck className="w-5 h-5" />
         </div>

@@ -36,7 +36,11 @@ const navItems = [
   { id: 'support', label: 'Support', icon: HelpCircle }
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogout }) {
+// The backend has no availability column, so the rider's on/off duty choice is
+// remembered per browser.
+const ONLINE_KEY = 'buyzo_rider_onlne';
+
+export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onCloseMobile }) {
   const [isOnline, setIsOnline] = useState(() => {
     try {
       return (localStorage.getItem('buyzo_rider_shift_status') || 'OFFLINE') === 'ONLINE';
@@ -108,7 +112,7 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogou
   const delivered = profile?.stats?.delivered ?? agent?.total_completed ?? 0;
 
   return (
-    <aside className="w-16 lg:w-64 bg-[#0B5E3C] text-white flex flex-col justify-between h-screen sticky top-0 border-r border-[#07452c] shadow-xl shrink-0 overflow-y-auto scrollbar-none">
+    <aside className="flex w-full md:w-64 bg-[#0B5E3C] text-white flex-col justify-between h-full md:h-screen md:sticky md:top-0 border-r border-[#07452c] shadow-xl shrink-0 overflow-y-auto scrollbar-none">
       <div>
         {/* Agent Profile Header Card */}
         <div className="p-2 lg:p-5 border-b border-[#108A57]/30 flex flex-col items-center text-center relative">
@@ -140,10 +144,10 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogou
             ></span>
           </div>
 
-          <h3 className="hidden lg:block font-extrabold text-white text-base tracking-wide">{name}</h3>
+          <h3 className="font-extrabold text-white text-base tracking-wide mt-1">{name}</h3>
 
           {/* Success rate is a real aggregate over this rider's completed tasks. */}
-          <div className="hidden lg:flex items-center space-x-1 mt-0.5 text-xs font-bold text-amber-300">
+          <div className="flex items-center space-x-1 mt-0.5 text-xs font-bold text-amber-300">
             <Star className="w-3.5 h-3.5 fill-amber-300 stroke-none" />
             <span>{successRate != null ? `${successRate}% success` : `${delivered} delivered`}</span>
           </div>
@@ -151,13 +155,16 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogou
           {/* Interactive Online/Offline Toggle Pill */}
           <button
             onClick={toggleOnline}
-            className={`mt-3 flex items-center justify-center lg:space-x-2 px-2 lg:px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${isOnline
+            className={`mt-3 flex items-center justify-center space-x-2 px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${isOnline
                 ? 'bg-[#108A57]/30 text-emerald-200 border border-[#108A57]/50 hover:bg-[#108A57]/40'
-                : 'bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                : 'bg-red-950/40 text-red-200 border border-red-500/30 hover:bg-red-900/50'
               }`}
           >
-            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-300 animate-pulse' : 'bg-gray-400'}`}></span>
-            <span className="hidden lg:inline">{isOnline ? 'Online' : 'Offline'}</span>
+            <span
+              className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[#108A57] animate-pulse' : 'bg-red-400'
+                }`}
+            />
+            <span className="inline">{isOnline ? 'Online' : 'Offline'}</span>
           </button>
         </div>
 
@@ -171,15 +178,18 @@ export default function Sidebar({ activeTab, setActiveTab, onExitPortal, onLogou
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-center lg:justify-between px-2 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${isActive
-                    ? 'bg-[#108A57] text-white shadow-md font-bold transform translate-x-1 border-l-4 border-white'
+                onClick={() => {
+                  setActiveTab(item.id);
+                  if (onCloseMobile) onCloseMobile();
+                }}
+                className={`w-full flex items-center justify-between px-3.5 lg:px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${isActive
+                    ? 'bg-[#108A57] text-white shadow-md font-bold border-l-4 border-white'
                     : 'text-emerald-100/90 hover:bg-[#07452c] hover:text-white'
                   }`}
               >
                 <div className="flex items-center space-x-3.5">
                   <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-emerald-200'}`} />
-                  <span className="hidden lg:inline">{item.label}</span>
+                  <span className="inline lg:inline font-semibold">{item.label}</span>
                 </div>
                 {showBadge && (
                   <span className="hidden lg:inline bg-[#108A57] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs">

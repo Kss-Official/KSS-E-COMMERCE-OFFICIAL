@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Edit, Trash2, X, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Plus, Edit, Trash2, X, RefreshCw, Upload, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import {
   fetchProducts,
   createProductApi,
@@ -21,6 +21,52 @@ export default function ProductsTab() {
   const [formData, setFormData] = useState({
     name: '', category: 'Electronics', price: '', stock: '', status: 'Active', image: ''
   });
+  const [csvUploadMessage, setCsvUploadMessage] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleCsvImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvUploadMessage('Parsing CSV file...');
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
+
+    if (lines.length <= 1) {
+      setCsvUploadMessage('CSV file is empty or missing data rows.');
+      return;
+    }
+
+    let successCount = 0;
+    // Skip header row
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(',').map((item) => item.replace(/^"|"$/g, '').trim());
+      if (row.length >= 3) {
+        const name = row[0];
+        const category = row[1] || 'General';
+        const price = Number(row[2]) || 999;
+        const stock = Number(row[3]) || 50;
+        
+        try {
+          await createProductApi({
+            name,
+            category,
+            price,
+            stock_quantity: stock,
+            is_active: true
+          });
+          successCount++;
+        } catch (err) {
+          console.error('Failed to import row', row, err);
+        }
+      }
+    }
+
+    setCsvUploadMessage(`Successfully imported ${successCount} products from CSV!`);
+    loadProducts();
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setTimeout(() => setCsvUploadMessage(null), 5000);
+  };
 
   const formatProduct = (p) => {
     const rawPrice = Number(p.price || p.current_price || 0);
@@ -137,6 +183,21 @@ export default function ProductsTab() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleCsvImport}
+            accept=".csv"
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center space-x-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer shrink-0"
+            title="Upload CSV to bulk import products"
+          >
+            <FileSpreadsheet className="w-4 h-4 stroke-[2]" />
+            <span>Bulk Upload CSV</span>
+          </button>
           <button
             onClick={handleOpenAddModal}
             className="flex items-center justify-center space-x-2 bg-[#ff5100] hover:bg-[#e64900] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer shrink-0"
@@ -146,6 +207,32 @@ export default function ProductsTab() {
           </button>
         </div>
       </div>
+
+      {/* CSV Upload Toast Message */}
+      {csvUploadMessage && (
+        <div className="bg-emerald-900 text-white p-4 rounded-2xl shadow-lg text-xs font-bold flex items-center space-x-2 animate-bounce">
+          <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
+          <span>{csvUploadMessage}</span>
+        </div>
+      )}
+
+      {/* Low Stock Radar Warning Banner */}
+      {products.some((p) => p.stock <= 5) && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between shadow-2xs text-xs font-bold text-amber-900">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span>
+              <strong>Low Stock Radar Warning:</strong> {products.filter((p) => p.stock <= 5).length} product(s) have 5 or fewer items remaining in warehouse inventory!
+            </span>
+          </div>
+          <button
+            onClick={() => setSelectedStatus('Low Stock')}
+            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold rounded-lg transition-colors cursor-pointer"
+          >
+            View Low Stock Items
+          </button>
+        </div>
+      )}
 
       {/* Filter Controls Bar */}
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
