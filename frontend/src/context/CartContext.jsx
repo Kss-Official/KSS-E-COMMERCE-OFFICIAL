@@ -409,6 +409,53 @@ export function CartProvider({ children }) {
     }
   };
 
+  const [savedForLater, setSavedForLater] = useState(() => {
+    try {
+      const saved = localStorage.getItem('buyzo_saved_for_later');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Mini Cart Drawer State
+  const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
+
+  // Gift Wrapping & Message State
+  const [isGiftWrapping, setIsGiftWrapping] = useState(false);
+  const [giftMessage, setGiftMessage] = useState('');
+  const giftWrapFee = isGiftWrapping ? 49 : 0;
+
+  const openMiniCart = () => setIsMiniCartOpen(true);
+  const closeMiniCart = () => setIsMiniCartOpen(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('buyzo_saved_for_later', JSON.stringify(savedForLater));
+    } catch (e) {}
+  }, [savedForLater]);
+
+  const saveForLater = (cartItemId) => {
+    const itemToSave = cartItems.find((i) => String(i.id) === String(cartItemId) || String(i.productId) === String(cartItemId));
+    if (!itemToSave) return;
+    setCartItems((prev) => prev.filter((i) => String(i.id) !== String(cartItemId) && String(i.productId) !== String(cartItemId)));
+    setSavedForLater((prev) => {
+      if (prev.some((s) => String(s.id) === String(itemToSave.id))) return prev;
+      return [...prev, itemToSave];
+    });
+  };
+
+  const moveToCart = (savedItemId) => {
+    const itemToMove = savedForLater.find((s) => String(s.id) === String(savedItemId) || String(s.productId) === String(savedItemId));
+    if (!itemToMove) return;
+    setSavedForLater((prev) => prev.filter((s) => String(s.id) !== String(savedItemId) && String(s.productId) !== String(savedItemId)));
+    addToCart(itemToMove);
+  };
+
+  const removeFromSaved = (savedItemId) => {
+    setSavedForLater((prev) => prev.filter((s) => String(s.id) !== String(savedItemId) && String(s.productId) !== String(savedItemId)));
+  };
+
   const getItemQuantity = (product) => {
     if (!product) return 0;
     const found = cartItems.find((i) => isItemMatch(i, product));
@@ -421,16 +468,28 @@ export function CartProvider({ children }) {
 
   const cartCount = cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0);
   const wishlistCount = wishlistItems.length;
+  const savedCount = savedForLater.length;
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
         wishlistItems,
+        savedForLater,
         cartCount,
         wishlistCount,
+        savedCount,
         cartSummary,
         isLoading,
+        isMiniCartOpen,
+        setIsMiniCartOpen,
+        openMiniCart,
+        closeMiniCart,
+        isGiftWrapping,
+        setIsGiftWrapping,
+        giftMessage,
+        setGiftMessage,
+        giftWrapFee,
         addToCart,
         updateQuantity,
         removeFromCart,
@@ -445,7 +504,10 @@ export function CartProvider({ children }) {
         // Pages consume this predicate under both names; keep them in sync.
         isWishlisted: isInWishlist,
         isProductInWishlist: isInWishlist,
-        clearWishlist
+        clearWishlist,
+        saveForLater,
+        moveToCart,
+        removeFromSaved
       }}
     >
       {children}

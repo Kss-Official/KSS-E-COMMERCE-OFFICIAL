@@ -20,8 +20,13 @@ import {
   Package,
   LayoutDashboard,
   Shield,
-  LogOut
+  LogOut,
+  Gift,
+  Bell,
+  Mic,
+  Bot
 } from 'lucide-react';
+import AIShoppingAssistantModal from '../ui/AIShoppingAssistantModal';
 import { useCartContext } from '../../context/CartContext';
 import { useNavigationContext } from '../../context/NavigationContext';
 import { getCurrentUser, logoutUser, fetchCurrentUserApi, fetchCategories, fetchSearchSuggestions, fetchProducts, fetchUserWalletApi } from '../../services/api';
@@ -234,12 +239,67 @@ export default function Header() {
   const context = useCartContext();
   const navContext = useNavigationContext();
   const navigateTo = navContext?.navigateTo || (() => {});
+  const openMiniCart = context?.openMiniCart || (() => navigateTo('cart'));
   const cartCount = context?.cartCount ?? (context?.cartItems ? context.cartItems.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0) : 0);
   const wishlistCount = context?.wishlistCount ?? (context?.wishlistItems ? context.wishlistItems.length : 0);
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isGiftFinderOpen, setIsGiftFinderOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
+
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice search is not supported on this browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.interimResults = false;
+      setIsListening(true);
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchQuery(transcript);
+        setIsDropdownOpen(true);
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.start();
+    } catch (err) {
+      console.error('Voice search error', err);
+      setIsListening(false);
+    }
+  };
+
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Order Confirmed! 🎉', desc: 'Order ORD-94812 is confirmed and being packed.', time: '10 mins ago', type: 'order', unread: true, target: 'orders' },
+    { id: 2, title: 'Price Drop Alert! 📉', desc: 'boAt Rockerz 450 price dropped by ₹400.', time: '2 hours ago', type: 'price', unread: true, target: 'deals' },
+    { id: 3, title: 'Coupon Unlocked! 🏷️', desc: 'Use code WELCOME15 for 15% OFF your next order.', time: '1 day ago', type: 'coupon', unread: true, target: 'shop' }
+  ]);
+
+  const unreadNotificationCount = notifications.filter((n) => n.unread).length;
+
+  const markAllCustomerNotificationsAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
+
+  const handleCustomerNotificationClick = (n) => {
+    setNotifications((prev) => prev.map((item) => (item.id === n.id ? { ...item, unread: false } : item)));
+    setIsNotificationOpen(false);
+    if (n.target) {
+      navigateTo(n.target);
+    }
+  };
 
   const userFirstName = currentUser?.first_name || currentUser?.profile?.first_name || (currentUser?.name ? currentUser.name.split(' ')[0] : '') || (currentUser?.email ? currentUser.email.split('@')[0] : '');
   const userName = currentUser?.name || currentUser?.profile?.full_name || [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || currentUser?.email?.split('@')[0] || 'Customer';
@@ -291,6 +351,7 @@ export default function Header() {
   const searchRef = useRef(null);
   const categoryDropdownRef = useRef(null);
   const userMenuRef = useRef(null);
+  const notificationRef = useRef(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -303,6 +364,9 @@ export default function Header() {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsNotificationOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -522,18 +586,32 @@ export default function Header() {
               placeholder="Search for products, brands and more..."
               className="w-full px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none bg-white pr-8"
             />
-            {searchQuery && (
+            <div className="absolute right-3 flex items-center space-x-1.5">
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsDropdownOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 cursor-pointer p-0.5"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setIsDropdownOpen(false);
-                }}
-                className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                onClick={handleVoiceSearch}
+                className={`p-1 rounded-full transition-colors cursor-pointer ${
+                  isListening
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'text-gray-400 hover:text-brand-700 hover:bg-gray-100'
+                }`}
+                title={isListening ? 'Listening...' : 'Search with Voice'}
               >
-                <X className="w-4 h-4" />
+                <Mic className="w-4 h-4" />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Search Button */}
@@ -656,7 +734,7 @@ export default function Header() {
 
           {/* User Account Dropdown Menu */}
           {currentUser && isUserMenuOpen && (
-            <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-full mt-2 sm:mt-3 w-auto sm:w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 rounded-t-xl">
                 <p className="text-xs font-bold text-gray-900 leading-tight">{userName}</p>
                 <p className="text-[11px] text-gray-500 truncate mt-0.5">{currentUser.email || currentUser.phone}</p>
@@ -752,6 +830,96 @@ export default function Header() {
           )}
         </div>
 
+        {/* Customer Notification Center Bell */}
+        <div className="relative" ref={notificationRef}>
+          <div 
+            onClick={() => setIsNotificationOpen((prev) => !prev)}
+            className="flex flex-col items-center cursor-pointer group relative px-1"
+            title="Notifications"
+          >
+            <div className="relative flex items-center justify-center p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">
+              <Bell className="w-6.5 h-6.5 stroke-[1.8]" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-emerald-600 text-white text-[10px] font-extrabold rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center border-2 border-white shadow-xs">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[12px] font-semibold text-gray-800 leading-none mt-0.5 group-hover:text-[#f95700] transition-colors">
+              Alerts
+            </span>
+          </div>
+
+          {/* Notification Drawer Dropdown */}
+          {isNotificationOpen && (
+            <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-full mt-2 sm:mt-3 w-auto sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                  <Bell className="w-4 h-4 text-emerald-700" />
+                  <span>Notifications & Alerts</span>
+                </h3>
+                {unreadNotificationCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={markAllCustomerNotificationsAsRead}
+                    className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+                  >
+                    Mark All Read
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                    All Read ✓
+                  </span>
+                )}
+              </div>
+
+              <div className="divide-y divide-gray-100 my-2 max-h-64 overflow-y-auto no-scrollbar">
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => handleCustomerNotificationClick(n)}
+                    className={`py-2.5 px-2 rounded-xl transition-colors cursor-pointer group flex items-start justify-between ${
+                      n.unread ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : 'hover:bg-gray-50/80'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1.5">
+                        <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-brand-700 transition-colors truncate">
+                          {n.title}
+                        </h4>
+                        {n.unread && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-500 font-medium leading-tight mt-0.5">{n.desc}</p>
+                      <span className="text-[9px] text-gray-400 font-semibold mt-1 block">{n.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-gray-100">
+                {unreadNotificationCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllCustomerNotificationsAsRead}
+                    className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-brand-800 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
+                  >
+                    Mark All Read
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationOpen(false)}
+                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
+                >
+                  Close Alerts
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Wishlist */}
         <div 
           onClick={() => navigateTo('wishlist')}
@@ -770,7 +938,7 @@ export default function Header() {
 
         {/* Cart */}
         <div
-          onClick={() => navigateTo('cart')}
+          onClick={openMiniCart}
           className="flex flex-col items-center cursor-pointer group relative px-1"
         >
           <div className="relative flex items-center justify-center p-1 rounded-full text-brand-700 group-hover:bg-brand-50 transition-colors">

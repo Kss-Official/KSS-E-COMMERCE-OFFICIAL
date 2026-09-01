@@ -88,10 +88,10 @@ export default function CartButton({ product, className = '', variant = 'default
     <button
       type="button"
       onClick={handleAdd}
-      className={`w-full bg-[#063328] hover:bg-[#094839] text-white text-[11px] sm:text-xs font-bold py-1.5 sm:py-2 px-3 rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 shadow-soft cursor-pointer active:scale-95 group border border-emerald-500/20 ${className}`}
+      className={`w-full max-w-full overflow-hidden bg-[#063328] hover:bg-[#094839] text-white text-[10px] sm:text-xs font-bold py-1.5 sm:py-2 px-2 sm:px-3 rounded-full flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 shadow-soft cursor-pointer active:scale-95 group border border-emerald-500/20 ${className}`}
     >
-      <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:scale-110 transition-transform text-emerald-300" />
-      <span>Add to Cart</span>
+      <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:scale-110 transition-transform text-emerald-300 shrink-0" />
+      <span className="truncate">Add to Cart</span>
     </button>
   );
 }
