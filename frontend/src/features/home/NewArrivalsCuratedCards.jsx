@@ -76,24 +76,24 @@ export default function NewArrivalsCuratedCards() {
   const { navigateTo } = useNavigationContext();
 
   return (
-    <section className="w-full max-w-7xl mx-auto">
+    <section className="w-full max-w-7xl mx-auto overflow-hidden">
       {/* Background Container with subtle sky-blue gradient */}
-      <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f3f8ff] to-[#ffffff] rounded-3xl p-5 sm:p-7 md:p-5 border border-sky-100/90 shadow-xs">
+      <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f3f8ff] to-[#ffffff] rounded-2xl sm:rounded-3xl p-2 sm:p-5 border border-sky-100/90 shadow-xs w-full overflow-hidden">
 
-        {/* 5-Card Grid Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4.5 items-stretch">
+        {/* 5-Card Grid Row: 2 per row on mobile (<640px) with min-w-0 grid items */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 items-stretch w-full">
           {CURATED_CARDS.map((card) => {
             return (
               <div
                 key={card.id}
                 onClick={() => navigateTo(card.targetPage)}
-                className="bg-white rounded-3xl p-3.5 sm:p-4 shadow-sm hover:shadow-xl border border-gray-100/90 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between group cursor-pointer overflow-hidden"
+                className="bg-white rounded-xl sm:rounded-3xl p-2 sm:p-4 shadow-sm hover:shadow-xl border border-gray-100/90 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between group cursor-pointer overflow-hidden min-w-0 w-full"
               >
                 {/* Clean Artwork Container */}
-                <div className="w-full overflow-hidden rounded-2xl bg-gray-50/50 flex items-center justify-center relative">
+                <div className="w-full overflow-hidden rounded-lg sm:rounded-2xl bg-gray-50/50 flex items-center justify-center relative">
                   {card.badge && (
                     <span
-                      className="absolute top-2.5 left-2.5 z-10 text-[9px] sm:text-[10px] font-extrabold tracking-wider text-white uppercase px-2 py-0.5 rounded-md shadow-xs pointer-events-none select-none"
+                      className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 z-10 text-[8px] sm:text-[10px] font-extrabold tracking-wider text-white uppercase px-1.5 sm:px-2 py-0.5 rounded-md shadow-xs pointer-events-none select-none"
                       style={{ backgroundColor: card.badgeBg || '#0d6efd' }}
                     >
                       {card.badge}
@@ -102,37 +102,38 @@ export default function NewArrivalsCuratedCards() {
                   <img
                     src={card.image}
                     alt={card.title}
-                    className="w-full h-auto object-cover rounded-2xl group-hover:scale-103 transition-transform duration-500"
+                    className="w-full h-auto object-cover rounded-lg sm:rounded-2xl group-hover:scale-103 transition-transform duration-500"
                     loading="lazy"
                   />
                 </div>
 
                 {/* Card Information */}
-                <div className="mt-3 space-y-1 text-left flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-sm sm:text-base font-black text-[#102a45] leading-snug group-hover:text-brand-700 transition-colors">
+                <div className="mt-1.5 sm:mt-3 space-y-1 text-left flex-1 flex flex-col justify-between min-w-0">
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-base font-black text-[#102a45] leading-snug group-hover:text-brand-700 transition-colors truncate">
                       {card.title}
                     </h3>
-                    <p className="text-[11px] sm:text-xs text-gray-400 font-medium">
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-medium truncate">
                       {card.subtitle}
                     </p>
                   </div>
 
                   {/* Price & Action Arrow Button */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-50 mt-2">
+                  <div className="flex items-center justify-between gap-1 pt-1.5 sm:pt-3 border-t border-gray-50 mt-1 sm:mt-2 min-w-0">
                     <span
-                      className="text-xs sm:text-sm font-black"
+                      className="text-[10px] sm:text-sm font-black truncate max-w-[calc(100%-1.5rem)]"
                       style={{ color: card.priceColor }}
+                      title={card.priceText}
                     >
                       {card.priceText}
                     </span>
 
                     <button
                       aria-label={`View ${card.title}`}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white shadow-xs group-hover:scale-110 transition-transform"
+                      className="w-5 h-5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white shadow-xs group-hover:scale-110 transition-transform shrink-0"
                       style={{ backgroundColor: card.buttonColor }}
                     >
-                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>

@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useNavigationContext } from '../../context/NavigationContext';
+import GiftFinderModal from '../ui/GiftFinderModal';
 
 const categories = [
   'Home',
@@ -38,6 +39,7 @@ const categories = [
 export default function Navbar() {
   const { currentPage, navigateTo } = useNavigationContext();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isGiftFinderOpen, setIsGiftFinderOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // 'giftCard' | 'recharge' | 'handloom' | 'buyMoreSaveMore'
   const drawerRef = useRef(null);
 
@@ -98,7 +100,7 @@ export default function Navbar() {
   return (
     <>
       {/* Top Navigation Bar */}
-      <nav className="w-full bg-brand-800 text-white text-xs font-semibold px-3 sm:px-6 flex items-center gap-0 overflow-x-auto select-none relative z-30 shadow-sm">
+      <nav className="w-full bg-brand-800 text-white text-xs font-semibold px-3 sm:px-6 flex items-center gap-0 overflow-x-auto no-scrollbar select-none relative z-30 shadow-sm">
         {/* All Categories Trigger Button */}
         <button
           onClick={() => setIsDrawerOpen(true)}
@@ -219,6 +221,27 @@ export default function Navbar() {
               </div>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#063328]" />
             </button>
+            <button
+              onClick={() => {
+                setIsDrawerOpen(false);
+                setIsGiftFinderOpen(true);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-[#063328] font-bold transition-all cursor-pointer group"
+            >
+              <div className="flex items-center space-x-2.5">
+                <div className="relative flex items-center justify-center">
+                  <Gift className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="absolute -top-1.5 -right-2.5 bg-gradient-to-r from-amber-500 to-accent text-white text-[7px] font-black rounded-full px-1 py-0.2 uppercase shadow-2xs">
+                    AI
+                  </span>
+                </div>
+                <span className="ml-1 text-gray-900 group-hover:text-[#063328]">Gift Finder</span>
+              </div>
+              <span className="text-[10px] bg-gradient-to-r from-amber-500 to-accent text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1">
+                <Sparkles className="w-2.5 h-2.5 text-white" />
+                AI Recommendation
+              </span>
+            </button>
           </div>
 
           {/* Section 2: Shop by Department / Category */}
@@ -283,6 +306,28 @@ export default function Navbar() {
               </div>
               <span className="text-[10px] bg-orange-100 text-accent font-bold px-2 py-0.5 rounded-full">
                 Instant
+              </span>
+            </button>
+
+            {/* AI Gift Finder */}
+            <button
+              onClick={() => {
+                setIsDrawerOpen(false);
+                setIsGiftFinderOpen(true);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white hover:shadow-xs hover:text-[#063328] font-semibold transition-all cursor-pointer group text-gray-800"
+            >
+              <div className="flex items-center space-x-2.5">
+                <div className="relative flex items-center justify-center">
+                  <Gift className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="absolute -top-1.5 -right-2.5 bg-gradient-to-r from-amber-500 to-accent text-white text-[7px] font-black rounded-full px-1 py-0.2 uppercase shadow-2xs">
+                    AI
+                  </span>
+                </div>
+                <span className="ml-1 font-bold text-gray-900 group-hover:text-[#063328]">AI Gift Finder</span>
+              </div>
+              <span className="text-[10px] bg-amber-100 text-amber-900 font-extrabold px-2 py-0.5 rounded-full">
+                Try Now
               </span>
             </button>
 
@@ -559,6 +604,8 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      {/* Gift Finder Modal */}
+      <GiftFinderModal isOpen={isGiftFinderOpen} onClose={() => setIsGiftFinderOpen(false)} />
     </>
   );
 }

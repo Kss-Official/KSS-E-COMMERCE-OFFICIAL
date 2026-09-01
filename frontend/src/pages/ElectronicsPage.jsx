@@ -360,10 +360,37 @@ export default function ElectronicsPage() {
         </div>
       </div>
 
+      {/* Mobile Horizontal Category Scroll Bar (< 1024px) */}
+      <div className="lg:hidden w-full overflow-x-auto no-scrollbar flex items-center space-x-2 py-2 mb-3">
+        <button
+          onClick={() => setSelectedCategory(null)}
+          className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+            selectedCategory === null
+              ? 'bg-brand-800 text-white border-brand-800 shadow-2xs'
+              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          All Electronics
+        </button>
+        {categoryList.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory((prev) => (prev === cat ? null : cat))}
+            className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+              selectedCategory === cat
+                ? 'bg-brand-800 text-white border-brand-800 shadow-2xs'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {/* Main Content Layout: Sidebar + Products */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        {/* Left Sidebar */}
-        <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
+        {/* Left Sidebar (Desktop Only) */}
+        <aside className="hidden lg:block lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
           {/* Categories Card */}
           <div className="bg-cream border border-gray-200/90 rounded-2xl p-4 shadow-2xs">
             <h3 className="text-sm font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">

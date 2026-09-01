@@ -102,8 +102,8 @@ export default function LoginPage() {
       notify(
         'error',
         res?.message ||
-          res?.detail ||
-          'Invalid email or password. If you don’t have an account, use Sign Up.',
+        res?.detail ||
+        'Invalid email or password. If you don’t have an account, use Sign Up.',
         4500
       );
       return;
@@ -202,11 +202,10 @@ export default function LoginPage() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 sm:top-8 sm:right-8 max-w-sm px-5 py-3 rounded-2xl shadow-lift text-sm font-semibold flex items-start space-x-2.5 z-50 border transition-all duration-300 ${
-            toast.type === 'error'
+          className={`fixed top-6 right-6 sm:top-8 sm:right-8 max-w-sm px-5 py-3 rounded-2xl shadow-lift text-sm font-semibold flex items-start space-x-2.5 z-50 border transition-all duration-300 ${toast.type === 'error'
               ? 'bg-crimson-700 text-white border-white/20'
               : 'bg-brand-800 text-white border-brand-500/30'
-          }`}
+            }`}
         >
           <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-px">
             {toast.type === 'error' ? (
@@ -289,22 +288,20 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('login')}
-                className={`flex-1 text-center py-2 text-base font-bold transition-all relative cursor-pointer ${
-                  activeTab === 'login'
+                className={`flex-1 text-center py-2 text-base font-bold transition-all relative cursor-pointer ${activeTab === 'login'
                     ? `${theme.underline} border-b-2`
                     : 'text-gray-500 hover:text-gray-800'
-                }`}
+                  }`}
               >
                 Login
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('signup')}
-                className={`flex-1 text-center py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'signup'
+                className={`flex-1 text-center py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${activeTab === 'signup'
                     ? theme.tabActive
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 Sign Up
               </button>
@@ -330,7 +327,7 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Email or Mobile Number
+                  Email
                 </label>
                 <input
                   type="text"

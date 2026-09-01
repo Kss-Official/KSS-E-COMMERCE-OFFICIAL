@@ -1,5 +1,6 @@
 import React from 'react';
 import { CartProvider } from './context/CartContext';
+import { CompareProvider } from './context/CompareContext';
 import { NavigationProvider, useNavigationContext } from './context/NavigationContext';
 import Header from './components/layout/Header';
 import Navbar from './components/layout/Navbar';
@@ -17,11 +18,17 @@ import BeautyPage from './pages/BeautyPage';
 import HomeKitchenPage from './pages/HomeKitchenPage';
 import ShopPage from './pages/ShopPage';
 import WishlistPage from './pages/WishlistPage';
+import ComparePage from './pages/ComparePage';
+import SupportPage from './pages/SupportPage';
 import LoginPage from './pages/LoginPage';
 import NewArrivalsPage from './pages/NewArrivalsPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmedPage from './pages/OrderConfirmedPage';
 import WelcomeScreen, { hasSeenWelcome } from './components/WelcomeScreen';
+import SocialProofTicker from './components/ui/SocialProofTicker';
+import AIFloatingWidget from './components/ui/AIFloatingWidget';
+import CompareDrawerModal from './components/ui/CompareDrawerModal';
+import MiniCartDrawerModal from './components/ui/MiniCartDrawerModal';
 
 import { getCurrentUser, fetchCurrentUserApi } from './services/api';
 import { homePageForRole, isStaffRole } from './utils/roles';
@@ -33,16 +40,10 @@ function AppContent() {
   const { currentPage, navigateTo } = useNavigationContext();
   const hasRestoredSession = React.useRef(false);
 
-  // First-time visitors get the branded intro once per browser. A returning
-  // visitor, or anyone already signed in, skips straight to the storefront.
   const [showWelcome, setShowWelcome] = React.useState(
     () => !hasSeenWelcome() && !getCurrentUser()
   );
 
-  // On first load only, revalidate the cached session against the server and
-  // drop a signed-in staff member straight into their portal. Guarded by a ref
-  // so it does not fight with in-portal navigation (or trap staff on the login
-  // page when they want to switch accounts).
   React.useEffect(() => {
     if (hasRestoredSession.current) return;
     hasRestoredSession.current = true;
@@ -52,8 +53,6 @@ function AppContent() {
 
     let cancelled = false;
     (async () => {
-      // `/api/auth/me/` returns the authoritative role plus a `home_page` key;
-      // it also clears the token when the session has expired.
       const fresh = await fetchCurrentUserApi();
       if (cancelled) return;
 
@@ -69,7 +68,6 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (currentPage === 'admin') {
@@ -106,6 +104,10 @@ function AppContent() {
         return <OrderConfirmedPage />;
       case 'wishlist':
         return <WishlistPage />;
+      case 'compare':
+        return <ComparePage />;
+      case 'support':
+        return <SupportPage />;
       case 'login':
         return <LoginPage />;
       case 'new-arrivals':
@@ -132,13 +134,17 @@ function AppContent() {
   const isLoginPage = currentPage === 'login';
 
   return (
-    <div className="min-h-screen bg-white font-sans text-ink flex flex-col justify-between relative">
+    <div className="min-h-screen bg-white font-sans text-ink flex flex-col justify-between relative overflow-x-hidden w-full max-w-full">
       {!isLoginPage && <Header />}
       {!isLoginPage && <Navbar />}
-      <div className="flex-1">
+      <div className="flex-1 w-full max-w-full overflow-x-hidden">
         {renderCurrentPage()}
       </div>
       {!isLoginPage && <Footer />}
+      {!isLoginPage && <SocialProofTicker />}
+      {!isLoginPage && <AIFloatingWidget />}
+      {!isLoginPage && <CompareDrawerModal />}
+      {!isLoginPage && <MiniCartDrawerModal />}
 
       {showWelcome && (
         <WelcomeScreen
@@ -156,9 +162,12 @@ function AppContent() {
 export default function App() {
   return (
     <CartProvider>
-      <NavigationProvider>
-        <AppContent />
-      </NavigationProvider>
+      <CompareProvider>
+        <NavigationProvider>
+          <AppContent />
+        </NavigationProvider>
+      </CompareProvider>
     </CartProvider>
   );
 }
+
