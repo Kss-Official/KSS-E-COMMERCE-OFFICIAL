@@ -289,6 +289,7 @@ export default function HomeKitchenPage() {
   }, [productsList]);
   const [viewMode, setViewMode] = useState('grid');
   const [toastMessage, setToastMessage] = useState(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
     if (selectedSubCategory) {
@@ -533,9 +534,28 @@ export default function HomeKitchenPage() {
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        {/* Mobile Filter Toggle */}
+        <div className="lg:hidden flex items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-200 mb-4">
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="flex items-center space-x-2 text-xs font-bold text-brand-800 cursor-pointer"
+          >
+            <SlidersHorizontal className="w-4 h-4 text-accent" />
+            <span>Filters & Refinements</span>
+            {(selectedBrands.length > 0 || minRating > 0 || maxPrice < 15000) && (
+              <span className="w-2 h-2 rounded-full bg-accent"></span>
+            )}
+          </button>
+          <span className="text-xs text-gray-500 font-semibold">{filteredProducts.length} Products</span>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Filter Sidebar */}
-          <div className="lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-6 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
+          <div
+            className={`lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-6 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none ${
+              showMobileFilters ? 'block' : 'hidden lg:block'
+            }`}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center space-x-2">
                 <SlidersHorizontal className="w-4 h-4 text-accent" />

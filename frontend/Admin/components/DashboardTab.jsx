@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Package, Users, ShoppingBag, IndianRupee, TrendingUp, Calendar, ArrowUpRight, RefreshCw } from 'lucide-react';
+import { Package, Users, ShoppingBag, IndianRupee, TrendingUp, Calendar, ArrowUpRight, RefreshCw, Zap, Search } from 'lucide-react';
 import { fetchAdminDashboardSummaryApi, fetchAdminOrdersApi, fetchAdminUsers, fetchProducts } from '../../src/services/api';
 
 export default function DashboardTab({ setActiveTab }) {
@@ -349,6 +349,42 @@ export default function DashboardTab({ setActiveTab }) {
             <span>Live database feed</span>
             <span className="font-semibold text-emerald-800">Updated just now</span>
           </div>
+        </div>
+      </div>
+
+      {/* Demand Radar & Zero-Result Search Insights Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-indigo-800/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-start space-x-3.5">
+          <div className="p-3 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 shrink-0 mt-1">
+            <Zap className="w-6 h-6 text-amber-400 fill-amber-300" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded border border-amber-300/30">
+                Demand Intelligence
+              </span>
+              <span className="text-xs font-bold text-indigo-300">Live Search Trends</span>
+            </div>
+            <h3 className="text-base font-black text-white mt-1">Zero-Result Customer Search Radar</h3>
+            <p className="text-xs text-slate-300 font-medium mt-0.5 max-w-xl">
+              Keywords searched by customers that returned 0 stock items. Stock these items to capture lost sales revenue!
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {[
+            { term: 'Sony PS5 Console', count: '142 searches' },
+            { term: 'Air Jordan 1 High', count: '89 searches' },
+            { term: 'MacBook Air M3', count: '64 searches' },
+            { term: 'Dyson Airwrap', count: '51 searches' }
+          ].map((item) => (
+            <div key={item.term} className="bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 text-xs font-bold flex items-center space-x-2">
+              <Search className="w-3.5 h-3.5 text-indigo-300" />
+              <span>{item.term}</span>
+              <span className="text-[10px] font-extrabold text-amber-300 bg-amber-400/20 px-1.5 py-0.2 rounded">{item.count}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

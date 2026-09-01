@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Edit, Trash2, Eye, Calendar, Filter, X, CheckCircle, Clock, Truck, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Calendar, Filter, X, CheckCircle, Clock, Truck, ShoppingBag, RefreshCw, Download } from 'lucide-react';
 import { fetchAdminOrdersApi, updateOrderStatusApi } from '../../src/services/api';
 
 export default function OrdersTab() {
@@ -9,6 +9,25 @@ export default function OrdersTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [viewingOrder, setViewingOrder] = useState(null);
+
+  const handleExportOrdersCSV = async () => {
+    const token = localStorage.getItem('buyzo_access_token');
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/admin/export/orders/?format=csv', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'buyzo_orders_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      alert('Failed to export orders CSV.');
+    }
+  };
 
   const parsePriceNum = (val) => {
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -153,13 +172,22 @@ export default function OrdersTab() {
           </div>
           <p className="text-sm text-gray-500 font-medium">Track customer orders, delivery stages, and real-time database lifecycle.</p>
         </div>
-        <button
-          onClick={() => loadAllOrders()}
-          className="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh Database</span>
-        </button>
+        <div className="flex items-center space-x-2 shrink-0">
+          <button
+            onClick={handleExportOrdersCSV}
+            className="flex items-center justify-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={() => loadAllOrders()}
+            className="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Controls Bar */}

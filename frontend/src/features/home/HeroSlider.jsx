@@ -235,7 +235,7 @@ export default function HeroSlider() {
 
   return (
     <div
-      className="relative w-full overflow-hidden min-h-[360px] sm:min-h-[420px] md:min-h-[470px] lg:min-h-[500px] flex items-center shadow-none select-none rounded-none mt-0 transition-colors duration-500"
+      className="relative w-full overflow-hidden min-h-[460px] sm:min-h-[440px] md:min-h-[470px] lg:min-h-[500px] flex items-center shadow-none select-none rounded-none mt-0 transition-colors duration-500 py-4 md:py-0"
       style={{ backgroundColor: slides[currentIndex].bgColor }}
     >
       {/* Background Images for smooth transition */}
@@ -352,7 +352,7 @@ export default function HeroSlider() {
 
                 {/* 5. Right Deep Forest Pine Green Arch Sector */}
                 <path
-                  d="M 1160 0 C 1030 140, 980 320, 1070 600 L 1440 600 L 1440 0 Z"
+                  d="M 1160 0 C 1030 140, 980 320, 1070 600 L 1440 720 L 1440 0 Z"
                   fill="url(#exactSlide2PineArch)"
                 />
 
@@ -382,11 +382,10 @@ export default function HeroSlider() {
               </svg>
             </div>
           ) : slide.id === 3 ? (
-            /* Fresh Light Lime / Green Canvas for Slide 3 with subtle dot grid */
-            <div className="w-full h-full relative overflow-hidden bg-[#E6F4D6]">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#ffffff_0%,transparent_60%)] pointer-events-none opacity-40" />
-              {/* Bottom Left Dot Grid */}
-              <div className="absolute bottom-4 left-6 grid grid-cols-4 gap-2 opacity-20 pointer-events-none">
+            /* Modern Urban Lime Green Canvas for Slide 3 Fashion */
+            <div className="w-full h-full relative overflow-hidden bg-gradient-to-br from-[#eaf6dd] via-[#e2f2d2] to-[#d6ebd0]">
+              {/* Subtle geometric dot pattern */}
+              <div className="absolute top-10 right-10 grid grid-cols-4 gap-3 opacity-20 pointer-events-none">
                 {[...Array(16)].map((_, i) => (
                   <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#1b4332]" />
                 ))}
@@ -407,20 +406,20 @@ export default function HeroSlider() {
         </div>
       ))}
 
-      {/* Left Slider Arrow */}
+      {/* Left Slider Arrow (Hidden on mobile to avoid blocking buttons) */}
       <button
         onClick={prevSlide}
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-sm shadow-md"
+        className="hidden sm:flex absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/30 hover:bg-black/60 text-white items-center justify-center transition-all cursor-pointer backdrop-blur-sm shadow-md"
         title="Previous banner"
         aria-label="Previous banner"
       >
         <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
       </button>
 
-      {/* Right Slider Arrow */}
+      {/* Right Slider Arrow (Hidden on mobile to avoid blocking buttons) */}
       <button
         onClick={nextSlide}
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-sm shadow-md"
+        className="hidden sm:flex absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/30 hover:bg-black/60 text-white items-center justify-center transition-all cursor-pointer backdrop-blur-sm shadow-md"
         title="Next banner"
         aria-label="Next banner"
       >
@@ -437,8 +436,8 @@ export default function HeroSlider() {
               : 'opacity-0 translate-y-4 absolute pointer-events-none'
               }`}
           >
-            {/* Left Text Block (7 cols on mobile, 6 cols on md+) */}
-            <div className="col-span-7 sm:col-span-7 md:col-span-6 lg:col-span-6 space-y-2.5 sm:space-y-4 md:space-y-5">
+            {/* Left Text Block (12 cols on mobile top, 6 cols on md+ left) */}
+            <div className="col-span-12 md:col-span-6 lg:col-span-6 space-y-2 sm:space-y-4 md:space-y-5 text-left">
               <h1
                 className={`text-xl sm:text-3xl md:text-[44px] lg:text-[54px] font-black leading-[1.08] tracking-tight drop-shadow-sm ${slide.titleColor}`}
               >
@@ -540,9 +539,9 @@ export default function HeroSlider() {
               )}
             </div>
 
-            {/* Right Hero Armchair Graphic & Offer Badge for Slide 1 (5 cols on mobile, 6 cols on md+) */}
+            {/* Right Hero Armchair Graphic & Offer Badge for Slide 1 */}
             {slide.id === 1 && (
-              <div className="col-span-5 sm:col-span-5 md:col-span-6 lg:col-span-6 flex items-end justify-end shrink-0 h-[180px] sm:h-[260px] md:h-[380px] lg:h-[460px] relative pointer-events-none select-none group/chair">
+              <div className="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-center md:justify-end shrink-0 h-[150px] sm:h-[240px] md:h-[380px] lg:h-[460px] relative pointer-events-none select-none group/chair mt-2 md:mt-0">
                 {/* Multi-layer Ambient Backlight Glow */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#ff5100]/20 via-emerald-400/20 to-amber-300/15 rounded-full blur-2xl md:blur-3xl pointer-events-none" />
 
@@ -556,16 +555,16 @@ export default function HeroSlider() {
                   />
                 </div>
 
-                {/* Exact Circular Offer Badge - Smaller & Shifted Right */}
-                <div className="absolute top-10 sm:top-14 md:top-16 lg:top-20 left-[14%] sm:left-[16%] md:left-[18%] lg:left-[20%] z-30 pointer-events-none select-none">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full bg-white shadow-[0_10px_28px_rgba(0,0,0,0.28)] flex flex-col items-center justify-center border-[3px] border-white/95">
-                    <span className="text-[7px] sm:text-[10px] md:text-[11px] lg:text-xs font-black tracking-wider text-gray-950 uppercase leading-none">
+                {/* Exact Circular Offer Badge - Smaller & Shifted Right (Hidden on mobile) */}
+                <div className="hidden sm:block absolute top-2 sm:top-14 md:top-16 lg:top-20 left-[5%] sm:left-[16%] md:left-[18%] lg:left-[20%] z-30 pointer-events-none select-none">
+                  <div className="w-11 h-11 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full bg-white shadow-[0_10px_28px_rgba(0,0,0,0.28)] flex flex-col items-center justify-center border-[2.5px] sm:border-[3px] border-white/95">
+                    <span className="text-[6px] sm:text-[10px] md:text-[11px] lg:text-xs font-black tracking-wider text-gray-950 uppercase leading-none">
                       UP TO
                     </span>
-                    <span className="text-sm sm:text-xl md:text-2xl lg:text-[32px] font-black text-[#ff5500] leading-none my-0.5 tracking-tight">
+                    <span className="text-xs sm:text-xl md:text-2xl lg:text-[32px] font-black text-[#ff5500] leading-none my-0.5 tracking-tight">
                       60%
                     </span>
-                    <span className="text-[7px] sm:text-[10px] md:text-[11px] lg:text-xs font-black tracking-wider text-gray-950 uppercase leading-none">
+                    <span className="text-[6px] sm:text-[10px] md:text-[11px] lg:text-xs font-black tracking-wider text-gray-950 uppercase leading-none">
                       OFF
                     </span>
                   </div>
@@ -582,7 +581,7 @@ export default function HeroSlider() {
 
             {/* Right Hero Gear Showcase Graphic for Slide 2 */}
             {slide.id === 2 && (
-              <div className="col-span-5 sm:col-span-5 md:col-span-6 lg:col-span-6 flex items-end justify-end shrink-0 h-[180px] sm:h-[260px] md:h-[380px] lg:h-[460px] relative pointer-events-none select-none group/gear">
+              <div className="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-center md:justify-end shrink-0 h-[150px] sm:h-[240px] md:h-[380px] lg:h-[460px] relative pointer-events-none select-none group/gear mt-2 md:mt-0">
                 <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/15 via-orange-400/15 to-emerald-600/10 rounded-full blur-2xl md:blur-3xl pointer-events-none" />
 
                 {/* Hanging Pendant Dome Lamp - Lowered Position */}
@@ -595,16 +594,16 @@ export default function HeroSlider() {
                   />
                 </div>
 
-                {/* Circular Offer Badge */}
-                <div className="absolute -top-1 -left-2 sm:top-2 sm:-left-3 md:top-6 md:-left-6 z-25 pointer-events-none select-none">
-                  <div className="w-13 h-13 sm:w-18 sm:h-18 md:w-24 md:h-24 rounded-full bg-white shadow-[0_8px_18px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center border-2 border-white/90">
-                    <span className="text-[7px] sm:text-[9px] md:text-xs font-black tracking-widest text-gray-950 uppercase leading-none">
+                {/* Circular Offer Badge (Hidden on mobile) */}
+                <div className="hidden sm:block absolute top-1 left-2 sm:top-2 sm:-left-3 md:top-6 md:-left-6 z-25 pointer-events-none select-none">
+                  <div className="w-11 h-11 sm:w-18 sm:h-18 md:w-24 md:h-24 rounded-full bg-white shadow-[0_8px_18px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center border-2 border-white/90">
+                    <span className="text-[6px] sm:text-[9px] md:text-xs font-black tracking-widest text-gray-950 uppercase leading-none">
                       UP TO
                     </span>
-                    <span className="text-sm sm:text-xl md:text-[28px] font-black text-[#ff5100] leading-none my-0.5 tracking-tight">
+                    <span className="text-xs sm:text-xl md:text-[28px] font-black text-[#ff5100] leading-none my-0.5 tracking-tight">
                       60%
                     </span>
-                    <span className="text-[7px] sm:text-[9px] md:text-xs font-black tracking-widest text-gray-950 uppercase leading-none">
+                    <span className="text-[6px] sm:text-[9px] md:text-xs font-black tracking-widest text-gray-950 uppercase leading-none">
                       OFF
                     </span>
                   </div>
@@ -621,7 +620,7 @@ export default function HeroSlider() {
 
             {/* Right Hero Fashion Showcase Graphic for Slide 3 */}
             {slide.id === 3 && (
-              <div className="col-span-5 sm:col-span-5 md:col-span-6 lg:col-span-6 flex items-end justify-end shrink-0 h-[180px] sm:h-[260px] md:h-[390px] lg:h-[470px] relative pointer-events-none select-none group/fashion">
+              <div className="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-center md:justify-end shrink-0 h-[150px] sm:h-[240px] md:h-[390px] lg:h-[470px] relative pointer-events-none select-none group/fashion mt-2 md:mt-0">
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#ff5100]/20 via-emerald-600/15 to-amber-400/15 rounded-full blur-2xl md:blur-3xl pointer-events-none" />
 
                 {/* Modern Streetwear & Fashion Showcase PNG */}
@@ -635,7 +634,7 @@ export default function HeroSlider() {
 
             {/* Right Hero Rakhi Celebration Showcase Graphic & Hanging Brass Lamps for Slide 4 */}
             {slide.id === 4 && (
-              <div className="col-span-5 sm:col-span-5 md:col-span-6 lg:col-span-6 flex items-end justify-end shrink-0 h-[180px] sm:h-[260px] md:h-[380px] lg:h-[460px] relative pointer-events-none select-none group/rakhi">
+              <div className="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-center md:justify-end shrink-0 h-[150px] sm:h-[240px] md:h-[380px] lg:h-[460px] relative pointer-events-none select-none group/rakhi mt-2 md:mt-0">
                 <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 via-pink-400/10 to-amber-200/15 rounded-full blur-2xl md:blur-3xl pointer-events-none" />
 
                 {/* Hanging Brass Diya Lamps with Glowing Flames on Far Right Edge */}
@@ -653,11 +652,11 @@ export default function HeroSlider() {
 
                 {/* Rakhi Festive Showcase PNG */}
                 {/* Rakhi Festive Showcase */}
-                <div className="relative h-full w-full flex items-end justify-end">
+                <div className="relative h-full w-full flex items-end justify-center md:justify-end">
 
-                  {/* Exact Circular Offer Badge */}
-                  <div className="absolute top-12 sm:top-16 md:top-20 lg:top-24 -left-7 sm:-left-10 md:-left-13 lg:-left-16 z-30 pointer-events-none select-none">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full bg-white shadow-[0_10px_28px_rgba(0,0,0,0.28)] flex flex-col items-center justify-center border-[3px] border-white/95">
+                  {/* Exact Circular Offer Badge (Hidden on mobile) */}
+                  <div className="hidden sm:block absolute top-0 left-2 sm:-left-10 md:-left-13 lg:-left-16 z-30 pointer-events-none select-none">
+                    <div className="w-11 h-11 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full bg-white shadow-[0_10px_28px_rgba(0,0,0,0.28)] flex flex-col items-center justify-center border-[2.5px] sm:border-[3px] border-white/95">
 
                       <span className="text-[7px] sm:text-[10px] md:text-[11px] lg:text-xs font-black tracking-wider text-gray-950 uppercase leading-none">
                         UP TO
@@ -678,7 +677,7 @@ export default function HeroSlider() {
                   <img
                     src={heroBanner4RakhiImg}
                     alt="Celebrate Rakhi & Raksha Bandhan with Love - Happy Rakhi Gift Box, Sweets, Chocolates, Diya & Rakhi"
-                    className="relative z-10 h-full w-auto max-w-full object-contain object-right-bottom drop-shadow-[0_15px_30px_rgba(0,0,0,0.2)]"
+                    className="relative z-10 h-full w-auto max-w-full object-contain object-bottom md:object-right-bottom drop-shadow-[0_15px_30px_rgba(0,0,0,0.2)]"
                   />
 
                 </div>

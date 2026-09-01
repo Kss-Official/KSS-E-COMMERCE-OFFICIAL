@@ -19,6 +19,7 @@ import { useCartContext } from '../context/CartContext';
 import { useNavigationContext } from '../context/NavigationContext';
 import { getProductImage } from '../utils/productAssets';
 import { fetchProducts } from '../services/api';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 // Import all product image assets
 import boatRockerzImg from '../assets/images/boat_rockerz.jpg';
@@ -1056,10 +1057,34 @@ export default function ShopPage() {
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-6 sm:pt-8">
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Mobile Horizontal Scrollable Categories (< 1024px) */}
+          <div className="lg:hidden w-full overflow-x-auto no-scrollbar flex items-center space-x-2 py-2 mb-3">
+            {categoriesList.map((cat) => {
+              const currentCatStr = (selectedCategory || 'All').toString().toLowerCase();
+              const isSelected = currentCatStr === (cat.id || '').toLowerCase();
+              const count = getCategoryCount(cat.id);
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-brand-900 text-white border-brand-900 shadow-2xs'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                  <span className={`ml-1.5 text-[10px] ${isSelected ? 'text-emerald-300' : 'text-gray-400'}`}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Left Sidebar - Categories */}
-          <aside className="w-full lg:w-64 bg-white rounded-2xl p-5 shadow-xs border border-gray-100 shrink-0 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Left Sidebar - Categories (Desktop Only) */}
+          <aside className="hidden lg:block lg:w-64 bg-white rounded-2xl p-5 shadow-xs border border-gray-100 shrink-0 lg:sticky lg:top-6 self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-none">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
               <h2 className="text-base font-extrabold text-gray-900">Categories</h2>
               <button
@@ -1163,7 +1188,11 @@ export default function ShopPage() {
             </div>
 
             {/* Product Items Display */}
-            {filteredProducts.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4.5 w-full">
+                <SkeletonCard count={8} />
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-xs">
                 <p className="text-gray-500 text-base font-medium">No products found in this category.</p>
                 <button
@@ -1174,7 +1203,7 @@ export default function ShopPage() {
                 </button>
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-4.5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4.5 w-full">
                 {filteredProducts.map((product) => {
                   const activeWish = isWishlisted(product);
                   return (
